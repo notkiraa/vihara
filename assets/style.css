@@ -337,3 +337,72 @@ html, body {
     transition-duration: .01ms !important;
   }
 }
+
+/* =========================================================================
+   RESPONSIVE — tablet & desktop (≥768px)
+   Mobile-first tetap default; di layar lebar konten melebar rapi & terpusat.
+   ========================================================================= */
+@media (min-width: 768px) {
+  body { background: #ece4e6; }
+
+  .phone {
+    max-width: 100%;
+    min-height: 100dvh;
+    box-shadow: none;
+  }
+
+  /* Latar gradien & blob menutupi seluruh layar lebar */
+  .bg-blob.a { width: 420px; height: 420px; }
+  .bg-blob.b { width: 420px; height: 420px; }
+
+  /* Header, hero, dan sheet dibatasi lebarnya lalu dipusatkan */
+  .topbar,
+  .page-head,
+  .summary,
+  .hero-card,
+  .brand-top { max-width: 760px; margin-left: auto; margin-right: auto; width: 100%; }
+
+  .sheet {
+    max-width: 760px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 28px;
+    margin-top: 20px;
+    padding: 36px 40px 120px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Form input lebih lega, maksimal 2 kolom di layar lebar */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  /* Aksi cepat jadi 4 kolom di layar lebar */
+  .quick { grid-template-columns: repeat(4, 1fr); }
+
+  /* CTA tetap di bawah tapi terpusat & dibatasi lebarnya */
+  .cta-wrap { max-width: 760px; }
+  .cta-wrap .btn { max-width: 360px; margin-left: auto; margin-right: auto; }
+
+  /* Bottom nav dibatasi lebarnya & dipusatkan, tetap seperti app bar */
+  .bottomnav { max-width: 560px; border-radius: 22px 22px 0 0; }
+
+  /* Receipt (halaman sukses) tidak terlalu lebar */
+  .wrap { max-width: 480px; margin: 0 auto; }
+}
+
+@media (min-width: 1100px) {
+  .topbar,
+  .page-head,
+  .summary,
+  .hero-card,
+  .brand-top,
+  .sheet,
+  .cta-wrap { max-width: 860px; }
+
+  .form-grid { gap: 0 28px; }
+}

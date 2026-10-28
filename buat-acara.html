@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Buat Acara · Buku Tamu Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .page-head { padding: 20px 20px 16px; color:#fff; display:flex; align-items:center; gap:14px; }
+    .page-head h1 { font-size:20px; font-weight:800; letter-spacing:-.4px; }
+    .page-head p { font-size:13px; opacity:.85; }
+    .back {
+      width:42px; height:42px; border-radius:13px; display:grid; place-items:center;
+      background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.22); color:#fff; cursor:pointer;
+      transition: transform .2s var(--ease);
+    }
+    .back:active { transform: scale(.9); }
+    .sub-label { font-size:13px; font-weight:600; color: var(--ink-70); margin:4px 0 10px; }
+    .textarea {
+      width:100%; min-height:100px; resize:vertical; padding:14px;
+      border:1.5px solid var(--line); border-radius:14px; font:inherit; font-size:15px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .textarea:focus { outline:none; border-color: var(--maroon-500); box-shadow:0 0 0 4px var(--maroon-100); }
+    .section-head { font-size:12px; font-weight:700; color:var(--maroon-700); text-transform:uppercase; letter-spacing:.6px; margin:22px 0 14px; display:flex; align-items:center; gap:8px; }
+    .section-head::after { content:''; flex:1; height:1px; background:var(--line); }
+    .cta-wrap { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:420px;
+      padding:16px 20px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(to top,#fff 70%,transparent); z-index:20; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="bg-gradient" style="position:fixed;"></div>
+    <div class="bg-blob a"></div>
+    <div class="bg-blob b"></div>
+
+    <div class="content page-in">
+      <div class="page-head">
+        <div class="back rise" data-nav="home.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </div>
+        <div class="rise d1">
+          <h1>Buat Acara Kebaktian</h1>
+          <p>Jadwalkan kegiatan vihara</p>
+        </div>
+      </div>
+
+      <div class="sheet" style="padding-bottom:140px;">
+
+        <div class="section-head rise d2">Informasi Acara</div>
+
+        <div class="field rise d2">
+          <label>Nama Acara</label>
+          <div class="input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg>
+            <input class="input" type="text" placeholder="Kebaktian Minggu Pagi" />
+          </div>
+        </div>
+
+        <!-- Pembicara: jenis + nama -->
+        <div class="rise d3">
+          <div class="sub-label">Jenis Pembicara</div>
+          <div class="chips" style="margin-bottom:16px;">
+            <span class="chip active">Bhikkhu</span>
+            <span class="chip">Romo</span>
+            <span class="chip">Penceramah</span>
+          </div>
+        </div>
+
+        <div class="field rise d3">
+          <label>Nama Pembicara</label>
+          <div class="input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+            <input class="input" type="text" placeholder="Bhikkhu Dhammavaro" />
+          </div>
+        </div>
+
+        <div class="section-head rise d4">Waktu &amp; Tempat</div>
+
+        <div class="form-grid">
+          <div class="field rise d4 full">
+            <label>Tanggal</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+              <input class="input" type="date" />
+            </div>
+          </div>
+
+          <div class="field rise d4">
+            <label>Jam Mulai</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <input class="input" type="time" value="09:00" />
+            </div>
+          </div>
+
+          <div class="field rise d5">
+            <label>Jam Selesai</label>
+            <div class="input-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <input class="input" type="time" value="11:00" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field rise d5">
+          <label>Lokasi</label>
+          <div class="input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <input class="input" type="text" placeholder="Dhammasala Utama" />
+          </div>
+        </div>
+
+        <div class="section-head rise d6">Detail</div>
+
+        <div class="field rise d6">
+          <label>Detail / Deskripsi Acara</label>
+          <textarea class="textarea" placeholder="Tuliskan rincian acara, tema ceramah, atau catatan untuk umat…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-wrap">
+      <button class="btn btn-primary" data-loading="acara-sukses.html">
+        Simpan Acara
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+      </button>
+    </div>
+  </div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
