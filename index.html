@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Buku Tamu Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .splash {
+      position: relative; z-index: 1;
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #fff; text-align: center; padding: 24px;
+    }
+    .logo-mark {
+      width: 104px; height: 104px; border-radius: 30px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.3);
+      backdrop-filter: blur(10px);
+      display: grid; place-items: center;
+      margin-bottom: 26px;
+      box-shadow: 0 20px 50px -16px rgba(0,0,0,.4);
+      animation: popIn .7s var(--ease-out) both;
+    }
+    .logo-mark svg { animation: softPulse 2.6s var(--ease) infinite; }
+    .splash h1 { font-size: 28px; font-weight: 800; letter-spacing: -.6px; animation: riseIn .6s .25s var(--ease-out) both; }
+    .splash p  { margin-top: 8px; opacity: .85; font-size: 15px; animation: riseIn .6s .4s var(--ease-out) both; }
+    .loader-track {
+      margin-top: 40px; width: 180px; height: 5px; border-radius: 999px;
+      background: rgba(255,255,255,.22); overflow: hidden;
+      animation: riseIn .6s .55s var(--ease-out) both;
+    }
+    .loader-fill {
+      height: 100%; width: 40%; border-radius: 999px;
+      background: #fff;
+      animation: load 1.9s var(--ease) forwards;
+    }
+    @keyframes load { 0% { width: 8%; } 60% { width: 72%; } 100% { width: 100%; } }
+    .splash .foot { position: absolute; bottom: 36px; font-size: 12px; opacity: .7; animation: riseIn .6s .7s both; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="bg-gradient"></div>
+    <div class="bg-blob a"></div>
+    <div class="bg-blob b"></div>
+
+    <div class="splash">
+      <div class="logo-mark">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          <path d="M9 7h6M9 11h6"/>
+        </svg>
+      </div>
+      <h1>Buku Tamu Digital</h1>
+      <p>Kehadiran warga, lebih mudah &amp; cepat</p>
+      <div class="loader-track"><div class="loader-fill"></div></div>
+      <div class="foot">Kelurahan Digital · v1.0</div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    // Auto lanjut ke login setelah splash
+    setTimeout(() => window.__go('login.html'), 2100);
+  </script>
+</body>
+</html>

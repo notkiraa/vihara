@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Masuk · Buku Tamu Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .brand-top { padding: 40px 24px 20px; color:#fff; text-align:center; }
+    .brand-top .mark {
+      width: 72px; height: 72px; border-radius: 22px; margin: 0 auto 16px;
+      background: rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
+      backdrop-filter: blur(10px); display:grid; place-items:center;
+    }
+    .brand-top h1 { font-size: 24px; font-weight: 800; letter-spacing:-.5px; }
+    .brand-top p { opacity:.85; font-size:14px; margin-top:4px; }
+    .forgot { text-align:right; font-size:13px; color: var(--maroon-700); font-weight:600; text-decoration:none; display:block; margin:-6px 0 20px; }
+    .divider { display:flex; align-items:center; gap:12px; margin:22px 0; color: var(--ink-30); font-size:13px; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background: var(--line); }
+    .signup { text-align:center; font-size:14px; color: var(--ink-50); margin-top:22px; }
+    .signup a { color: var(--maroon-700); font-weight:700; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="bg-gradient"></div>
+    <div class="bg-blob a"></div>
+    <div class="bg-blob b"></div>
+
+    <div class="content page-in">
+      <div class="brand-top">
+        <div class="mark rise">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h6M9 11h6"/>
+          </svg>
+        </div>
+        <h1 class="rise d1">Selamat Datang</h1>
+        <p class="rise d2">Masuk untuk mulai mencatat kehadiran</p>
+      </div>
+
+      <div class="sheet">
+        <div class="field rise d3">
+          <label>Email atau NIK</label>
+          <div class="input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m22 6-10 7L2 6"/></svg>
+            <input class="input" type="text" placeholder="warga@email.com" />
+          </div>
+        </div>
+
+        <div class="field rise d4">
+          <label>Kata Sandi</label>
+          <div class="input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="input" type="password" placeholder="••••••••" />
+          </div>
+        </div>
+
+        <a href="#" class="forgot rise d4">Lupa kata sandi?</a>
+
+        <button class="btn btn-primary rise d5" data-loading="home.html">
+          Masuk
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+
+        <div class="divider rise d5">atau</div>
+
+        <button class="btn btn-ghost rise d6" data-nav="home.html">
+          Masuk sebagai Tamu
+        </button>
+
+        <p class="signup rise d6">Belum punya akun? <a href="#">Daftar sekarang</a></p>
+      </div>
+    </div>
+  </div>
+  <script src="assets/app.js"></script>
+</body>
+</html>

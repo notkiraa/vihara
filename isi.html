@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Isi Buku Tamu · Buku Tamu Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .page-head { padding: 20px 20px 16px; color:#fff; display:flex; align-items:center; gap:14px; }
+    .page-head h1 { font-size:20px; font-weight:800; letter-spacing:-.4px; }
+    .page-head p { font-size:13px; opacity:.85; }
+    .back {
+      width:42px; height:42px; border-radius:13px; display:grid; place-items:center;
+      background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.22); color:#fff; cursor:pointer;
+      transition: transform .2s var(--ease);
+    }
+    .back:active { transform: scale(.9); }
+    .sub-label { font-size:13px; font-weight:600; color: var(--ink-70); margin:4px 0 10px; }
+    .textarea {
+      width:100%; min-height:90px; resize:none; padding:14px;
+      border:1.5px solid var(--line); border-radius:14px; font:inherit; font-size:15px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .textarea:focus { outline:none; border-color: var(--maroon-500); box-shadow:0 0 0 4px var(--maroon-100); }
+    .loc-card {
+      display:flex; align-items:center; gap:12px; padding:14px; border-radius:14px;
+      background: var(--maroon-50); border:1px solid var(--maroon-100); margin-bottom:4px;
+    }
+    .loc-card .ic { width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#fff;color:var(--maroon-700); }
+    .loc-card .t { font-weight:700; font-size:14px; }
+    .loc-card .s { font-size:12px; color: var(--ink-50); }
+    .live { margin-left:auto; display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--maroon-700); }
+    .live .d { width:8px;height:8px;border-radius:50%;background:var(--maroon-600); animation:softPulse 1.6s var(--ease) infinite; }
+    .cta-wrap { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:420px;
+      padding:16px 20px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(to top,#fff 70%,transparent); z-index:20; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="bg-gradient" style="position:fixed;"></div>
+    <div class="bg-blob a"></div>
+
+    <div class="content page-in">
+      <div class="page-head">
+        <div class="back rise" data-nav="home.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </div>
+        <div class="rise d1">
+          <h1>Isi Buku Tamu</h1>
+          <p>Catat kehadiranmu hari ini</p>
+        </div>
+      </div>
+
+      <div class="sheet" style="padding-bottom:140px;">
+        <!-- Lokasi otomatis -->
+        <div class="loc-card rise d2">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+          <div><div class="t">Balai Warga RW 05</div><div class="s">Terdeteksi otomatis</div></div>
+          <div class="live"><span class="d"></span> LIVE</div>
+        </div>
+
+        <div class="field rise d3" style="margin-top:20px;">
+          <label>Nama Lengkap</label>
+          <div class="input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+            <input class="input" type="text" value="Budi Antoro" />
+          </div>
+        </div>
+
+        <div class="field rise d3">
+          <label>Nomor Telepon</label>
+          <div class="input-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.5-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>
+            <input class="input" type="tel" placeholder="08xx xxxx xxxx" />
+          </div>
+        </div>
+
+        <div class="rise d4">
+          <div class="sub-label">Keperluan</div>
+          <div class="chips" style="margin-bottom:20px;">
+            <span class="chip active">Rapat</span>
+            <span class="chip">Kerja Bakti</span>
+            <span class="chip">Posyandu</span>
+            <span class="chip">Pengaduan</span>
+            <span class="chip">Lainnya</span>
+          </div>
+        </div>
+
+        <div class="field rise d5">
+          <label>Catatan (opsional)</label>
+          <textarea class="textarea" placeholder="Tulis keterangan tambahan…"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-wrap">
+      <button class="btn btn-primary" data-loading="sukses.html">
+        Kirim Kehadiran
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+      </button>
+    </div>
+  </div>
+  <script src="assets/app.js"></script>
+</body>
+</html>
