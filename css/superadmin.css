@@ -1,0 +1,979 @@
+/* ==========================================================================
+   FILE: css/superadmin.css - Stylesheet Portal Master Super Administrator
+   ==========================================================================
+   DAFTAR INDEKS & GLOSARIUM SEKSI CEPAT (QUICK LOOKUP GLOSSARY):
+   Gunakan pencarian ID tag [INDEX: SUPER-CSS-XX] untuk langsung menuju baris kode terkait.
+   --------------------------------------------------------------------------
+   [INDEX: SUPER-CSS-01] Theme Variables, Obsidian Dark Tokens & Reset
+   [INDEX: SUPER-CSS-02] Top Header & Floating Dark Glass Capsule Navbar
+   [INDEX: SUPER-CSS-03] Main Content Container & Glassmorphism Cards
+   [INDEX: SUPER-CSS-04] KPI Metrics Grid (4 Kartu Statistik Glass)
+   [INDEX: SUPER-CSS-05] Toolbar Filter, Search Bar & Button Styles
+   [INDEX: SUPER-CSS-06] Users Table (Desktop) & Card List (Mobile)
+   [INDEX: SUPER-CSS-07] Gate Login Screen Super Admin (Master Vault)
+   [INDEX: SUPER-CSS-08] Modal Popups (Modern Centered Glass) & Toast Notification
+   ========================================================================== */
+
+/* ==========================================================================
+   Portal Super Administrator - Vihara Amurwa Bhumi Cibinong
+   Master Authority: Hak Akses Pengurus & Manajemen Database Umat
+   Design: Modern Obsidian Glassmorphism + Buddhist Monastic Gold/Maroon Accent
+   ========================================================================== */
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-01] THEME VARIABLES, OBSIDIAN DARK TOKENS & RESET
+   Fungsi: Variabel warna dark obsidian, monastic gold, glassmorphism, & reset DOM.
+   ========================================================================== */
+:root {
+  /* Brand Palette */
+  --color-primary: #8f1d38;
+  --color-primary-dark: #5e1526;
+  --color-primary-light: #b73a59;
+  --color-primary-glow: rgba(143, 29, 56, 0.35);
+
+  --color-gold: #eab308;
+  --color-gold-dark: #a16207;
+  --color-gold-light: #fef08a;
+  --color-gold-glow: rgba(234, 179, 8, 0.35);
+
+  /* Glass Dark Backgrounds */
+  --bg-app: #0e0d0f;
+  --bg-gradient: radial-gradient(130% 90% at 50% -10%, #3e0c18 0%, #20050c 32%, #120306 65%, #080103 100%);
+  --surface-glass: rgba(24, 22, 26, 0.78);
+  --surface-glass-card: rgba(26, 23, 28, 0.85);
+  --surface-glass-border: rgba(255, 255, 255, 0.12);
+  --surface-glass-border-gold: rgba(254, 240, 138, 0.28);
+
+  /* Typography */
+  --color-text-main: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-text-subtle: rgba(255, 255, 255, 0.45);
+
+  /* Semantic Alerts */
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.15);
+  --color-success-border: rgba(16, 185, 129, 0.35);
+
+  --color-danger: #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.15);
+  --color-danger-border: rgba(239, 68, 68, 0.35);
+
+  --color-amber: #f59e0b;
+  --color-amber-bg: rgba(245, 158, 11, 0.15);
+
+  --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  --shadow-card: 0 20px 48px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-glow-gold: 0 10px 30px -8px rgba(234, 179, 8, 0.45);
+  --shadow-glow-maroon: 0 10px 30px -8px rgba(143, 29, 56, 0.55);
+
+  --max-width-content: 1140px;
+  --transition-fast: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-app);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--color-text-main);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, button, select, textarea {
+  font-family: inherit;
+}
+
+.ui-icon-svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.app-container {
+  width: 100%;
+  max-width: var(--max-width-content);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 0 0.85rem;
+  }
+}
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-02] TOP HEADER & FLOATING DARK GLASS CAPSULE NAVBAR
+   Fungsi: Header melayang kapsul obsidian, logo mahkota master, dan tombol aksi.
+   ========================================================================== */
+.super-header {
+  position: sticky;
+  top: 16px;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 0 24px;
+  pointer-events: none;
+  background: transparent;
+}
+
+.super-header-inner {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1100px;
+  height: 60px;
+  background: rgba(18, 18, 22, 0.85);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  padding: 6px 14px 6px 8px;
+  box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.2s var(--transition-normal), box-shadow 0.2s var(--transition-normal);
+}
+
+.super-header-inner:hover {
+  box-shadow: 0 24px 56px -8px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(254, 240, 138, 0.2);
+}
+
+.super-brand-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: #ffffff;
+  padding-left: 2px;
+  flex-shrink: 0;
+}
+
+.super-logo-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #fde047 0%, #eab308 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  box-shadow: 0 2px 12px rgba(234, 179, 8, 0.45);
+  flex-shrink: 0;
+}
+
+.super-title-text {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.super-badge-crown {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: rgba(254, 240, 138, 0.18);
+  color: #fef08a;
+  border: 1px solid rgba(254, 240, 138, 0.35);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.super-actions-capsule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-link-site {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.btn-link-site:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-super-logout {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.btn-super-logout:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+.btn-super-logout span {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .super-title-text {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-03] MAIN CONTENT CONTAINER & GLASSMORPHISM CARDS
+   Fungsi: Pembungkus konten utama dan kartu kaca gelap dengan pendaran border emas.
+   ========================================================================== */
+.main-content {
+  flex: 1;
+  padding: 1.5rem 0 4rem 0;
+}
+
+.card {
+  background: var(--surface-glass-card);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--surface-glass-border);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 1.5rem;
+  transition: all var(--transition-normal);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+  }
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.card-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-04] KPI METRICS GRID (4 KARTU STATISTIK GLASS)
+   Fungsi: Grid 4 metrik ringkasan (Umat, Admin, Presensi, Acara) dengan ikon aksen.
+   ========================================================================== */
+.kpi-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1023px) {
+  .kpi-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid-4 {
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+}
+
+.stat-card {
+  background: rgba(28, 24, 30, 0.8);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.45);
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.6);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.35rem;
+}
+
+.stat-icon.marun {
+  background: rgba(143, 29, 56, 0.25);
+  border: 1px solid rgba(143, 29, 56, 0.45);
+  box-shadow: 0 0 16px rgba(143, 29, 56, 0.3);
+}
+
+.stat-icon.gold {
+  background: rgba(234, 179, 8, 0.25);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+  box-shadow: 0 0 16px rgba(234, 179, 8, 0.3);
+}
+
+.stat-icon.emerald {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+}
+
+.stat-icon.blue {
+  background: rgba(14, 165, 233, 0.25);
+  border: 1px solid rgba(14, 165, 233, 0.45);
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.3);
+}
+
+.stat-number {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-05] TOOLBAR FILTER, SEARCH BAR & BUTTON STYLES
+   Fungsi: Tombol filter role (Semua, Umat, Admin), search bar, dan gaya tombol aksi.
+   ========================================================================== */
+.toolbar-wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 260px;
+  flex-wrap: wrap;
+}
+
+.search-box-pill {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+  min-width: 200px;
+}
+
+.search-input-pill {
+  width: 100%;
+  padding: 10px 16px 10px 40px;
+  font-size: 0.875rem;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-full);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.search-input-pill:focus {
+  border-color: #fde047;
+  box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.2);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.search-input-pill::placeholder {
+  color: var(--color-text-subtle);
+}
+
+.search-icon-pill {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-subtle);
+  pointer-events: none;
+}
+
+.filter-pills {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  gap: 4px;
+}
+
+.filter-btn {
+  padding: 7px 15px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.filter-btn.active {
+  background: #d4f73c;
+  color: #111111;
+  font-weight: 800;
+  box-shadow: 0 2px 10px rgba(212, 247, 60, 0.35);
+}
+
+/* ==========================================================================
+   BUTTONS
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  line-height: 1.25;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #d4a359 0%, #c29134 100%);
+  color: #1d1402;
+  box-shadow: 0 4px 14px rgba(194, 145, 52, 0.4);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(194, 145, 52, 0.55);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+  color: #713f12;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
+}
+
+.btn-gold:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ffffff;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.775rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-action-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-action-icon:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.05);
+}
+
+.btn-action-icon.danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-06] USERS TABLE (DESKTOP) & CARD LIST (MOBILE)
+   Fungsi: Tabel pengguna responsif dengan link WhatsApp dan kartu mobile terpadu.
+   ========================================================================== */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  background: rgba(14, 12, 16, 0.6);
+}
+
+.super-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.super-table th {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 13px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.super-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: middle;
+}
+
+.super-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.super-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.user-avatar-circle.admin {
+  background: linear-gradient(135deg, #fde047 0%, #eab308 100%);
+  color: #713f12;
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+}
+
+.user-avatar-circle.umat {
+  background: rgba(143, 29, 56, 0.35);
+  border: 1px solid rgba(143, 29, 56, 0.5);
+  color: #ffffff;
+}
+
+.user-name-title {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.user-id-sub {
+  font-size: 0.725rem;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+.role-badge-pill {
+  font-size: 0.725rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.role-badge-pill.admin {
+  background: rgba(254, 240, 138, 0.18);
+  color: #fef08a;
+  border: 1px solid rgba(254, 240, 138, 0.35);
+}
+
+.role-badge-pill.umat {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* User Card List (Mobile) */
+.user-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-mobile-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+
+.user-mobile-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.user-mobile-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (min-width: 860px) {
+  .table-wrap {
+    display: block !important;
+  }
+  .user-card-list {
+    display: none !important;
+  }
+}
+
+@media (max-width: 859px) {
+  .table-wrap {
+    display: none !important;
+  }
+  .user-card-list {
+    display: flex !important;
+  }
+}
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-07] GATE LOGIN SCREEN SUPER ADMIN (MASTER VAULT)
+   Fungsi: Layar brankas login PIN master 9999 dengan kartu terpusat dan tombol cepat.
+   ========================================================================== */
+.super-gate-card {
+  max-width: 460px;
+  margin: 3.5rem auto 0 auto;
+  text-align: center;
+  padding: 2.5rem;
+  background: rgba(26, 23, 28, 0.85);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(254, 240, 138, 0.25);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.75), 0 0 35px rgba(234, 179, 8, 0.12);
+  animation: pageIn 0.5s var(--transition-normal);
+}
+
+.super-gate-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, #fde047 0%, #eab308 100%);
+  color: #713f12;
+  font-size: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem auto;
+  box-shadow: 0 0 25px rgba(234, 179, 8, 0.45);
+}
+
+.quick-pin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: rgba(254, 240, 138, 0.12);
+  border: 1px solid rgba(254, 240, 138, 0.25);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  color: #fef08a;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quick-pin-pill:hover {
+  background: rgba(254, 240, 138, 0.22);
+  border-color: rgba(254, 240, 138, 0.45);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   [INDEX: SUPER-CSS-08] MODAL POPUPS (MODERN CENTERED GLASS) & TOAST NOTIFICATION
+   Fungsi: Pop-up dialog tambah user, edit profil, konfirmasi hapus, & notifikasi toast.
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 7, 10, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.modal-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-box {
+  background: rgba(28, 24, 30, 0.95);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-xl);
+  max-width: 480px;
+  width: 100%;
+  padding: 1.75rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: translateY(18px) scale(0.97);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-backdrop.show .modal-box {
+  transform: translateY(0) scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.btn-close-modal {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 1.25rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.btn-close-modal:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 6px;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 14px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: #fde047;
+  box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.2);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.form-select option {
+  background: #1e1b1f;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATION
+   ========================================================================== */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: 380px;
+  width: 90%;
+}
+
+@media (max-width: 768px) {
+  #toast-container {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: 24px;
+  }
+}
+
+.toast {
+  background: rgba(26, 23, 28, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+  animation: slideUpToast 0.22s ease-out;
+}
+
+.toast.success { border-left: 4px solid var(--color-success); }
+.toast.error { border-left: 4px solid var(--color-danger); }
+.toast.warning { border-left: 4px solid var(--color-amber); }
+
+@keyframes slideUpToast {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}

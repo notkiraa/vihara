@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Super Administrator Master Portal - Vihara Amurwa Bhumi Cibinong</title>
+  
+  <!-- Font Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet Khusus Super Admin dengan Cache-Busting -->
+  <link rel="stylesheet" href="css/superadmin.css?v=7.1">
+</head>
+<body>
+
+  <!-- ==========================================================================
+     PORTAL MASTER SUPER ADMINISTRATOR - VIHARA AMURWA BHUMI CIBINONG
+     ==========================================================================
+     DAFTAR INDEKS & GLOSARIUM SEKSI CEPAT (QUICK LOOKUP GLOSSARY):
+     Gunakan pencarian ID tag [INDEX: SUPER-HTML-XX] untuk langsung menuju baris kode terkait.
+     --------------------------------------------------------------------------
+     [INDEX: SUPER-HTML-01] Top Navbar & Tombol Kembali / Logout Super Admin
+     [INDEX: SUPER-HTML-02] Gate Autentikasi PIN Master Rahasia (Vault Screen)
+     [INDEX: SUPER-HTML-03] Dashboard Utama & 4 Kartu Metrik Agregat Sistem
+     [INDEX: SUPER-HTML-04] Tabel Manajemen Master Pengguna (Filter, Search & Actions)
+     [INDEX: SUPER-HTML-05] Danger Zone: Pembersihan Riwayat Presensi & Buku Tamu
+     [INDEX: SUPER-HTML-06] Modal Dialogs: Tambah, Edit & Hapus Pengguna Permanen
+     ========================================================================== -->
+
+  <!-- ==========================================================================
+       [INDEX: SUPER-HTML-01] TOP NAVBAR & TOMBOL KEMBALI / LOGOUT SUPER ADMIN
+       Fungsi: Header melayang kapsul superadmin, tautan ke aplikasi utama, dan logout.
+       ========================================================================== -->
+  <header class="super-header">
+    <div class="super-header-inner">
+      
+      <!-- Brand Capsule Icon & Title -->
+      <div class="super-brand-capsule">
+        <div class="super-logo-badge" title="Master Super Administrator">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #713f12;">
+            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>
+          </svg>
+        </div>
+        <span class="super-title-text">Super Administrator</span>
+        <span class="super-badge-crown">Master</span>
+      </div>
+
+      <!-- Aksi Kanan: Buka Aplikasi & Logout -->
+      <div class="super-actions-capsule">
+        <a href="index.html" class="btn-link-site" title="Buka Aplikasi Presensi Utama">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+          <span>Aplikasi Utama</span>
+        </a>
+
+        <button onclick="handleSuperAdminLogout()" class="btn-super-logout" id="btn-header-logout" title="Keluar dari Portal Super Admin">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       KONTEN UTAMA
+       ======================================================================== -->
+  <main class="main-content">
+    <div class="app-container">
+
+      <!-- ==========================================================================
+           [INDEX: SUPER-HTML-02] GATE AUTENTIKASI PIN MASTER RAHASIA (VAULT SCREEN)
+           Fungsi: Gerbang keamanan PIN 9999 sebelum membuka kontrol database vihara.
+           ========================================================================== -->
+      <section id="super-gate-section" style="display: block;">
+        <div class="super-gate-card">
+          <div class="super-gate-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #fde047;">
+              <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>
+            </svg>
+          </div>
+          <h2 style="font-size: 1.4rem; font-weight: 800; color: #ffffff; margin-bottom: 6px; letter-spacing: -0.01em;">
+            Super Administrator Vault
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+            Masukkan Kunci Rahasia / PIN Master untuk mengakses pengelolaan otoritas Pengurus, manajemen nama/email/telepon, dan penghapusan data umat.
+          </p>
+
+          <form onsubmit="handleSuperAdminLogin(event)">
+            <div class="form-group" style="text-align: left;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label class="form-label" for="super-gate-pin" style="margin-bottom: 0;">PIN Master Super Admin</label>
+                <button type="button" onclick="togglePinVisibility()" style="background: none; border: none; color: var(--color-gold-light); font-size: 0.75rem; cursor: pointer; text-decoration: underline;">
+                  Lihat / Tutup PIN
+                </button>
+              </div>
+              <input type="password" id="super-gate-pin" class="form-input" placeholder="Masukkan PIN Master (Default: 9999)" required autocomplete="current-password" autofocus>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                <span style="font-size: 0.75rem; color: var(--color-text-subtle);">Gunakan PIN master bawaan:</span>
+                <span class="quick-pin-pill" onclick="fillMasterPin('9999')" title="Klik untuk mengisi otomatis" style="display: inline-flex; align-items: center; gap: 5px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                  <span>Isi PIN 9999</span>
+                </span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+              </svg>
+              <span>Buka Vault Super Administrator</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+           [INDEX: SUPER-HTML-03] DASHBOARD UTAMA & 4 KARTU METRIK AGREGAT SISTEM
+           Fungsi: Banner selamat datang superadmin dan kartu statistik (umat, admin, presensi).
+           ========================================================================== -->
+      <section id="super-main-section" style="display: none;">
+        
+        <!-- Welcome Banner Super Admin -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 1.5rem; padding: 14px 20px; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: var(--radius-lg);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: #fde047; flex-shrink: 0;">
+              <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>
+            </svg>
+            <div>
+              <div style="font-size: 0.95rem; font-weight: 800; color: #ffffff;">Selamat Datang, Super Administrator</div>
+              <div style="font-size: 0.75rem; color: var(--color-text-muted);">Sesi Master Otoritas Aktif &bull; Vihara Amurwa Bhumi Cibinong</div>
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; font-weight: 700; color: #fef08a; background: rgba(0, 0, 0, 0.35); padding: 5px 12px; border-radius: var(--radius-full); border: 1px solid rgba(254, 240, 138, 0.3);">
+            ● Database Terhubung
+          </div>
+        </div>
+
+        <!-- KPI Metrics Grid (4 Kartu Glass) -->
+        <div class="kpi-grid-4">
+          <div class="stat-card">
+            <div class="stat-icon marun">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div>
+              <div class="stat-number" id="super-stat-umat">0</div>
+              <div class="stat-label">Total Umat Terdaftar</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon gold">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="stat-number" id="super-stat-admin">0</div>
+              <div class="stat-label">Pengurus / Admin</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon emerald">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                <polyline points="9 13 11 15 15 10"/>
+              </svg>
+            </div>
+            <div>
+              <div class="stat-number" id="super-stat-presensi">0</div>
+              <div class="stat-label">Total Log Presensi</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <div>
+              <div class="stat-number" id="super-stat-acara">0</div>
+              <div class="stat-label">Jadwal Kebaktian</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================================
+             [INDEX: SUPER-HTML-04] TABEL MANAJEMEN MASTER PENGGUNA (FILTER & SEARCH)
+             Fungsi: Filter role chip, form pencarian, tabel desktop, dan kartu mobile.
+             ========================================================================== -->
+        <!-- Kartu Utama: Manajemen Pengguna & Hak Akses -->
+        <div class="card" id="super-users-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 1.5rem;">
+            <div>
+              <h2 class="card-title">Manajemen Pengguna & Hak Akses Vihara</h2>
+              <p class="card-subtitle">
+                Atur pengurus/admin, ubah data pribadi (Nama, No HP, Email), atau hapus akun pengguna secara permanen.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button onclick="openCreateUserModal()" class="btn btn-primary">
+                + Tambah Pengguna Baru
+              </button>
+              <button onclick="handleExportMasterUsersCSV()" class="btn btn-secondary">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Unduh Master CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Toolbar: Pencarian & Filter Role -->
+          <div class="toolbar-wrap">
+            <div class="toolbar-left">
+              <div class="search-box-pill">
+                <svg class="search-icon-pill" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="super-search-input" class="search-input-pill" placeholder="Cari nama, email, nomor HP, atau ID...">
+              </div>
+
+              <!-- Filter Role -->
+              <div class="filter-pills">
+                <button type="button" class="filter-btn active" data-role="all" onclick="setFilterRole('all')">
+                  Semua
+                </button>
+                <button type="button" class="filter-btn" data-role="umat" onclick="setFilterRole('umat')">
+                  Umat Sahaja
+                </button>
+                <button type="button" class="filter-btn" data-role="admin" onclick="setFilterRole('admin')">
+                  Pengurus / Admin
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tampilan Tabel (Layar PC/Tablet) -->
+          <div class="table-wrap">
+            <table class="super-table">
+              <thead>
+                <tr>
+                  <th>Pengguna</th>
+                  <th>WhatsApp / Telepon</th>
+                  <th>Hak Akses (Role)</th>
+                  <th>Terdaftar</th>
+                  <th>Tindakan Otoritas</th>
+                </tr>
+              </thead>
+              <tbody id="super-users-tbody">
+                <!-- Diisi via superadmin.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tampilan Kartu (Layar Mobile) -->
+          <div class="user-card-list" id="super-users-mobile-list">
+            <!-- Diisi via superadmin.js -->
+          </div>
+        </div>
+
+        <!-- ==========================================================================
+             [INDEX: SUPER-HTML-05] DANGER ZONE: PEMBERSIHAN RIWAYAT PRESENSI & BUKU TAMU
+             Fungsi: Tindakan penghapusan massal log presensi dan buku tamu dengan konfirmasi.
+             ========================================================================== -->
+        <!-- Kartu Utilitas & Pemeliharaan Database -->
+        <div class="card" id="super-utilities-card" style="border-color: rgba(239, 68, 68, 0.25);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #fca5a5;">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <h3 class="card-title" style="font-size: 1.15rem; color: #fca5a5;">
+              Utilitas & Pemeliharaan Database
+            </h3>
+          </div>
+          <p class="card-subtitle">
+            Tindakan pembersihan log berkala untuk Super Administrator. Data yang dibersihkan tidak dapat dipulihkan.
+          </p>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1.25rem;">
+            <button onclick="handlePurgeAttendanceLogs()" class="btn btn-danger" style="font-size: 0.825rem; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Bersihkan Log Presensi Umat</span>
+            </button>
+            <button onclick="handlePurgeGuestLogs()" class="btn btn-danger" style="font-size: 0.825rem; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Bersihkan Data Buku Tamu</span>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ==========================================================================
+       [INDEX: SUPER-HTML-06] MODAL DIALOGS: TAMBAH, EDIT & HAPUS PENGGUNA PERMANEN
+       Fungsi: Pop-up pembuatan user baru, modifikasi kontak/email, dan konfirmasi hapus.
+       ========================================================================== -->
+  <!-- MODAL 1: TAMBAH PENGGUNA BARU (MANUAL SUPER ADMIN) -->
+  <div id="modal-create-user" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff;">
+          + Tambah Pengguna Baru
+        </h3>
+        <button onclick="closeModal('modal-create-user')" class="btn-close-modal" title="Tutup">&times;</button>
+      </div>
+
+      <form onsubmit="handleCreateUserSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="modal-create-name">Nama Lengkap *</label>
+          <input type="text" id="modal-create-name" class="form-input" placeholder="Contoh: Budi Santoso" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-create-phone">Nomor WhatsApp / Telepon *</label>
+          <input type="tel" id="modal-create-phone" class="form-input" placeholder="Contoh: 08123456789" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-create-email">Alamat Email *</label>
+          <input type="email" id="modal-create-email" class="form-input" placeholder="Contoh: budi@gmail.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-create-role">Tentukan Hak Akses (Role) *</label>
+          <select id="modal-create-role" class="form-select">
+            <option value="umat">Umat Biasa (Hanya Presensi Kebaktian)</option>
+            <option value="admin">Pengurus Vihara / Admin (Akses Kelola Acara & Presensi)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="button" onclick="closeModal('modal-create-user')" class="btn btn-secondary">
+            Batal
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Simpan Pengguna
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: EDIT DATA PENGGUNA
+       ======================================================================== -->
+  <div id="modal-edit-user" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 7px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <span>Edit Data Pengguna</span>
+        </h3>
+        <button onclick="closeModal('modal-edit-user')" class="btn-close-modal" title="Tutup">&times;</button>
+      </div>
+
+      <form onsubmit="handleEditUserSubmit(event)">
+        <input type="hidden" id="modal-edit-id">
+
+        <div style="font-size: 0.775rem; color: #fef08a; background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.3); padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; font-weight: 600; display: flex; align-items: center; gap: 7px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>
+          </svg>
+          <span>Otoritas Super Admin: Anda berwenang mengubah Nama Lengkap, Nomor Telepon, dan Email pengguna.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-edit-name">Nama Lengkap *</label>
+          <input type="text" id="modal-edit-name" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-edit-phone">Nomor WhatsApp / Telepon *</label>
+          <input type="tel" id="modal-edit-phone" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-edit-email">Alamat Email *</label>
+          <input type="email" id="modal-edit-email" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-edit-role">Hak Akses (Role)</label>
+          <select id="modal-edit-role" class="form-select">
+            <option value="umat">Umat Biasa</option>
+            <option value="admin">Pengurus Vihara / Admin</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="button" onclick="closeModal('modal-edit-user')" class="btn btn-secondary">
+            Batal
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: KONFIRMASI HAPUS PENGGUNA
+       ======================================================================== -->
+  <div id="modal-delete-user" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center;">
+      <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(239, 68, 68, 0.2); color: #fca5a5; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 1px solid rgba(239, 68, 68, 0.35);">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: #ffffff; margin-bottom: 6px;">
+        Hapus Pengguna Ini?
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem; line-height: 1.45;">
+        Apakah Anda yakin ingin menghapus data pengguna berikut dari database Vihara Amurwa Bhumi Cibinong?
+      </p>
+
+      <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1); padding: 14px; border-radius: var(--radius-md); text-align: left; font-size: 0.85rem; margin-bottom: 1.25rem;">
+        <div style="margin-bottom: 6px;">
+          Nama: <strong id="modal-delete-user-name" style="color: #ffffff;">-</strong>
+        </div>
+        <div style="margin-bottom: 6px;">
+          Role: <strong id="modal-delete-user-role" style="color: #fde047;">-</strong>
+        </div>
+        <div>
+          WhatsApp: <strong id="modal-delete-user-phone" style="color: #ffffff;">-</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button onclick="closeModal('modal-delete-user')" class="btn btn-secondary" style="flex: 1;">
+          Batal
+        </button>
+        <button onclick="handleConfirmDeleteUser()" class="btn btn-danger" style="flex: 1; background-color: var(--color-danger); color: #fff;">
+          Ya, Hapus Permanen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Helper Scripts Superadmin (PIN toggle & Auto Fill) -->
+  <script>
+    function fillMasterPin(val) {
+      var inp = document.getElementById('super-gate-pin');
+      if (inp) {
+        inp.value = val;
+        inp.focus();
+      }
+    }
+    function togglePinVisibility() {
+      var inp = document.getElementById('super-gate-pin');
+      if (inp) {
+        inp.type = inp.type === 'password' ? 'text' : 'password';
+      }
+    }
+  </script>
+
+  <!-- Supabase JS SDK & Integrasi Client Database -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js?v=11.0"></script>
+
+  <!-- Scripts Modular -->
+  <script src="js/data.js?v=11.0"></script>
+  <script src="js/superadmin.js?v=11.0"></script>
+</body>
+</html>
