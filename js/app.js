@@ -1314,6 +1314,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.handleLogout = function() {
     closeModal('modal-user-profile');
     ViharaAuth.logout();
+    updateNotificationsBadge();
     showToast('Anda telah keluar.', 'success');
     navigateTo('view-login');
   };
@@ -1578,6 +1579,46 @@ document.addEventListener('DOMContentLoaded', () => {
   <text x="500" y="390" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="11" font-weight="600" letter-spacing="2" fill="#fef9c3" opacity="0.7">VIHARA AMURWA BHUMI CIBINONG</text>
 </svg>`);
 
+  // ==========================================================================
+  // SISTEM PELACAKAN STATUS BACA PENGUMUMAN PER-PENGGUNA (PER-USER READ TRACKING)
+  // Setiap user memiliki daftar warta yang sudah dibacanya sendiri secara terpisah.
+  // ==========================================================================
+  function getUserReadStorageKey() {
+    const cur = typeof ViharaAuth !== 'undefined' ? ViharaAuth.currentUser() : null;
+    if (cur && (cur.id || cur.phone)) {
+      return `vihara_read_announcements_${cur.id || cur.phone}`;
+    }
+    return 'vihara_read_announcements_guest';
+  }
+
+  function getUserReadAnnouncementIds() {
+    try {
+      const raw = localStorage.getItem(getUserReadStorageKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  function isAnnouncementReadByUser(annId) {
+    if (!annId) return false;
+    const readIds = getUserReadAnnouncementIds();
+    return readIds.includes(String(annId));
+  }
+
+  function markAnnouncementAsReadByUser(annId) {
+    if (!annId) return;
+    const key = getUserReadStorageKey();
+    const readIds = getUserReadAnnouncementIds();
+    const strId = String(annId);
+    if (!readIds.includes(strId)) {
+      readIds.push(strId);
+      localStorage.setItem(key, JSON.stringify(readIds));
+    }
+  }
+
   function getStoredAnnouncements() {
     const defaultAnnouncements = []; // Data awal bersih tanpa dummy sesuai permintaan produksi
 
@@ -1627,20 +1668,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = list.find(n => n.id === annId);
     if (!item) return;
 
-    // Tandai sudah dibaca & hilangkan aura merah dari kartu ini
-    if (!item.read) {
-      item.read = true;
-      localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, JSON.stringify(list));
+    // Tandai sudah dibaca khusus untuk user yang sedang login saat ini (Per-User Read Tracking)
+    markAnnouncementAsReadByUser(annId);
 
-      const cardEl = document.querySelector(`[data-announcement-id="${annId}"]`);
-      if (cardEl) {
-        cardEl.classList.remove('unread');
-        const unreadBadges = cardEl.querySelectorAll('.announcement-unread-badge');
-        unreadBadges.forEach(b => b.remove());
-      }
-
-      updateNotificationsBadge();
+    // Hilangkan efek glow aura merah dan badge "Baru" dari kartu ini seketika di DOM
+    const cardEl = document.querySelector(`[data-announcement-id="${annId}"]`);
+    if (cardEl) {
+      cardEl.classList.remove('unread');
+      const unreadBadges = cardEl.querySelectorAll('.announcement-unread-badge');
+      unreadBadges.forEach(b => b.remove());
     }
+
+    updateNotificationsBadge();
 
     // 1. POPULATE DEDICATED PAGE VIEW (#view-announcement-detail - Anti-Popup)
     const pageBadge = document.getElementById('page-detail-badge');
@@ -1806,7 +1845,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     filteredList.forEach(item => {
-      const isUnread = !item.read;
+      // Cek status baca spesifik per-user (Per-User Read Tracking)
+      const isReadByUser = isAnnouncementReadByUser(item.id);
+      const isUnread = !isReadByUser && !item.archived;
       const card = document.createElement('article');
       card.className = 'announcement-card' + (isUnread ? ' unread' : '') + (item.archived ? ' card-archived' : '');
       card.setAttribute('data-announcement-id', item.id);
@@ -2208,8 +2249,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateNotificationsBadge() {
-    const list = getStoredAnnouncements();
-    const unreadCount = list.filter(n => !n.read).length;
+    const list = getStoredAnnouncements().filter(n => !n.archived);
+    const unreadCount = list.filter(n => !isAnnouncementReadByUser(n.id)).length;
 
     // Titik unread pada Bottom Nav
     const dot = document.getElementById('bell-unread-dot');
