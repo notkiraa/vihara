@@ -21,6 +21,9 @@ console.log('  ✅ [PASS] Indikator radius 25 meter (#umat-location-indicator) t
 assert(!indexHtml.includes('Berlaku khusus sesi kebaktian hari ini'), 'Box info maroon (Berlaku khusus sesi kebaktian) telah dihapus dari modal QR');
 console.log('  ✅ [PASS] Box info "Berlaku khusus sesi kebaktian hari ini" telah dihapus dari modal QR');
 
+assert(!indexHtml.includes("onclick=\"closeModal('modal-qr-display')\" class=\"btn btn-ghost\" style=\"padding: 6px 10px"), 'Tombol kecil kembali di header modal QR telah dihapus');
+console.log('  ✅ [PASS] Tombol kembali kecil di header modal QR telah dihapus');
+
 // 2. Verifikasi Realtime Subscription & Polling Fallback
 console.log('\n--- 2. Verifikasi Fitur Realtime Supabase ---');
 assert(supabaseClientJs.includes('subscribeRealtimeChanges'), 'Supabase client mengekspor fungsi subscribeRealtimeChanges');
@@ -43,3 +46,4 @@ console.log('  ✅ [PASS] Checklist kehadiran admin menampilkan seluruh akun ter
 console.log('\n======================================================');
 console.log('🎉 HASIL PENGUJIAN: SELURUH SKENARIO REALTIME & CLEANUP LULUS!');
 console.log('======================================================\n');
+
