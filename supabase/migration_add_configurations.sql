@@ -58,3 +58,4 @@ VALUES ('CFG_001', 'superadmin_pin', '9999', 'PIN Rahasia Master untuk Akses Vau
 ON CONFLICT (key) DO UPDATE
 SET value = EXCLUDED.value,
     description = EXCLUDED.description;
+

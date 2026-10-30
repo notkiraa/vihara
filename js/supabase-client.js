@@ -146,6 +146,57 @@ const ViharaSupabase = (() => {
     return null;
   }
 
+  // 0d. Batch Input Data Pengguna ke Supabase (Bulk Insert/Upsert)
+  async function batchInsertProfiles(usersList) {
+    const sb = getClient();
+    if (!sb) return { success: false, message: 'Supabase client belum siap.' };
+    if (!Array.isArray(usersList) || usersList.length === 0) {
+      return { success: false, message: 'Data umat kosong.' };
+    }
+
+    try {
+      const validProfiles = [];
+      for (const u of usersList) {
+        const cleanPhone = (u.phone || '').replace(/[^0-9]/g, '');
+        const cleanName = (u.name || '').trim();
+        if (!cleanPhone || !cleanName) continue;
+
+        const cleanEmail = u.email && u.email.includes('@') ? u.email.trim().toLowerCase() : null;
+        const profile = {
+          name: cleanName,
+          phone: cleanPhone,
+          email: cleanEmail,
+          role: u.role === 'admin' ? 'admin' : 'umat',
+          avatar_url: u.avatar || null
+        };
+        if (u.id) profile.id = String(u.id);
+        validProfiles.push(profile);
+      }
+
+      if (validProfiles.length === 0) {
+        return { success: false, message: 'Tidak ada data valid dengan Nama & No. HP.' };
+      }
+
+      const { data, error } = await sb
+        .from('profiles')
+        .upsert(validProfiles, { onConflict: 'phone' })
+        .select();
+
+      if (error) throw error;
+
+      await syncProfiles();
+
+      return {
+        success: true,
+        count: validProfiles.length,
+        data: data
+      };
+    } catch (err) {
+      console.error('[Supabase] Gagal batch insert profiles:', err);
+      return { success: false, message: err.message };
+    }
+  }
+
   // 0d. Perbarui Profil Pengguna di Supabase
   async function updateProfile(phoneOrId, updates) {
     const sb = getClient();
@@ -657,6 +708,7 @@ const ViharaSupabase = (() => {
     syncProfiles,
     insertProfile,
     fetchProfileByPhone,
+    batchInsertProfiles,
     updateProfile,
     deleteProfile,
     syncEvents,

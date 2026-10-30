@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Budi Santoso",
+    "phone": "081211112222",
+    "email": "budi@gmail.com",
+    "role": "umat"
+  },
+  {
+    "name": "Suryani Wijaya",
+    "phone": "081233334444",
+    "email": "suryani@gmail.com",
+    "role": "umat"
+  },
+  {
+    "name": "Hendrik Pratama",
+    "phone": "081255556666",
+    "email": "hendrik@gmail.com",
+    "role": "umat"
+  },
+  {
+    "name": "Vincen Tan",
+    "phone": "081277778888",
+    "email": "vincen@amurwabhumi.or.id",
+    "role": "admin"
+  },
+  {
+    "name": "Meilani Chen",
+    "phone": "081299990000",
+    "email": "meilani@gmail.com",
+    "role": "umat"
+  }
+]

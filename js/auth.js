@@ -51,7 +51,7 @@ const ViharaAuth = (() => {
     if (!user) {
       return {
         success: false,
-        message: 'Nomor telepon belum terdaftar. Silakan pilih tab "Daftar Akun Baru".'
+        message: 'Nomor telepon belum terdaftar. Silakan hubungi pengurus vihara untuk pembuatan akun.'
       };
     }
     ViharaData.setSession(user, rememberMe);

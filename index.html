@@ -206,17 +206,22 @@
                 <p class="card-subtitle auth-card-subtitle" style="font-size: 0.85rem; color: var(--ink-70);">Sistem Presensi Umat & Buku Tamu Digital</p>
               </div>
 
-              <!-- Tab Switcher: Masuk vs Daftar Umat Baru -->
-              <div class="auth-tabs">
-                <button type="button" id="tab-btn-login" class="auth-tab active" onclick="switchAuthTab('login')">
-                  Masuk (Login)
-                </button>
-                <button type="button" id="tab-btn-register" class="auth-tab" onclick="switchAuthTab('register')">
-                  Daftar Umat Baru
-                </button>
+              <!-- Header Form Masuk (Hanya Login Akun Terdaftar) -->
+              <div style="text-align: center; margin-bottom: 1.25rem;">
+                <div data-ui style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.825rem; font-weight: 700; color: var(--maroon-800); background: var(--maroon-50); padding: 5px 14px; border-radius: 9999px; border: 1px solid var(--maroon-100);">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                    <polyline points="10 17 15 12 10 7"></polyline>
+                    <line x1="15" y1="12" x2="3" y2="12"></line>
+                  </svg>
+                  <span>Masuk ke Akun Umat</span>
+                </div>
+                <p style="font-size: 0.825rem; color: var(--ink-70); margin-top: 8px; line-height: 1.45;">
+                  Silakan masukkan nomor telepon / WhatsApp yang sudah terdaftar di Vihara untuk masuk ke akun Anda.
+                </p>
               </div>
 
-              <!-- FORM 1: MASUK (LOGIN) -->
+              <!-- FORM: MASUK (LOGIN) -->
               <form id="auth-form-login" onsubmit="handleLoginSubmit(event)">
                 <div class="form-group">
                   <label class="form-label" for="login-input-phone">Nomor Telepon / WhatsApp</label>
@@ -239,57 +244,9 @@
                 <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-bottom: 0.5rem;">
                   Masuk ke Akun
                 </button>
-                <div style="font-size: 0.775rem; color: var(--ink-50); text-align: center; margin-top: 8px;">
-                  
+                <div style="font-size: 0.775rem; color: var(--ink-50); text-align: center; margin-top: 8px; line-height: 1.4;">
+                  Belum memiliki akun? Hubungi <strong>Pengurus Vihara</strong> untuk pendaftaran data umat.
                 </div>
-              </form>
-
-              <!-- FORM 2: DAFTAR UMAT BARU -->
-              <form id="auth-form-register" onsubmit="handleRegisterSubmit(event)" style="display: none;">
-                <div class="form-group">
-                  <label class="form-label" for="reg-input-name">Nama Lengkap Umat *</label>
-                  <div class="input-with-icon">
-                    <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <input type="text" id="reg-input-name" class="form-input" placeholder="Nama lengkap sesuai KTP / panggilan" required>
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="reg-input-phone">Nomor Telepon / WhatsApp *</label>
-                  <div class="input-with-icon">
-                    <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                    <input type="tel" id="reg-input-phone" class="form-input" placeholder="Contoh: 08123456789" required>
-                  </div>
-                </div>
-
-                <!-- Section Email untuk Pendaftaran -->
-                <div class="form-group">
-                  <label class="form-label" for="reg-input-email">Alamat Email *</label>
-                  <div class="input-with-icon">
-                    <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                      <polyline points="22,6 12,13 2,6"></polyline>
-                    </svg>
-                    <input type="email" id="reg-input-email" class="form-input" placeholder="nama@email.com" required>
-                  </div>
-                </div>
-
-                <!-- Opsi Ingat Saya (Register) -->
-                <div class="form-remember-wrap" style="margin-top: 8px; margin-bottom: 0.5rem;">
-                  <label class="remember-label" for="reg-remember-me">
-                    <input type="checkbox" id="reg-remember-me" class="remember-checkbox" checked>
-                    <span>Ingat saya di perangkat ini</span>
-                  </label>
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 0.75rem; margin-bottom: 0.5rem;">
-                  Daftar & Masuk Sekarang
-                </button>
               </form>
 
               <div data-ui style="position: relative; text-align: center; margin: 1.25rem 0;">

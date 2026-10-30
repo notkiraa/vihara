@@ -592,6 +592,151 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================================================
+  // BATCH IMPORT DATA UMAT (CSV / TEXT INPUT)
+  // ==========================================================================
+  window.openBatchImportModal = function() {
+    const fileInp = document.getElementById('batch-file-input');
+    const textInp = document.getElementById('batch-text-input');
+    const previewEl = document.getElementById('batch-preview-info');
+    if (fileInp) fileInp.value = '';
+    if (textInp) {
+      textInp.value = '';
+      textInp.removeEventListener('input', onBatchTextInput);
+      textInp.addEventListener('input', onBatchTextInput);
+    }
+    if (previewEl) {
+      previewEl.style.display = 'none';
+      previewEl.innerText = '';
+    }
+    openModal('modal-batch-import');
+  };
+
+  function onBatchTextInput(e) {
+    updateBatchPreview(e.target.value);
+  }
+
+  window.handleBatchFileSelect = function(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const textInp = document.getElementById('batch-text-input');
+      if (textInp) {
+        textInp.value = text;
+        updateBatchPreview(text);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  function parseClientCSV(content) {
+    if (!content) return [];
+    const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (lines.length === 0) return [];
+
+    const delimiter = lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',';
+    const users = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      // Skip header jika mengandung 'nama' atau 'name' dan 'phone' atau 'hp'
+      if (i === 0 && (line.toLowerCase().includes('nama') || line.toLowerCase().includes('name')) && (line.toLowerCase().includes('phone') || line.toLowerCase().includes('hp') || line.toLowerCase().includes('telp'))) {
+        continue;
+      }
+
+      const cols = line.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
+      if (cols.length < 2) continue;
+
+      const name = cols[0];
+      const rawPhone = cols[1];
+      const email = cols[2] || '';
+      const role = cols[3] || 'umat';
+
+      let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+      if (cleanPhone.startsWith('62')) cleanPhone = '0' + cleanPhone.slice(2);
+
+      if (name && cleanPhone) {
+        users.push({
+          name: name,
+          phone: cleanPhone,
+          email: email.includes('@') ? email.toLowerCase() : '',
+          role: role.toLowerCase().includes('admin') ? 'admin' : 'umat'
+        });
+      }
+    }
+    return users;
+  }
+
+  function updateBatchPreview(text) {
+    const previewEl = document.getElementById('batch-preview-info');
+    if (!previewEl) return;
+    const list = parseClientCSV(text);
+    if (list.length > 0) {
+      previewEl.style.display = 'block';
+      previewEl.innerText = `🔍 Terdeteksi ${list.length} baris data calon umat siap disimpan ke Supabase.`;
+    } else {
+      previewEl.style.display = 'none';
+    }
+  }
+
+  window.handleBatchImportSubmit = async function(event) {
+    if (event) event.preventDefault();
+    const textInp = document.getElementById('batch-text-input');
+    const content = textInp ? textInp.value : '';
+    const users = parseClientCSV(content);
+
+    if (users.length === 0) {
+      showToast('Tidak ada data valid dengan Nama & No. HP untuk diimpor.', 'warning');
+      return;
+    }
+
+    const submitBtn = document.getElementById('btn-submit-batch-import');
+    const origHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.8s linear infinite;">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10"></path>
+        </svg>
+        <span>Mengunggah ${users.length} Umat ke Supabase...</span>
+      `;
+    }
+
+    try {
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.batchInsertProfiles === 'function') {
+        const result = await ViharaSupabase.batchInsertProfiles(users);
+        if (result.success) {
+          showToast(`Berhasil menyimpan ${result.count} data umat ke Supabase!`, 'success');
+          closeModal('modal-batch-import');
+          renderDashboard();
+        } else {
+          showToast('Gagal impor batch: ' + result.message, 'error');
+        }
+      } else {
+        // Fallback local save jika offline
+        users.forEach(u => {
+          ViharaData.addUser(u);
+        });
+        showToast(`Berhasil menyimpan ${users.length} data umat (Lokal).`, 'success');
+        closeModal('modal-batch-import');
+        renderDashboard();
+      }
+    } catch (err) {
+      console.error('Error batch import:', err);
+      showToast('Terjadi kesalahan saat mengunggah batch: ' + err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origHtml;
+      }
+    }
+  };
+
+  // ==========================================================================
   // [INDEX: JS-SUPER-06] EKSPOR MASTER DATA CSV, PEMBERSIHAN LOG & UTILITAS MODAL
   // Fungsi: Unduh CSV database pengguna, purge log presensi/tamu, dan helper modal.
   // ==========================================================================

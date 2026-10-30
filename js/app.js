@@ -1130,15 +1130,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const formReg = document.getElementById('auth-form-register');
 
     if (tabName === 'login') {
-      btnLogin.classList.add('active');
-      btnReg.classList.remove('active');
-      formLogin.style.display = 'block';
-      formReg.style.display = 'none';
+      if (btnLogin) btnLogin.classList.add('active');
+      if (btnReg) btnReg.classList.remove('active');
+      if (formLogin) formLogin.style.display = 'block';
+      if (formReg) formReg.style.display = 'none';
     } else {
-      btnReg.classList.add('active');
-      btnLogin.classList.remove('active');
-      formReg.style.display = 'block';
-      formLogin.style.display = 'none';
+      if (btnReg) btnReg.classList.add('active');
+      if (btnLogin) btnLogin.classList.remove('active');
+      if (formReg) formReg.style.display = 'block';
+      if (formLogin) formLogin.style.display = 'none';
     }
   };
 
