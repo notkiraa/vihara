@@ -2031,3 +2031,72 @@ Pada header `#modal-qr-display`, keberadaan tombol kecil "Kembali" di samping ju
 ### 4. 🧪 Hasil Verifikasi
 - **Eksekusi Pengujian (`npm test`)**: `62 / 62 Skenario LULUS (100% PASS)`
 - **Status Deployment**: Disimpan murni di repositori lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel).
+
+
+---
+
+## 📖 Entri #19 — Eliminasi Bug Kedip-kedip (Flicker) Kartu Dhamma & Penghapusan Banner Super Administrator
+
+### 1. 💬 Prompt User
+> ```
+> ini kenapa kedip kedip ya dia
+> [Gambar: Kartu Mutiara Dhamma Hari Ini di Beranda Umat]
+> 
+> <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 1.5rem; padding: 14px 20px; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: var(--radius-lg);" bis_skin_checked="1">
+>   ...
+>   Selamat Datang, Super Administrator
+>   ...
+>   ● Database Terhubung
+> </div>
+> ini hapus juga ya
+> ```
+
+---
+
+### 2. ⚠️ Analisis Akar Masalah (Root Cause)
+1. **Penyebab Kartu Dhamma Berkedip ("Kedip-kedip"):**
+   - Pada pembaruan sinkronisasi real-time sebelumnya, background sync interval fallback dijalankan berkala dan memanggil `renderUmatDashboard()`.
+   - Di dalam `renderUmatDashboard()`, fungsi `renderHomeDhammaQuote()` dipanggil.
+   - Di dalam `renderHomeDhammaQuote()`, terdapat animasi fade transisi dengan mengubah `textEl.style.opacity = '0'` lalu menunggu `setTimeout 150ms` untuk mengembalikan `opacity = '1'` (didukung properti CSS `transition: opacity 0.2s`).
+   - Selain itu, `renderUmatDashboard()` tanpa flag memicu promise sinkronisasi sekunder yang memanggil kembali `renderUmatDashboard(true)`. Akibatnya setiap interval polling, kartu kutipan Dhamma memudar keluar (0) dan masuk kembali (1) berulang kali sehingga terlihat berkedip.
+2. **Avatar Reload:**
+   - `renderUserAvatar` mereset `el.innerHTML = ''` setiap render, yang dapat memicu pembuatan ulang elemen `<img>` dan berpotensi memunculkan flicker pada koneksi gambar eksternal.
+3. **Banner Emas Super Administrator di Portal Master:**
+   - Banner `Selamat Datang, Super Administrator` di `public/superadmin.html` bersifat dekoratif statis dan diminta pengguna untuk ditiadakan agar antarmuka Super Admin lebih bersih dan langsung fokus pada metrik inti.
+
+---
+
+### 3. 🛠️ Solusi & Implementasi Teknis
+1. **Penanganan Anti-Flicker Kutipan Dhamma (`public/js/app.js`):**
+   - Menambahkan parameter boolean `animate = false` ke `renderHomeDhammaQuote(animate = false)` dan `renderDhammapadaQuote(animate = false)`.
+   - Efek transisi pemudaran (`opacity = '0'` lalu `1`) **hanya** diaktifkan bila pengguna secara eksplisit mengklik tombol *"Kutipan Lain"* (`cycleHomeDhammaQuote` / `cycleDhammapadaQuote`).
+   - Pada pembaruan dashboard berkala, teks diperbarui secara langsung tanpa mengubah opacity, dan hanya memperbarui elemen jika nilainya benar-benar berbeda (`innerText !== quote.translation`), mencegah browser melakukan repaint / layout thrashing yang tidak perlu.
+2. **Proteksi Cache Avatar (`public/js/app.js`):**
+   - Pada fungsi `renderUserAvatar(el, user)`, memeriksa apakah elemen `<img>` yang ada sudah memiliki nilai `src` yang sama dengan `safeUrl`. Jika sudah sama, hindari perombakan DOM agar gambar avatar tidak kedip/reload.
+3. **Penyelarasan Interval Background Sync (`public/js/app.js`):**
+   - Mengubah background sync interval menjadi 15 detik (karena WebSocket Supabase Realtime sudah aktif menangani perubahan seketika secara push).
+   - Memastikan pemanggilan di background sync meneruskan flag `renderUmatDashboard(true)` untuk mencegah duplikasi pemanggilan sinkronisasi bersarang.
+4. **Penghapusan Welcome Banner Super Admin (`public/superadmin.html`):**
+   - Menghapus blok elemen banner `Selamat Datang, Super Administrator` dan status `Database Terhubung` dari seksyen `#super-main-section` di `public/superadmin.html`.
+5. **Penambahan Suite Uji Otomatis (`tests/test_realtime_kpi.cjs`):**
+   - Menambahkan verifikasi penghapusan banner Super Admin dari `public/superadmin.html`.
+   - Menambahkan verifikasi isolasi animasi `animate = false` pada fungsi kutipan Dhamma dan proteksi cache avatar.
+
+---
+
+### 4. 📁 File yang Diperbarui
+1. [`public/js/app.js`](file:///c:/AKU_NYOBA/appvihara/public/js/app.js): Logika anti-flicker quote, proteksi avatar, dan optimasi timer sinkronisasi.
+2. [`public/superadmin.html`](file:///c:/AKU_NYOBA/appvihara/public/superadmin.html): Penghapusan Welcome Banner Super Administrator.
+3. [`tests/test_realtime_kpi.cjs`](file:///c:/AKU_NYOBA/appvihara/tests/test_realtime_kpi.cjs): Penambahan pengujian otomatis anti-flicker dan verifikasi banner.
+4. [`docs/DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/docs/DOKUMENTASI_PEMBELAJARAN.md): Entri dokumentasi #19.
+
+---
+
+### 5. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis
+Perintah `npm test` berhasil meluluskan seluruh pengujian otomatis:
+- **Scenario Test Suite (`tests/run_scenario_test.cjs`)**: `16 / 16 PASSED (100%)`
+- **Security Audit Suite (`tests/test_security_audit.cjs`)**: `11 / 11 PASSED (100%)`
+- **QR Fallback & Multi-Week Permanent Suite (`tests/test_qr_feature.cjs`)**: `27 / 27 PASSED (100%)`
+- **Realtime KPI, Visual Cleanup & Anti-Flicker Suite (`tests/test_realtime_kpi.cjs`)**: `10 / 10 PASSED (100%)`
+- **Total Keseluruhan**: `64 / 64 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
+- **Status Deployment**: Seluruh perubahan tersimpan aman di lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel sesuai instruksi pengguna).

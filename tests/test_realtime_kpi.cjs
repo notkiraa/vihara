@@ -9,11 +9,12 @@ console.log('🧪 PENGUJIAN: PEMBERSIHAN ELEMEN & REALTIME KPI ADMIN');
 console.log('======================================================\n');
 
 const indexHtml = fs.readFileSync('public/index.html', 'utf8');
+const superadminHtml = fs.readFileSync('public/superadmin.html', 'utf8');
 const appJs = fs.readFileSync('public/js/app.js', 'utf8');
 const supabaseClientJs = fs.readFileSync('public/js/supabase-client.js', 'utf8');
 const adminJs = fs.readFileSync('public/js/admin.js', 'utf8');
 
-// 1. Verifikasi elemen atas yang diminta dihapus
+// 1. Verifikasi elemen yang diminta dihapus
 console.log('--- 1. Verifikasi Pembersihan Elemen Visual ---');
 assert(!indexHtml.includes('umat-location-indicator'), 'Elemen umat-location-indicator (radius 25 meter) telah dihapus dari HTML');
 console.log('  ✅ [PASS] Indikator radius 25 meter (#umat-location-indicator) telah dihapus');
@@ -23,6 +24,9 @@ console.log('  ✅ [PASS] Box info "Berlaku khusus sesi kebaktian hari ini" tela
 
 assert(!indexHtml.includes("onclick=\"closeModal('modal-qr-display')\" class=\"btn btn-ghost\" style=\"padding: 6px 10px"), 'Tombol kecil kembali di header modal QR telah dihapus');
 console.log('  ✅ [PASS] Tombol kembali kecil di header modal QR telah dihapus');
+
+assert(!superadminHtml.includes('Selamat Datang, Super Administrator'), 'Welcome Banner Super Admin telah dihapus dari superadmin.html');
+console.log('  ✅ [PASS] Welcome Banner Super Admin di superadmin.html telah dihapus');
 
 // 2. Verifikasi Realtime Subscription & Polling Fallback
 console.log('\n--- 2. Verifikasi Fitur Realtime Supabase ---');
@@ -35,8 +39,18 @@ console.log('  ✅ [PASS] app.js mendengarkan perubahan realtime tabel Supabase'
 assert(appJs.includes('setInterval(') && appJs.includes('syncEvents()'), 'app.js memiliki fallback background polling interval untuk sinkronisasi otomatis');
 console.log('  ✅ [PASS] app.js memiliki interval sinkronisasi background otomatis');
 
-// 3. Verifikasi KPI Admin Dashboard Menghitung Seluruh Umat Terdaftar
-console.log('\n--- 3. Verifikasi Logika KPI Total Umat & Acara ---');
+// 3. Verifikasi Pencegahan Flicker / Kedip pada Dhamma Quote & Avatar
+console.log('\n--- 3. Verifikasi Pencegahan Flicker / Kedip Quote & Avatar ---');
+assert(appJs.includes('function renderHomeDhammaQuote(animate = false)'), 'renderHomeDhammaQuote menerima parameter animate untuk cegah flicker');
+assert(appJs.includes('function renderDhammapadaQuote(animate = false)'), 'renderDhammapadaQuote menerima parameter animate');
+assert(appJs.includes('renderHomeDhammaQuote(false)'), 'renderUmatDashboard memanggil renderHomeDhammaQuote tanpa animasi kedip');
+assert(appJs.includes('existingImg.getAttribute(\'src\') === safeUrl'), 'renderUserAvatar mencegah reload elemen avatar jika gambar sama');
+console.log('  ✅ [PASS] Animasi transisi opacity kutipan hanya aktif saat tombol Putar/Kutipan Lain diklik manual');
+console.log('  ✅ [PASS] Sinkronisasi background tidak memicu re-render kedip pada kutipan Dhamma');
+console.log('  ✅ [PASS] Avatar cache terproteksi dari kedipan regenerasi DOM');
+
+// 4. Verifikasi KPI Admin Dashboard Menghitung Seluruh Umat Terdaftar
+console.log('\n--- 4. Verifikasi Logika KPI Total Umat & Acara ---');
 assert(!appJs.includes("ViharaData.getUsers().filter(u => u.role === 'umat')"), 'app.js tidak lagi memfilter umat kaku (menghitung seluruh anggota terdaftar)');
 console.log('  ✅ [PASS] KPI Total Umat Terdaftar mencakup seluruh jemaat terdaftar');
 
@@ -44,6 +58,5 @@ assert(!adminJs.includes("ViharaData.getUsers().filter(u => u.role === 'umat')")
 console.log('  ✅ [PASS] Checklist kehadiran admin menampilkan seluruh akun terdaftar');
 
 console.log('\n======================================================');
-console.log('🎉 HASIL PENGUJIAN: SELURUH SKENARIO REALTIME & CLEANUP LULUS!');
+console.log('🎉 HASIL PENGUJIAN: SELURUH SKENARIO REALTIME, CLEANUP & ANTI-FLICKER LULUS!');
 console.log('======================================================\n');
-

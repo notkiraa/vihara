@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Render Mutiara Dhamma Lebar pada Beranda Umat
-    renderHomeDhammaQuote();
+    renderHomeDhammaQuote(false);
 
     if (typeof updateNotificationsBadge === 'function') {
       updateNotificationsBadge();
@@ -1294,23 +1294,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.cycleDhammapadaQuote = function() {
     currentQuoteIndex = (currentQuoteIndex + 1) % DHAMMAPADA_QUOTES.length;
-    renderDhammapadaQuote();
-    renderHomeDhammaQuote();
+    renderDhammapadaQuote(true);
+    renderHomeDhammaQuote(true);
   };
 
   window.cycleHomeDhammaQuote = function() {
     currentQuoteIndex = (currentQuoteIndex + 1) % DHAMMAPADA_QUOTES.length;
-    renderDhammapadaQuote();
-    renderHomeDhammaQuote();
+    renderDhammapadaQuote(true);
+    renderHomeDhammaQuote(true);
   };
 
-  function renderHomeDhammaQuote() {
+  function renderHomeDhammaQuote(animate = false) {
     const quote = DHAMMAPADA_QUOTES[currentQuoteIndex];
     const textEl = document.getElementById('home-quote-text');
     const paliEl = document.getElementById('home-quote-pali');
     const sourceEl = document.getElementById('home-quote-source');
 
-    if (textEl && quote) {
+    if (!textEl || !quote) return;
+
+    if (animate) {
       textEl.style.opacity = '0';
       if (paliEl) paliEl.style.opacity = '0';
       setTimeout(() => {
@@ -1320,16 +1322,30 @@ document.addEventListener('DOMContentLoaded', () => {
         textEl.style.opacity = '1';
         if (paliEl) paliEl.style.opacity = '1';
       }, 150);
+    } else {
+      if (textEl.innerText !== quote.translation) {
+        textEl.innerText = quote.translation;
+      }
+      if (paliEl && paliEl.innerText !== quote.pali) {
+        paliEl.innerText = quote.pali;
+      }
+      if (sourceEl && sourceEl.innerText !== quote.source) {
+        sourceEl.innerText = quote.source;
+      }
+      textEl.style.opacity = '1';
+      if (paliEl) paliEl.style.opacity = '1';
     }
   }
 
-  function renderDhammapadaQuote() {
+  function renderDhammapadaQuote(animate = false) {
     const quote = DHAMMAPADA_QUOTES[currentQuoteIndex];
     const textEl = document.getElementById('dhammapada-quote-text');
     const paliEl = document.getElementById('dhammapada-quote-pali');
     const sourceEl = document.getElementById('dhammapada-quote-source');
 
-    if (textEl && quote) {
+    if (!textEl || !quote) return;
+
+    if (animate) {
       textEl.style.opacity = '0';
       if (paliEl) paliEl.style.opacity = '0';
       setTimeout(() => {
@@ -1339,14 +1355,26 @@ document.addEventListener('DOMContentLoaded', () => {
         textEl.style.opacity = '1';
         if (paliEl) paliEl.style.opacity = '1';
       }, 150);
+    } else {
+      if (textEl.innerText !== quote.translation) {
+        textEl.innerText = quote.translation;
+      }
+      if (paliEl && paliEl.innerText !== quote.pali) {
+        paliEl.innerText = quote.pali;
+      }
+      if (sourceEl && sourceEl.innerText !== quote.source) {
+        sourceEl.innerText = quote.source;
+      }
+      textEl.style.opacity = '1';
+      if (paliEl) paliEl.style.opacity = '1';
     }
   }
 
   function initDhammapadaQuotes() {
     const dayIndex = new Date().getDay() % DHAMMAPADA_QUOTES.length;
     currentQuoteIndex = dayIndex;
-    renderDhammapadaQuote();
-    renderHomeDhammaQuote();
+    renderDhammapadaQuote(false);
+    renderHomeDhammaQuote(false);
   }
 
   window.toggleLoginPasswordVisibility = function() {
@@ -1753,13 +1781,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el || !user) return;
     const safeUrl = sanitizeImageUrl(user.avatar);
     if (safeUrl) {
+      const existingImg = el.querySelector('img');
+      if (existingImg && (existingImg.getAttribute('src') === safeUrl || existingImg.src === safeUrl)) {
+        return;
+      }
       el.innerHTML = '';
       const img = document.createElement('img');
       img.src = safeUrl;
       img.alt = user.name || 'User Avatar';
       el.appendChild(img);
     } else {
-      el.textContent = getInitials(user.name);
+      const initials = getInitials(user.name);
+      if (el.textContent !== initials) {
+        el.textContent = initials;
+      }
     }
   }
 
@@ -2835,7 +2870,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Polling sinkronisasi background berkala (setiap 4 detik) untuk memastikan data live
+  // Polling sinkronisasi background berkala (setiap 15 detik) untuk memastikan data live jika websocket idle
   setInterval(() => {
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.isConfigured === 'function' && ViharaSupabase.isConfigured()) {
       if (typeof ViharaAuth !== 'undefined' && ViharaAuth.isLoggedIn()) {
@@ -2854,13 +2889,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderAdminEventDetailModal(currentAdminEventId);
               }
             } else if (activeView === 'view-umat') {
-              renderUmatDashboard();
+              renderUmatDashboard(true);
             }
           }).catch(() => {});
         }
       }
     }
-  }, 4000);
+  }, 15000);
 
   // Sinkronisasi konfigurasi titik lokasi & radius geofencing Vihara
   if (typeof ViharaGeo !== 'undefined' && typeof ViharaGeo.initSync === 'function') {
