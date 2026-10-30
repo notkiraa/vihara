@@ -2658,6 +2658,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Event listener global: Tutup modal saat klik area latar belakang (backdrop)
+  document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('modal-backdrop')) {
+      const modalId = e.target.id;
+      if (modalId && modalId !== 'modal-force-change-password') {
+        if (typeof ViharaQR !== 'undefined' && modalId === 'modal-qr-scanner') {
+          ViharaQR.closeScannerModal();
+        } else {
+          closeModal(modalId);
+        }
+      }
+    }
+  });
+
+  // Event listener global: Tombol ESC untuk menutup modal atau mode standee layar penuh
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      const activeBackdrop = document.querySelector('.modal-backdrop.show');
+      if (activeBackdrop && activeBackdrop.id !== 'modal-force-change-password') {
+        if (typeof ViharaQR !== 'undefined' && activeBackdrop.id === 'modal-qr-scanner') {
+          ViharaQR.closeScannerModal();
+        } else {
+          closeModal(activeBackdrop.id);
+        }
+      }
+      if (typeof ViharaQR !== 'undefined' && document.body.classList.contains('standee-active')) {
+        ViharaQR.closeStandeeMode();
+      }
+    }
+  });
+
   window.showToast = function(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;

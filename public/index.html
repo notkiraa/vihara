@@ -204,19 +204,6 @@
                 <p class="card-subtitle auth-card-subtitle" style="font-size: 0.85rem; color: var(--ink-70);">Sistem Presensi Umat & Buku Tamu Digital</p>
               </div>
 
-              <!-- Tombol Cepat Pindai QR di Meja Dhammasala (Fallback GPS / Belum Login) -->
-              <div class="auth-quick-qr-wrap" style="margin-bottom: 1.25rem;">
-                <button type="button" class="btn-quick-qr-dhammasala" onclick="ViharaQR.openScannerModal()" title="Pindai QR Hadir">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                  </svg>
-                  <span>Pindai QR Hadir Dhammasala</span>
-                </button>
-              </div>
-
               <!-- Header Form Masuk (Hanya Login Akun Terdaftar) -->
               <p style="font-size: 0.85rem; color: var(--ink-70); text-align: center; margin-bottom: 1.25rem; line-height: 1.45;">
                 Silakan masukkan nomor telepon dan kata sandi akun Anda untuk masuk.
@@ -1745,8 +1732,14 @@
   <div id="modal-qr-display" class="modal-backdrop">
     <div class="modal-box" style="text-align: center; max-width: 480px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
-          QR Presensi Masuk Dhammasala
+        <button type="button" onclick="closeModal('modal-qr-display')" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 4px;" title="Kembali">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Kembali</span>
+        </button>
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
+          QR Presensi Dhammasala
         </h3>
         <button onclick="closeModal('modal-qr-display')" class="btn-modal-close-round" title="Tutup">&times;</button>
       </div>
@@ -1792,6 +1785,9 @@
           <span>⛶ Layar Penuh (Monitor Meja)</span>
         </button>
       </div>
+      <button type="button" onclick="closeModal('modal-qr-display')" class="btn btn-ghost btn-block" style="margin-top: 10px; padding: 10px; font-weight: 700; color: var(--maroon-800); border: 1px solid var(--maroon-200); background: #ffffff;">
+        ← Kembali
+      </button>
     </div>
   </div>
 
@@ -1802,8 +1798,14 @@
   <div id="modal-qr-scanner" class="modal-backdrop">
     <div class="modal-box" style="text-align: center; max-width: 440px; padding: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
-          Pindai QR Presensi Vihara
+        <button type="button" onclick="ViharaQR.closeScannerModal()" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 4px;" title="Kembali">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Kembali</span>
+        </button>
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
+          Pindai QR Presensi
         </h3>
         <button onclick="ViharaQR.closeScannerModal()" class="btn-modal-close-round" title="Tutup">&times;</button>
       </div>
@@ -1995,6 +1997,13 @@
        Fungsi: Monitor Display Standee Meja Resepsionis Vihara
        ========================================================================== -->
   <div id="qr-standee-overlay" class="standee-overlay-fullscreen">
+    <!-- Tombol Kembali Melayang Layar Penuh -->
+    <button type="button" onclick="ViharaQR.closeStandeeMode()" style="position: fixed; top: 16px; left: 16px; z-index: 10000; display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: rgba(0,0,0,0.65); color: #ffffff; border: 1px solid rgba(255,255,255,0.4); border-radius: 999px; font-size: 0.85rem; font-weight: 700; cursor: pointer; backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+      <span>← Kembali</span>
+    </button>
     <!-- Header Standee -->
     <div class="standee-header-bar">
       <div class="standee-brand-pill">

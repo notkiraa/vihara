@@ -255,6 +255,7 @@ async function runTests() {
   console.log('\n--- 8. Verifikasi Kebijakan Akses: Buku Tamu Wajib Melalui QR ---');
   const indexHtmlContent = fs.readFileSync('public/index.html', 'utf8');
   assert(!indexHtmlContent.includes('Isi Buku Tamu (Pengunjung Luar)'), 'Tombol publik Isi Buku Tamu di halaman login telah dihapus');
+  assert(!indexHtmlContent.includes('btn-quick-qr-dhammasala'), 'Tombol cepat Pindai QR di halaman login telah dihapus');
   assert(!indexHtmlContent.includes('desktop-nav-guest'), 'Menu navigasi tamu bebas di header telah dihapus');
 
   const directAccess = ViharaAuth.checkRouteAccess('view-guest');

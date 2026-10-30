@@ -1874,3 +1874,61 @@ Eksekusi melalui perintah terpadu `npm test`:
 
 
 
+
+
+---
+
+## 📖 Entri #16 — Penyempurnaan UX QR Code: Penambahan Tombol Kembali, Penutupan Backdrop/ESC, dan Pembersihan Elemen Redundan Terakhir di Halaman Login
+
+### 1. 💬 Prompt User
+> 1. *"qrnya tambahin tombol backnya dong, gabisa di close"*
+> 2. *[Lampiran Gambar 1: Tombol Pindai QR Hadir Dhammasala di Form Login]*
+> 3. *[Lampiran Gambar 2: Tombol Isi Buku Tamu (Pengunjung Luar)]*
+> 4. *[Lampiran Gambar 3: Card QR Presensi Dhammasala di Dashboard]*
+
+---
+
+### 2. ⚠️ Gejala / Masalah
+1. **Kesulitan Menutup Modal QR**: Pada modal tampilan QR (`#modal-qr-display`) dan modal scanner kamera (`#modal-qr-scanner`), penutupan sebelumnya hanya mengandalkan tombol silang (×) kecil di pojok kanan atas yang sulit ditekan oleh umat lansia di layar sentuh HP.
+2. **Terjebak di Layar Penuh Standee**: Mode Standee (`#qr-standee-overlay`) menutupi layar monitor/HP sepenuhnya tanpa tombol kembali yang terlihat jelas bagi pengguna tablet/layar sentuh.
+3. **Klik Backdrop & ESC Belum Menutup Modal**: Mengklik area gelap luar modal atau menekan tombol `Escape` (ESC) tidak menutup modal.
+4. **Elemen Redundan di Form Login**: Tombol cepat *"Pindai QR Hadir Dhammasala"* masih menempel di antara logo dan formulir login di `#view-login`, padahal alur kehadiran fisik Dhammasala dirancang bersih: umat/pengunjung langsung memindai QR fisik meja dengan kamera HP mereka.
+
+---
+
+### 3. 🛠️ Solusi & Implementasi Teknis
+
+#### A. Penambahan Tombol "← Kembali" pada Seluruh Tampilan QR (`public/index.html`)
+- **Modal QR Display (`#modal-qr-display`)**:
+  - Menambahkan tombol "← Kembali" di kiri atas header modal sejajar dengan judul.
+  - Menambahkan tombol lebar penuh "← Kembali" di bagian bawah modal.
+- **Modal QR Scanner (`#modal-qr-scanner`)**:
+  - Menambahkan tombol "← Kembali" di kiri atas header modal yang mematikan stream kamera secara anggun (`ViharaQR.closeScannerModal()`).
+  - Menambahkan tombol batal / kembali di footer scanner.
+- **Overlay Layar Penuh Standee (`#qr-standee-overlay`)**:
+  - Menambahkan tombol kapsul melayang `← Kembali` di pojok kiri atas (`position: fixed; top: 16px; left: 16px; z-index: 10000`) dengan efek glassmorphism agar dapat disentuh dengan mudah di layar tablet/HP tanpa keyboard.
+
+#### B. Event Listener Global Backdrop Click & Tombol ESC (`public/js/app.js`)
+- Menambahkan listener `click` pada elemen berkelas `.modal-backdrop` untuk menutup modal saat latar belakang diklik (dikecualikan untuk modal paksa ganti sandi demi keamanan).
+- Menambahkan listener `keydown` untuk tombol `Escape` / `Esc` yang otomatis menutup modal aktif atau keluar dari mode standee.
+
+#### C. Pembersihan Elemen Redundan Terakhir di Halaman Login (`public/index.html`)
+- Menghapus blok `.auth-quick-qr-wrap` beserta tombol `.btn-quick-qr-dhammasala` dari `#view-login`.
+- Sekarang ketiga elemen yang dimaksud pengguna (tombol Isi Buku Tamu bebas, tombol cepat QR login, dan card dashboard QR meja) telah 100% dibersihkan dari antarmuka visual.
+
+---
+
+### 4. 📁 File yang Diperbarui
+1. [`public/index.html`](file:///c:/AKU_NYOBA/appvihara/public/index.html): Penambahan tombol kembali pada modal QR display, modal scanner, mode standee, dan penghapusan tombol cepat login.
+2. [`public/js/app.js`](file:///c:/AKU_NYOBA/appvihara/public/js/app.js): Penambahan listener klik luar backdrop dan tombol keyboard ESC.
+3. [`tests/test_qr_feature.cjs`](file:///c:/AKU_NYOBA/appvihara/tests/test_qr_feature.cjs): Penambahan asersi pengujian pembersihan tombol cepat login (27 skenario lulus).
+4. [`docs/DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/docs/DOKUMENTASI_PEMBELAJARAN.md): Dokumentasi pembelajaran Entri #16.
+
+---
+
+### 5. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis
+Eksekusi melalui perintah terpadu `npm test`:
+- **Scenario Test Suite (`tests/run_scenario_test.cjs`)**: `16 / 16 PASSED (100%)`
+- **Security Audit Suite (`tests/test_security_audit.cjs`)**: `11 / 11 PASSED (100%)`
+- **QR Fallback & Multi-Week Permanent Suite (`tests/test_qr_feature.cjs`)**: `27 / 27 PASSED (100%)`
+- **Total Keseluruhan**: `54 / 54 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
