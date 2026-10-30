@@ -464,7 +464,7 @@ const ViharaData = (() => {
     return isUserCheckedInEvent(userId, activeEvent.id);
   }
 
-  function addAttendanceRecord({ userId, userName, userPhone, eventId = null, method = 'mandiri' }) {
+  function addAttendanceRecord({ userId, userName, userPhone, eventId = null, method = 'mandiri', coords = null, distanceMeters = null }) {
     const list = getAttendanceList();
     const events = getEvents();
     const targetEvent = eventId ? events.find(e => String(e.id) === String(eventId)) : getActiveEvent();
@@ -495,6 +495,8 @@ const ViharaData = (() => {
       timeStr: timeStr,
       timestamp: now.toISOString(),
       method: method, // 'mandiri' | 'manual_admin'
+      coords: coords ? { latitude: coords.latitude, longitude: coords.longitude, accuracy: coords.accuracy } : null,
+      distanceMeters: typeof distanceMeters === 'number' ? distanceMeters : null,
       status: 'Hadir'
     };
 

@@ -405,8 +405,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Handler Tombol Presensi Umat Langsung
-  window.handleUmatCheckIn = function() {
+  // Handler Tombol Presensi Umat Langsung Berbasis Geolocation Radius 25 Meter
+  window.handleUmatCheckIn = async function() {
     const user = ViharaAuth.currentUser();
     const activeEvent = ViharaData.getActiveEvent();
 
@@ -421,20 +421,85 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const record = ViharaData.addAttendanceRecord({
-      userId: user.id,
-      userName: user.name,
-      userPhone: user.phone,
-      method: 'mandiri'
-    });
+    const checkinBtn = document.getElementById('btn-umat-checkin');
+    const originalBtnHtml = checkinBtn ? checkinBtn.innerHTML : '';
 
-    document.getElementById('modal-checkin-event').innerText = record.kebaktianName;
-    document.getElementById('modal-checkin-speaker').innerText = record.speaker;
-    document.getElementById('modal-checkin-time').innerText = record.timeStr;
-    openModal('modal-success-checkin');
+    if (checkinBtn) {
+      checkinBtn.disabled = true;
+      checkinBtn.innerHTML = `
+        <span style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></svg>
+          <span>Memeriksa Lokasi GPS...</span>
+        </span>
+      `;
+    }
 
-    renderUmatDashboard();
-    showToast(`Presensi berhasil! Selamat beribadah di ${record.kebaktianName}.`, 'success');
+    try {
+      if (typeof ViharaGeo === 'undefined') {
+        throw new Error('Modul Geolocation belum termuat.');
+      }
+
+      // Verifikasi koordinat GPS pengguna terhadap titik Vihara
+      const geoResult = await ViharaGeo.verifyCheckInDistance();
+
+      // Cek apakah di luar radius geofencing (25 meter)
+      if (!geoResult.isWithinRadius && !geoResult.isBypass) {
+        const distEl = document.getElementById('modal-geo-current-distance');
+        const radiusEl = document.getElementById('modal-geo-max-radius');
+        const accEl = document.getElementById('modal-geo-gps-accuracy');
+
+        if (distEl) distEl.innerText = geoResult.formattedDistance;
+        if (radiusEl) radiusEl.innerText = `${geoResult.maxRadius} meter`;
+        if (accEl) accEl.innerText = `±${geoResult.userCoords.accuracy || 0} m`;
+
+        openModal('modal-location-out-of-range');
+        return;
+      }
+
+      // Catat presensi jika berada dalam batas radius
+      const record = ViharaData.addAttendanceRecord({
+        userId: user.id,
+        userName: user.name,
+        userPhone: user.phone,
+        method: 'mandiri',
+        coords: geoResult.userCoords,
+        distanceMeters: geoResult.distance
+      });
+
+      document.getElementById('modal-checkin-event').innerText = record.kebaktianName;
+      document.getElementById('modal-checkin-speaker').innerText = record.speaker;
+      document.getElementById('modal-checkin-time').innerText = record.timeStr;
+
+      const geoStatusEl = document.getElementById('modal-checkin-geo-verified');
+      if (geoStatusEl) {
+        if (geoResult.isBypass) {
+          geoStatusEl.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Bypass Dev Mode (${geoResult.formattedDistance})</span>
+          `;
+          geoStatusEl.style.color = '#eab308';
+        } else {
+          geoStatusEl.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Terverifikasi di Lokasi (${geoResult.formattedDistance})</span>
+          `;
+          geoStatusEl.style.color = 'var(--success)';
+        }
+      }
+
+      openModal('modal-success-checkin');
+      renderUmatDashboard();
+      showToast(`Presensi berhasil! Selamat beribadah di ${record.kebaktianName}.`, 'success');
+
+    } catch (err) {
+      console.warn('[Geolocation Check-in] Gagal:', err);
+      showToast(err.message || 'Kendala mendeteksi lokasi GPS.', 'warning');
+    } finally {
+      if (checkinBtn) {
+        checkinBtn.disabled = false;
+        checkinBtn.innerHTML = originalBtnHtml;
+      }
+    }
   };
 
   // ==========================================================================

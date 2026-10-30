@@ -11,6 +11,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 3. [Entri #02 — Solusi Hapus Pengumuman Harus 2x Klik (Race Condition & Optimistic UI)](#entri-02--solusi-hapus-pengumuman-harus-2x-klik-race-condition--optimistic-ui)
 4. [Entri #03 — Hapus Tombol Akses Portal Super Administrator dari Halaman Profil](#entri-03--hapus-tombol-akses-portal-super-administrator-dari-halaman-profil)
 5. [Entri #04 — Integrasi Skill Security Audit Cloudflare & Kompatibilitas Windows](#entri-04--integrasi-skill-security-audit-cloudflare--kompatibilitas-windows)
+6. [Entri #05 — Pembatasan Presensi Mandiri Berbasis Geolocation & Geofencing 25 Meter](#entri-05--pembatasan-presensi-mandiri-berbasis-geolocation--geofencing-25-meter)
 
 ---
 
@@ -455,6 +456,133 @@ Struktur skill Cloudflare yang dipasang:
    - `coverage-ledger.json` & `findings.json`: Ledger cakupan dan data temuan tervalidasi skema.
 5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Menambahkan catatan pembelajaran Entri #04.
+
+---
+
+## 📖 Entri #05 — Pembatasan Presensi Mandiri Berbasis Geolocation & Geofencing 25 Meter
+
+### 1. 💬 Prompt User
+> *"mau add yang geolocation dulu dong, supaya hadir cuma pas deket aja, perkecil aja, kaya 25 m raduisnya dari titik"*
+
+### 2. ⚠️ Kebutuhan & Tantangan Teknis
+Sebelumnya, umat dapat melakukan presensi mandiri dari mana saja hanya dengan menekan tombol *"Presensi Hadir Sekarang"*. Untuk menjamin keabsahan kehadiran fisik umat di Vihara:
+1. Sistem harus mendeteksi koordinat geografis nyata (GPS) perangkat pengguna melalui browser.
+2. Jarak antara posisi perangkat pengguna dengan titik koordinat Vihara Amurwa Bhumi Cibinong harus dihitung secara akurat.
+3. Batas toleransi kehadiran dibatasi ketat pada radius maksimal **25 meter**.
+4. Jika pengguna berada di luar radius 25 meter, tombol presensi tidak boleh mencatat kehadiran dan harus menampilkan modal peringatan informatif berisi jarak riil dan akurasi GPS.
+5. Harus ada panel pengaturan fleksibel bagi Superadmin untuk menyesuaikan titik koordinat, radius, atau mengaktifkan mode pengujian (*dev bypass*) saat simulasi pengembangan.
+
+---
+
+### 3. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. HTML5 Geolocation API (`navigator.geolocation.getCurrentPosition`)
+Browser modern menyediakan antarmuka akses sensor GPS perangkat.
+
+```javascript
+navigator.geolocation.getCurrentPosition(successCallback, errorCallback, options);
+```
+
+Parameter `options` yang digunakan:
+```javascript
+const options = {
+  enableHighAccuracy: true, // Meminta sinyal GPS satelit terbaik (bukan sekadar estimasi IP network)
+  timeout: 12000,           // Batas maksimal waktu tunggu pencarian sinyal (12 detik)
+  maximumAge: 0             // Memaksa perangkat mengambil pembacaan lokasi terkini (tanpa cache lama)
+};
+```
+
+Kode Error Geolocation:
+* `error.code === 1` (`PERMISSION_DENIED`): Pengguna menolak akses lokasi di browser.
+* `error.code === 2` (`POSITION_UNAVAILABLE`): Satelit atau jaringan lokasi tidak dapat diakses.
+* `error.code === 3` (`TIMEOUT`): Permintaan posisi melebihi batas waktu (timeout).
+
+#### B. Rumus Jarak Lengkung Bumi Haversine (Haversine Great-Circle Distance)
+Bumi adalah bola lengkung (*geoid*), sehingga rumus jarak euclidean biasa ($\sqrt{\Delta x^2 + \Delta y^2}$) tidak akurat untuk koordinat GPS. Rumus **Haversine** menghitung jarak terpendek di permukaan bola:
+
+$$\Delta\text{lat} = (\text{lat}_2 - \text{lat}_1) \times \frac{\pi}{180}$$
+$$\Delta\text{lon} = (\text{lon}_2 - \text{lon}_1) \times \frac{\pi}{180}$$
+$$a = \sin^2\left(\frac{\Delta\text{lat}}{2}\right) + \cos(\text{lat}_1 \times \frac{\pi}{180}) \times \cos(\text{lat}_2 \times \frac{\pi}{180}) \times \sin^2\left(\frac{\Delta\text{lon}}{2}\right)$$
+$$c = 2 \times \text{atan2}\left(\sqrt{a}, \sqrt{1 - a}\right)$$
+$$d = R \times c$$
+
+Dengan konstanta radius rata-rata bumi $R = 6.371.000\text{ meter}$.
+
+Implementasi JavaScript di `js/geo.js`:
+```javascript
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = deg => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const rLat1 = toRad(lat1);
+  const rLat2 = toRad(lat2);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(rLat1) * Math.cos(rLat2) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c); // Hasil dibulatkan dalam satuan meter
+}
+```
+
+#### C. Asynchronous Pattern (`Promise` & `async/await`)
+`navigator.geolocation.getCurrentPosition` menggunakan sistem callback lama. Di `js/geo.js`, kita membungkusnya ke dalam `Promise` modern agar dapat dipanggil bersih menggunakan `await`:
+```javascript
+function getCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) {
+      reject(new Error('Browser tidak mendukung GPS.'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      err => reject(err),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  });
+}
+```
+
+---
+
+### 4. 🚀 Alur & Cara Kerja Solusi
+1. **Titik Acuan Resmi:**
+   - Nama: **Vihara Amurwa Bhumi Cibinong**
+   - Alamat: *Jl. HR. Lukman No.51, Cirimekar, Cibinong, Bogor*
+   - Koordinat: **Latitude -6.467433, Longitude 106.853755**
+   - Batas Radius: **25 Meter**
+2. **Saat Umat Menekan *"Presensi Hadir Sekarang"*:**
+   - Tombol berubah menjadi status loading: *"Memeriksa Lokasi GPS..."* (dengan spinner SVG).
+   - Memanggil `ViharaGeo.verifyCheckInDistance()`.
+3. **Pengecekan Geofence:**
+   - Jika `distance <= 25` (atau mode bypass aktif):
+     - Presensi berhasil dicatat di `localStorage` dan Supabase bersama metadata koordinat dan jarak.
+     - Modal `#modal-success-checkin` menampilkan status: *"📍 Terverifikasi di Lokasi (X meter)"*.
+   - Jika `distance > 25`:
+     - Presensi ditolak.
+     - Modal `#modal-location-out-of-range` terbuka, menampilkan jarak saat ini (misal: *150 meter*), batas toleransi (*25 meter*), dan akurasi GPS perangkat, serta menyediakan tombol *"Coba Deteksi Ulang GPS"*.
+4. **Fitur Superadmin:**
+   - Tersedia tombol *"Atur Radius & Lokasi GPS"* di dashboard Superadmin.
+   - Pengurus dapat mengubah titik koordinat dan batas radius kapan saja, melakukan kalibrasi otomatis menggunakan lokasi saat ini (*"Gunakan Lokasi Saya"*), atau menyalakan toggle *Mode Pengujian Bypass* untuk testing tanpa batasan jarak.
+
+---
+
+### 5. 📂 File yang Diperbarui / Ditambahkan
+1. [`js/geo.js`](file:///c:/AKU_NYOBA\appvihara/js/geo.js) *(BARU)*
+   - Modul Geolocation mandiri, perhitungan rumus Haversine, evaluasi geofence 25m, dan sinkronisasi konfigurasi.
+2. [`js/data.js`](file:///c:/AKU_NYOBA\appvihara/js/data.js)
+   - Fungsi `addAttendanceRecord()` diperluas untuk menyimpan metadata `coords` dan `distanceMeters`.
+3. [`js/app.js`](file:///c:/AKU_NYOBA\appvihara/js/app.js)
+   - Fungsi `handleUmatCheckIn()` diubah menjadi `async` dan memvalidasi geofence sebelum mencatat kehadiran.
+4. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html)
+   - Penambahan badge radius pada kartu status hero, modal `#modal-location-out-of-range`, indikator lokasi pada `#modal-success-checkin`, dan pembaruan versi skrip ke `?v=17.0`.
+5. [`superadmin/index.html`](file:///c:/AKU_NYOBA\appvihara/superadmin/index.html) & [`superadmin.html`](file:///c:/AKU_NYOBA\appvihara/superadmin.html)
+   - Penambahan tombol toolbar dan modal `#modal-geo-config` untuk kalibrasi lokasi dan radius Vihara.
+6. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Dokumentasi pembelajaran Entri #05.
 
 ---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*

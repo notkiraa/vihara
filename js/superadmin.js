@@ -191,6 +191,82 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
+  // MANAJEMEN GEOLOCATION & RADIUS PRESENSI VIHARA (GEOFENCE)
+  // ==========================================================================
+  window.openGeoConfigModal = function() {
+    if (typeof ViharaGeo === 'undefined') {
+      showToast('Modul Geolocation belum siap.', 'warning');
+      return;
+    }
+
+    const config = ViharaGeo.getConfig();
+    const latInput = document.getElementById('modal-geo-lat');
+    const lngInput = document.getElementById('modal-geo-lng');
+    const radiusInput = document.getElementById('modal-geo-radius');
+    const bypassCheckbox = document.getElementById('modal-geo-dev-bypass');
+
+    if (latInput) latInput.value = config.latitude;
+    if (lngInput) lngInput.value = config.longitude;
+    if (radiusInput) radiusInput.value = config.radiusMeters || 25;
+    if (bypassCheckbox) bypassCheckbox.checked = ViharaGeo.isDevBypass();
+
+    openModal('modal-geo-config');
+  };
+
+  window.handleAutoCalibrateGeo = async function() {
+    const btn = document.getElementById('btn-auto-calibrate-geo');
+    const originalText = btn ? btn.innerText : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = 'Mendeteksi GPS...';
+    }
+
+    try {
+      if (typeof ViharaGeo === 'undefined') throw new Error('Modul Geolocation tidak tersedia.');
+      const pos = await ViharaGeo.getCurrentPosition();
+      const latInput = document.getElementById('modal-geo-lat');
+      const lngInput = document.getElementById('modal-geo-lng');
+      if (latInput) latInput.value = pos.latitude;
+      if (lngInput) lngInput.value = pos.longitude;
+      showToast(`Lokasi GPS berhasil diambil! Akurasi: ±${pos.accuracy}m`, 'success');
+    } catch (err) {
+      showToast(err.message || 'Gagal membaca GPS perangkat.', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = originalText;
+      }
+    }
+  };
+
+  window.handleSaveGeoConfig = async function(e) {
+    if (e) e.preventDefault();
+    const lat = parseFloat(document.getElementById('modal-geo-lat').value);
+    const lng = parseFloat(document.getElementById('modal-geo-lng').value);
+    const radius = parseInt(document.getElementById('modal-geo-radius').value, 10);
+    const bypass = document.getElementById('modal-geo-dev-bypass').checked;
+
+    if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
+      showToast('Harap masukkan nilai latitude, longitude, dan radius yang valid!', 'warning');
+      return;
+    }
+
+    const saveBtn = document.getElementById('btn-save-geo-config');
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      await ViharaGeo.saveConfig({ latitude: lat, longitude: lng, radiusMeters: radius });
+      ViharaGeo.setDevBypass(bypass);
+      showToast('Konfigurasi Geolocation Vihara berhasil disimpan!', 'success');
+      closeModal('modal-geo-config');
+    } catch (err) {
+      showToast('Gagal menyimpan konfigurasi: ' + err.message, 'error');
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  };
+
+  // ==========================================================================
   // [INDEX: JS-SUPER-02] DASHBOARD & AGREGASI METRIK STATISTIK KESELURUHAN VIHARA
   // Fungsi: Perhitungan total umat, admin, presensi tercatat, dan jadwal kebaktian.
   // ==========================================================================

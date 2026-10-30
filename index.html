@@ -429,6 +429,15 @@
           <button id="btn-umat-checkin" onclick="handleUmatCheckIn()" class="btn btn-primary btn-block btn-lg" style="margin-top: 14px;">
             Presensi Hadir Sekarang
           </button>
+
+          <!-- Indikator Geolocation Geofence Radius 25 Meter -->
+          <div id="umat-location-indicator" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.88); background: rgba(0, 0, 0, 0.18); padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.15);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>Presensi hanya aktif dalam radius <strong>25 meter</strong> dari Vihara</span>
+          </div>
         </div>
 
         <!-- Sheet Putih Konten Utama (Matching Image 1) -->
@@ -1413,11 +1422,67 @@
           <span style="color: var(--ink-50);">Waktu Presensi:</span>
           <strong id="modal-checkin-time" style="color: var(--ink);">-</strong>
         </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--maroon-100);">
+          <span style="color: var(--ink-50);">Lokasi Presensi:</span>
+          <strong id="modal-checkin-geo-verified" style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;">-</strong>
+        </div>
       </div>
 
       <button onclick="closeModal('modal-success-checkin')" class="btn btn-primary btn-block">
         Tutup & Selesai
       </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-13B] MODAL POPUP: DI LUAR RADIUS LOKASI VIHARA (GEOLOCATION GEOFENCE)
+       Fungsi: Menolak presensi mandiri jika umat berada di luar radius 25 meter dari Vihara.
+       ID Terkait: #modal-location-out-of-range, #modal-geo-current-distance, #modal-geo-max-radius
+       ========================================================================== -->
+  <div id="modal-location-out-of-range" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #fecaca;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke-width="2.5"></line>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: #991b1b; margin-bottom: 6px;">
+        Di Luar Area Vihara
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--ink-70); margin-bottom: 1.25rem; line-height: 1.5;">
+        Presensi mandiri hanya dapat dilakukan saat Anda sudah berada langsung di lingkungan <strong>Vihara Amurwa Bhumi Cibinong</strong> (radius maksimal <strong>25 meter</strong>).
+      </p>
+
+      <div style="background: #fef2f2; padding: 14px; border-radius: var(--r-md); text-align: left; font-size: 0.825rem; margin-bottom: 1.25rem; border: 1px solid #fee2e2;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #991b1b; font-weight: 600;">Jarak Anda Saat Ini:</span>
+          <strong id="modal-geo-current-distance" style="color: #b91c1c; font-size: 0.95rem;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--ink-50);">Batas Toleransi Radius:</span>
+          <strong id="modal-geo-max-radius" style="color: var(--ink);">25 meter</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--ink-50);">Akurasi GPS Perangkat:</span>
+          <span id="modal-geo-gps-accuracy" style="color: var(--ink); font-weight: 600;">±- m</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button onclick="closeModal('modal-location-out-of-range'); handleUmatCheckIn();" class="btn btn-primary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Coba Deteksi Ulang GPS</span>
+        </button>
+        <button onclick="closeModal('modal-location-out-of-range')" class="btn btn-ghost btn-block">
+          Tutup
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1607,13 +1672,14 @@
 
   <!-- Supabase JS SDK & Integrasi Client Database -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=16.0"></script>
+  <script src="js/supabase-client.js?v=17.0"></script>
 
   <!-- Canvas Animasi & Scripts Modular dengan Cache-Busting -->
-  <script src="js/animated-bg.js?v=16.0"></script>
-  <script src="js/data.js?v=16.0"></script>
-  <script src="js/auth.js?v=16.0"></script>
-  <script src="js/admin.js?v=16.0"></script>
-  <script src="js/app.js?v=16.0"></script>
+  <script src="js/animated-bg.js?v=17.0"></script>
+  <script src="js/geo.js?v=17.0"></script>
+  <script src="js/data.js?v=17.0"></script>
+  <script src="js/auth.js?v=17.0"></script>
+  <script src="js/admin.js?v=17.0"></script>
+  <script src="js/app.js?v=17.0"></script>
 </body>
 </html>
