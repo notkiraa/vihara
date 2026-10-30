@@ -920,6 +920,43 @@ const ViharaSupabase = (() => {
     }
   }
 
+  // 5b. Subscription Real-Time Database Supabase (Websocket postgres_changes)
+  let realtimeChannel = null;
+
+  function subscribeRealtimeChanges(callback) {
+    const sb = getClient();
+    if (!sb || realtimeChannel) return;
+
+    try {
+      realtimeChannel = sb.channel('vihara-realtime-all')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, async (payload) => {
+          console.info('[Realtime] Perubahan pada tabel events:', payload.eventType);
+          await syncEvents();
+          if (typeof callback === 'function') callback('events', payload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, async (payload) => {
+          console.info('[Realtime] Perubahan pada tabel attendance:', payload.eventType);
+          await syncAttendance();
+          if (typeof callback === 'function') callback('attendance', payload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'guests' }, async (payload) => {
+          console.info('[Realtime] Perubahan pada tabel guests:', payload.eventType);
+          await syncGuests();
+          if (typeof callback === 'function') callback('guests', payload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async (payload) => {
+          console.info('[Realtime] Perubahan pada tabel profiles:', payload.eventType);
+          await syncProfiles();
+          if (typeof callback === 'function') callback('profiles', payload);
+        })
+        .subscribe((status) => {
+          console.info('[Supabase Realtime] Status channel vihara-realtime-all:', status);
+        });
+    } catch (err) {
+      console.warn('[Supabase Realtime] Tidak dapat mengaktifkan websocket subscription:', err);
+    }
+  }
+
   // Inisialisasi awal saat aplikasi dibuka (Menyinkronkan SELURUH 5 Entitas Database)
   async function initSync() {
     if (!isConfigured()) {
@@ -970,7 +1007,8 @@ const ViharaSupabase = (() => {
     insertGuest,
     clearAllGuests,
     getConfiguration,
-    updateConfiguration
+    updateConfiguration,
+    subscribeRealtimeChanges
   };
 })();
 

@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "Sistem Presensi Umat & Buku Tamu Digital Vihara Amurwa Bhumi",
   "scripts": {
-    "test": "node tests/run_scenario_test.cjs && node tests/test_security_audit.cjs && node tests/test_qr_feature.cjs",
+    "test": "node tests/run_scenario_test.cjs && node tests/test_security_audit.cjs && node tests/test_qr_feature.cjs && node tests/test_realtime_kpi.cjs",
     "test:scenarios": "node tests/run_scenario_test.cjs",
     "test:security": "node tests/test_security_audit.cjs",
     "test:qr": "node tests/test_qr_feature.cjs",
+    "test:realtime": "node tests/test_realtime_kpi.cjs",
     "scan:xss": "node tests/scan_xss.cjs",
     "scan:onclick": "node tests/scan_onclick.cjs"
   },

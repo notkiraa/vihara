@@ -27,7 +27,7 @@ const ViharaAdmin = (() => {
     const events = ViharaData.getEvents();
     const attendance = ViharaData.getAttendanceList();
     const guests = ViharaData.getGuestList();
-    const users = ViharaData.getUsers().filter(u => u.role === 'umat');
+    const users = ViharaData.getUsers();
 
     return events.map(evt => {
       // Deduplikasi ketat: 1 umat dihitung tepat 1 kali per acara
@@ -59,7 +59,7 @@ const ViharaAdmin = (() => {
     const event = events.find(e => e.id === eventId);
     if (!event) return null;
 
-    const allUsers = ViharaData.getUsers().filter(u => u.role === 'umat');
+    const allUsers = ViharaData.getUsers();
     const rawAttendance = ViharaData.getAttendanceList().filter(a => a.eventId === eventId);
     const seenUmat = new Set();
     const attendance = rawAttendance.filter(a => {

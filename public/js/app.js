@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const eventsWithStats = ViharaAdmin.getEventsWithStats();
-    const allUsers = ViharaData.getUsers().filter(u => u.role === 'umat');
+    const allUsers = ViharaData.getUsers();
 
     // Stats ringkasan atas
     const totalUmatEl = document.getElementById('admin-stat-total-umat');
@@ -2810,15 +2810,57 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.initSync === 'function') {
     ViharaSupabase.initSync().then(() => {
       if (typeof ViharaSupabase.isConfigured === 'function' && ViharaSupabase.isConfigured()) {
+        // Aktifkan Realtime WebSocket listener
+        if (typeof ViharaSupabase.subscribeRealtimeChanges === 'function') {
+          ViharaSupabase.subscribeRealtimeChanges((table, payload) => {
+            const cur = ViharaAuth.currentUser();
+            if (cur) {
+              if (activeView === 'view-admin') renderAdminDashboard(true);
+              if (activeView === 'view-umat') renderUmatDashboard();
+              const activeDetailModal = document.getElementById('modal-event-detail');
+              if (activeDetailModal && activeDetailModal.classList.contains('show') && currentAdminEventId) {
+                renderAdminEventDetailModal(currentAdminEventId);
+              }
+            }
+          });
+        }
+
         const cur = ViharaAuth.currentUser();
         if (cur) {
           if (activeView === 'view-umat') renderUmatDashboard();
           if (activeView === 'view-announcements') renderAnnouncementsPage();
-          if (activeView === 'view-admin') renderAdminDashboard();
+          if (activeView === 'view-admin') renderAdminDashboard(true);
         }
       }
     });
   }
+
+  // Polling sinkronisasi background berkala (setiap 4 detik) untuk memastikan data live
+  setInterval(() => {
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.isConfigured === 'function' && ViharaSupabase.isConfigured()) {
+      if (typeof ViharaAuth !== 'undefined' && ViharaAuth.isLoggedIn()) {
+        const cur = ViharaAuth.currentUser();
+        if (cur && (activeView === 'view-admin' || activeView === 'view-umat')) {
+          Promise.allSettled([
+            ViharaSupabase.syncEvents(),
+            ViharaSupabase.syncAttendance(),
+            ViharaSupabase.syncGuests(),
+            ViharaSupabase.syncProfiles()
+          ]).then(() => {
+            if (activeView === 'view-admin') {
+              renderAdminDashboard(true);
+              const activeDetailModal = document.getElementById('modal-event-detail');
+              if (activeDetailModal && activeDetailModal.classList.contains('show') && currentAdminEventId) {
+                renderAdminEventDetailModal(currentAdminEventId);
+              }
+            } else if (activeView === 'view-umat') {
+              renderUmatDashboard();
+            }
+          }).catch(() => {});
+        }
+      }
+    }
+  }, 4000);
 
   // Sinkronisasi konfigurasi titik lokasi & radius geofencing Vihara
   if (typeof ViharaGeo !== 'undefined' && typeof ViharaGeo.initSync === 'function') {

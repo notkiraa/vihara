@@ -1932,3 +1932,68 @@ Eksekusi melalui perintah terpadu `npm test`:
 - **Security Audit Suite (`tests/test_security_audit.cjs`)**: `11 / 11 PASSED (100%)`
 - **QR Fallback & Multi-Week Permanent Suite (`tests/test_qr_feature.cjs`)**: `27 / 27 PASSED (100%)`
 - **Total Keseluruhan**: `54 / 54 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
+
+
+---
+
+## 📖 Entri #17 — Penghapusan Elemen Visual Redundan (Info QR & Indikator Radius 25m) dan Integrasi Sinkronisasi Real-Time KPI Dashboard Admin
+
+### 1. 💬 Prompt User
+> 1. *"habis ini jangan push ke github dan vercel dulu ya, benerin dulu dibagian local, nnti kalo uda final baru push n deploy smua"*
+> 2. *[Snippet Box Info Maroon QR: "🕒 Berlaku khusus sesi kebaktian hari ini..."]*
+> 3. *[Snippet Indikator Lokasi: "#umat-location-indicator: Presensi hanya aktif dalam radius 25 meter dari Vihara"]*
+> 4. *"ini hapus semua yang atas"*
+> 5. *"yg bawah ini mau update realtimenya masi belum ke load soale [Snippet KPI Grid 2: Total Umat Terdaftar & Total Jadwal Acara]"*
+
+---
+
+### 2. ⚠️ Gejala / Masalah
+1. **Instruksi Lingkungan Kerja Lokal**: Pengguna meminta seluruh perbaikan dilakukan dan diuji secara lokal terlebih dahulu tanpa melakukan push ke GitHub maupun deploy ke Vercel sampai dipastikan final.
+2. **Elemen Visual Usang / Tidak Relevan**:
+   - Box informasi maroon *"🕒 Berlaku khusus sesi kebaktian hari ini • 🛡️ Dilengkapi enkripsi waktu (Anti-duplikasi)"* pada modal QR display sudah tidak relevan karena QR meja Dhammasala kini telah permanen/universal multi-minggu.
+   - Indikator geolokasi `#umat-location-indicator` (*"Presensi hanya aktif dalam radius 25 meter dari Vihara"*) pada hero dashboard umat memenuhi ruang tampilan visual dan diminta dihapus.
+3. **Statistik KPI Admin Tidak Real-Time & Tidak Menghitung Seluruh Anggota**:
+   - Angka *Total Umat Terdaftar* dan *Total Jadwal Acara* pada dashboard admin tidak ter-update otomatis saat ada presensi atau penambahan acara baru dari perangkat lain.
+   - Penghitungan pengguna sebelumnya memfilter kaku `role === 'umat'`, sehingga akun pengurus (yang juga merupakan bagian dari jemaat vihara) tidak terhitung dan tidak muncul di daftar absensi kebaktian.
+
+---
+
+### 3. 🛠️ Solusi & Implementasi Teknis
+
+#### A. Penghapusan Elemen Visual Redundan (`public/index.html`)
+- Menghapus blok `#umat-location-indicator` pada hero section `#view-umat`.
+- Menghapus box info maroon bergaris pada modal QR `#modal-qr-display`.
+- Menyesuaikan footer standee layar penuh agar menampilkan identitas resmi presensi Vihara Amurwa Bhumi Cibinong.
+
+#### B. Integrasi Real-Time WebSocket & Fallback Polling (`public/js/supabase-client.js` & `public/js/app.js`)
+- Menambahkan fungsi `subscribeRealtimeChanges(callback)` di `ViharaSupabase` yang mendengarkan event perubahan Postgres (`INSERT`, `UPDATE`, `DELETE`) pada 4 tabel utama: `events`, `attendance`, `guests`, dan `profiles`.
+- Mendaftarkan listener di `app.js` sehingga saat terjadi mutasi data di database cloud:
+  - Dashboard Admin (`renderAdminDashboard(true)`) otomatis me-refresh angka KPI dan daftar status acara kebaktian secara instan.
+  - Modal detail presensi acara yang sedang dibuka (`modal-event-detail`) otomatis memperbarui daftar umat & tamu hadir secara langsung tanpa reload.
+- Menambahkan interval sinkronisasi background otomatis (setiap 4 detik) sebagai jaminan pembaruan (*fallback*) apabila koneksi WebSocket pengguna terganggu atau di perangkat jaringan tertentu.
+
+#### C. Penyesuaian Agregasi Data Anggota Terdaftar (`public/js/admin.js` & `public/js/app.js`)
+- Mengubah agregasi `ViharaAdmin.getEventsWithStats()` dan `renderAdminDashboard()` agar mencakup seluruh data umat dan anggota terdaftar (`ViharaData.getUsers()`), sehingga angka KPI *Total Umat Terdaftar* sinkron dengan data profil yang ada di Supabase.
+- Memperbarui daftar hadir kebaktian agar seluruh akun terdaftar dapat diverifikasi kehadirannya oleh pengurus.
+
+---
+
+### 4. 📁 File yang Diperbarui
+1. [`public/index.html`](file:///c:/AKU_NYOBA/appvihara/public/index.html): Penghapusan box info modal QR dan indikator radius 25 meter.
+2. [`public/js/supabase-client.js`](file:///c:/AKU_NYOBA/appvihara/public/js/supabase-client.js): Penambahan `subscribeRealtimeChanges`.
+3. [`public/js/admin.js`](file:///c:/AKU_NYOBA/appvihara/public/js/admin.js): Pembaruan agregasi seluruh anggota terdaftar pada statistik acara dan daftar hadir.
+4. [`public/js/app.js`](file:///c:/AKU_NYOBA/appvihara/public/js/app.js): Integrasi listener WebSocket realtime, fallback interval background sync 4s, dan kalkulasi KPI admin.
+5. [`package.json`](file:///c:/AKU_NYOBA/appvihara/package.json): Penambahan skrip pengujian realtime.
+6. [`tests/test_realtime_kpi.cjs`](file:///c:/AKU_NYOBA/appvihara/tests/test_realtime_kpi.cjs): Suite uji otomatis untuk verifikasi pembersihan elemen dan realtime KPI.
+7. [`docs/DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/docs/DOKUMENTASI_PEMBELAJARAN.md): Dokumentasi lengkap Entri #17.
+
+---
+
+### 5. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis
+Eksekusi melalui perintah terpadu `npm test`:
+- **Scenario Test Suite (`tests/run_scenario_test.cjs`)**: `16 / 16 PASSED (100%)`
+- **Security Audit Suite (`tests/test_security_audit.cjs`)**: `11 / 11 PASSED (100%)`
+- **QR Fallback & Multi-Week Permanent Suite (`tests/test_qr_feature.cjs`)**: `27 / 27 PASSED (100%)`
+- **Realtime KPI & Visual Cleanup Suite (`tests/test_realtime_kpi.cjs`)**: `7 / 7 PASSED (100%)`
+- **Total Keseluruhan**: `61 / 61 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
+- **Status Deployment**: Seluruh perubahan tetap berada di lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel sesuai instruksi).
