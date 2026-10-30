@@ -1561,11 +1561,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRemove) {
       btnRemove.style.display = user.avatar ? 'inline-flex' : 'none';
     }
-
-    const btnSuper = document.getElementById('btn-profile-superadmin');
-    if (btnSuper) {
-      btnSuper.style.display = ViharaAuth.isAdmin() ? 'flex' : 'none';
-    }
   }
 
   window.openProfileModal = function() {

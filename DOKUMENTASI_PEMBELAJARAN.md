@@ -9,6 +9,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 1. [Standar Format Dokumentasi](#standar-format-dokumentasi)
 2. [Entri #01 — Perbaikan Sinkronisasi Ubah Role di Superadmin](#entri-01--perbaikan-sinkronisasi-ubah-role-di-superadmin)
 3. [Entri #02 — Solusi Hapus Pengumuman Harus 2x Klik (Race Condition & Optimistic UI)](#entri-02--solusi-hapus-pengumuman-harus-2x-klik-race-condition--optimistic-ui)
+4. [Entri #03 — Hapus Tombol Akses Portal Super Administrator dari Halaman Profil](#entri-03--hapus-tombol-akses-portal-super-administrator-dari-halaman-profil)
 
 ---
 
@@ -279,4 +280,73 @@ const list = getStoredAnnouncements().filter(n => String(n.id) !== strId);
    - Pembuatan buku panduan pembelajaran dan log pengembangan aplikasi.
 
 ---
+
+## 📖 Entri #03 — Hapus Tombol Akses Portal Super Administrator dari Halaman Profil
+
+### 1. 💬 Prompt User
+> *"hapus portal super"*
+> *(Dilampirkan tangkapan layar halaman Profil Saya yang menampilkan tombol kuning: `👑 Buka Portal Super Administrator (Master Vault)`)*
+
+### 2. ⚠️ Gejala / Masalah
+Pada halaman **Profil Saya** (`#view-profile`), akun dengan peran Pengurus/Admin menampilkan tombol:
+- `👑 Buka Portal Super Administrator (Master Vault)` yang mengarahkan pengguna ke halaman `superadmin.html`.
+- **Kekhawatiran:** Tautan ke Master Vault / Super Administrator tidak boleh terekspos secara publik di layar profil admin biasa. Portal Super Admin adalah pintu gerbang sensitif level master yang hanya boleh diakses secara langsung melalui URL rahasia (`/superadmin/` atau `superadmin.html`) dengan autentikasi PIN Master.
+
+---
+
+### 3. 🔍 Akar Masalah & Desain Keamanan
+1. Di `index.html`, terdapat elemen anchor tag `<a>`:
+   ```html
+   <a href="superadmin.html" id="btn-profile-superadmin" class="btn btn-block admin-only-action" ...>
+     <span>Buka Portal Super Administrator (Master Vault)</span>
+   </a>
+   ```
+2. Di `js/app.js`, fungsi `renderProfilePage()` mengontrol tampilan tombol ini:
+   ```javascript
+   const btnSuper = document.getElementById('btn-profile-superadmin');
+   if (btnSuper) {
+     btnSuper.style.display = ViharaAuth.isAdmin() ? 'flex' : 'none';
+   }
+   ```
+3. **Prinsip Keamanan Web (*Security Decoupling*):**
+   - Halaman Super Administrator adalah *vault* administratif tingkat tinggi.
+   - Menampilkan tombol aksesnya di aplikasi publik membuat keberadaan pintu gerbang tersebut diketahui umum (*reconnaissance risk*).
+   - Menghapus tombol ini memastikan hanya pengelola sah yang mengetahui URL langsung (`/superadmin/` atau `superadmin.html`) dan PIN Master yang dapat mencoba masuk.
+
+---
+
+### 4. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Pembersihan Elemen Navigasi DOM HTML
+* Menghapus elemen `<a>` dengan ID `btn-profile-superadmin` dari layout view profil di `index.html`.
+* Mengurangi kerapatan antarmuka pengguna (*UI clutter*) sehingga halaman profil tetap fokus pada identitas pengguna, ganti kata sandi, dan logout.
+
+#### B. *Defensive Coding* pada Query DOM JavaScript
+* Pada `js/app.js`, kode lama menggunakan:
+  ```javascript
+  const btnSuper = document.getElementById('btn-profile-superadmin');
+  if (btnSuper) {
+    btnSuper.style.display = ViharaAuth.isAdmin() ? 'flex' : 'none';
+  }
+  ```
+* Meskipun pengecekan `if (btnSuper)` mencegah error runtime `null pointer exception`, blok kode yang tidak lagi memiliki elemen terkait di HTML harus dibersihkan (*dead code cleanup*) agar script tetap ramping, mudah dibaca, dan efisien.
+
+#### C. *Cache Busting Versioning* Lanjutan
+* Menaikkan parameter versi file JavaScript di `index.html` dari `?v=15.0` ke `?v=16.0`.
+* Menjamin browser umat dan pengurus langsung memuat DOM dan skrip bersih tanpa sisa tombol lama di cache.
+
+---
+
+### 5. 📂 File yang Diperbarui
+1. [`index.html`](file:///c:/AKU_NYOBA/appvihara/index.html)
+   - Menghapus tombol `btn-profile-superadmin` dari halaman profil.
+   - Menaikkan versi script modular ke `?v=16.0`.
+2. [`js/app.js`](file:///c:/AKU_NYOBA/appvihara/js/app.js)
+   - Menghapus kontrol `btnSuper` di fungsi `renderProfilePage()`.
+3. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Menambahkan catatan pembelajaran Entri #03.
+
+---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
+
+
