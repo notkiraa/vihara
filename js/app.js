@@ -1909,8 +1909,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </svg>
           <span>Pulihkan ke Beranda</span>
         `;
-        pageDeleteBtn.onclick = () => {
-          handleRestoreAnnouncement(item.id);
+        pageDeleteBtn.onclick = async () => {
+          await handleRestoreAnnouncement(item.id);
           navigateTo('view-announcements');
         };
       } else {
@@ -1921,8 +1921,8 @@ document.addEventListener('DOMContentLoaded', () => {
           </svg>
           <span>Arsipkan Pengumuman</span>
         `;
-        pageDeleteBtn.onclick = () => {
-          handleArchiveAnnouncement(item.id);
+        pageDeleteBtn.onclick = async () => {
+          await handleArchiveAnnouncement(item.id);
           navigateTo('view-announcements');
         };
       }
@@ -2105,14 +2105,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isAdmin) {
         if (item.archived) {
           actionButtonsHtml = `
-            <button type="button" class="btn-announcement-restore" onclick="event.stopPropagation(); handleRestoreAnnouncement('${item.id}')" title="Pulihkan pengumuman ini ke beranda publik">
+            <button type="button" class="btn-announcement-restore" onclick="event.stopPropagation(); event.preventDefault(); handleRestoreAnnouncement('${item.id}')" title="Pulihkan pengumuman ini ke beranda publik">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"></polyline>
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
               </svg>
               <span>Pulihkan</span>
             </button>
-            <button type="button" class="btn-announcement-delete-perm" onclick="event.stopPropagation(); handlePermanentDeleteAnnouncement('${item.id}')" title="Hapus permanen warta ini">
+            <button type="button" class="btn-announcement-delete-perm" onclick="event.stopPropagation(); event.preventDefault(); handlePermanentDeleteAnnouncement('${item.id}')" title="Hapus permanen warta ini">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -2122,7 +2122,7 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
         } else {
           actionButtonsHtml = `
-            <button type="button" class="btn-announcement-delete" onclick="event.stopPropagation(); handleArchiveAnnouncement('${item.id}')" title="Pindahkan ke Arsip Pengurus">
+            <button type="button" class="btn-announcement-delete" onclick="event.stopPropagation(); event.preventDefault(); handleArchiveAnnouncement('${item.id}')" title="Pindahkan ke Arsip Pengurus">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="21 8 21 21 3 21 3 8"></polyline>
                 <rect x="1" y="3" width="22" height="5"></rect>
@@ -2331,8 +2331,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Global Set penampung ID pengumuman yang sedang diproses hapus (mencegah race-condition sinkronisasi)
+  window.ViharaDeletedAnnIds = window.ViharaDeletedAnnIds || new Set();
+
   // 1. Pindahkan ke Arsip Pengurus (Soft Delete - Hanya Admin yang Bisa Mengakses)
-  window.handleArchiveAnnouncement = function(annId) {
+  window.handleArchiveAnnouncement = async function(annId) {
     if (!ViharaAuth.isAdmin()) {
       showToast('Hanya pengurus/admin yang dapat mengarsipkan pengumuman.', 'error');
       return;
@@ -2344,17 +2347,24 @@ document.addEventListener('DOMContentLoaded', () => {
     item.archived = true;
     item.archivedAt = new Date().toISOString();
     localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem('vihara_user_announcements_v5', JSON.stringify(list));
+    localStorage.setItem('vihara_announcements_list', JSON.stringify(list));
 
-    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.archiveAnnouncement === 'function') {
-      ViharaSupabase.archiveAnnouncement(annId);
-    }
     updateNotificationsBadge();
     showToast('Pengumuman berhasil dipindahkan ke Arsip Pengurus.', 'info');
-    renderAnnouncementsPage();
+    renderAnnouncementsPage(true); // skipRemoteSync = true agar langsung update tanpa flash/revert
+
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.archiveAnnouncement === 'function') {
+      try {
+        await ViharaSupabase.archiveAnnouncement(annId);
+      } catch (err) {
+        console.warn('[Supabase] Gagal sync arsipkan warta:', err);
+      }
+    }
   };
 
   // 2. Pulihkan Pengumuman dari Arsip ke Beranda Warta Aktif
-  window.handleRestoreAnnouncement = function(annId) {
+  window.handleRestoreAnnouncement = async function(annId) {
     if (!ViharaAuth.isAdmin()) {
       showToast('Hanya pengurus/admin yang dapat memulihkan pengumuman.', 'error');
       return;
@@ -2366,17 +2376,24 @@ document.addEventListener('DOMContentLoaded', () => {
     item.archived = false;
     delete item.archivedAt;
     localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem('vihara_user_announcements_v5', JSON.stringify(list));
+    localStorage.setItem('vihara_announcements_list', JSON.stringify(list));
 
-    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.restoreAnnouncement === 'function') {
-      ViharaSupabase.restoreAnnouncement(annId);
-    }
     updateNotificationsBadge();
     showToast('Pengumuman berhasil dipulihkan ke warta utama!', 'success');
-    renderAnnouncementsPage();
+    renderAnnouncementsPage(true); // skipRemoteSync = true agar langsung update tanpa flash/revert
+
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.restoreAnnouncement === 'function') {
+      try {
+        await ViharaSupabase.restoreAnnouncement(annId);
+      } catch (err) {
+        console.warn('[Supabase] Gagal sync pulihkan warta:', err);
+      }
+    }
   };
 
   // 3. Hapus Permanen Pengumuman dari Database
-  window.handlePermanentDeleteAnnouncement = function(annId) {
+  window.handlePermanentDeleteAnnouncement = async function(annId) {
     if (!ViharaAuth.isAdmin()) {
       showToast('Hanya pengurus/admin yang dapat menghapus pengumuman permanen.', 'error');
       return;
@@ -2384,14 +2401,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm('Hapus permanen warta pengumuman ini? Data yang terhapus tidak dapat dipulihkan kembali.')) {
       return;
     }
-    const list = getStoredAnnouncements().filter(n => n.id !== annId);
+
+    const strId = String(annId);
+    window.ViharaDeletedAnnIds.add(strId);
+
+    // Update penyimpanan lokal seketika (Optimistic UI Update)
+    const list = getStoredAnnouncements().filter(n => String(n.id) !== strId);
     localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, JSON.stringify(list));
-    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.deleteAnnouncement === 'function') {
-      ViharaSupabase.deleteAnnouncement(annId);
-    }
+    localStorage.setItem('vihara_user_announcements_v5', JSON.stringify(list));
+    localStorage.setItem('vihara_announcements_list', JSON.stringify(list));
+
+    // Render ulang tampilan lokal secara instan (skipRemoteSync = true agar tidak ada balapan kueri)
     updateNotificationsBadge();
     showToast('Pengumuman dihapus secara permanen.', 'info');
-    renderAnnouncementsPage();
+    renderAnnouncementsPage(true);
+
+    // Kirim permintaan penghapusan permanen ke database Supabase dan tunggu hingga tuntas
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.deleteAnnouncement === 'function') {
+      try {
+        await ViharaSupabase.deleteAnnouncement(annId);
+      } catch (err) {
+        console.warn('[Supabase] Gagal hapus permanen pengumuman di cloud:', err);
+      } finally {
+        window.ViharaDeletedAnnIds.delete(strId);
+      }
+    } else {
+      window.ViharaDeletedAnnIds.delete(strId);
+    }
   };
 
   // Kompatibilitas mundur: handleDeleteAnnouncement mengarsipkan data (bukan merusak/destroy)

@@ -415,10 +415,16 @@ const ViharaSupabase = (() => {
       if (error) throw error;
       if (data && Array.isArray(data)) {
         // Abaikan entri auto-generated kehadiran/jadwal jika pernah tersimpan di remote db
-        const cleaned = data.filter(a => {
+        let cleaned = data.filter(a => {
           const t = (a.title || '').toLowerCase();
           return !t.includes('presensi') && !t.includes('jadwal kebaktian baru');
         });
+
+        // Cegah race-condition: Jangan pulihkan pengumuman yang sedang dalam proses penghapusan lokal
+        if (typeof window !== 'undefined' && window.ViharaDeletedAnnIds && window.ViharaDeletedAnnIds.size > 0) {
+          cleaned = cleaned.filter(a => !window.ViharaDeletedAnnIds.has(String(a.id)));
+        }
+
         const mapped = cleaned.map(a => ({
           id: a.id,
           category: a.category,
@@ -476,12 +482,11 @@ const ViharaSupabase = (() => {
       const queryId = String(annId);
       const { data, error } = await sb
         .from('announcements')
-        .update({ is_published: false })
+        .update({ is_published: false, updated_at: new Date().toISOString() })
         .eq('id', queryId)
-        .select()
-        .single();
+        .select();
       if (error) throw error;
-      return data;
+      return data && data.length > 0 ? data[0] : null;
     } catch (err) {
       console.warn('[Supabase] Gagal arsipkan announcement:', err.message);
     }
@@ -496,12 +501,11 @@ const ViharaSupabase = (() => {
       const queryId = String(annId);
       const { data, error } = await sb
         .from('announcements')
-        .update({ is_published: true })
+        .update({ is_published: true, updated_at: new Date().toISOString() })
         .eq('id', queryId)
-        .select()
-        .single();
+        .select();
       if (error) throw error;
-      return data;
+      return data && data.length > 0 ? data[0] : null;
     } catch (err) {
       console.warn('[Supabase] Gagal pulihkan announcement:', err.message);
     }
@@ -594,7 +598,7 @@ const ViharaSupabase = (() => {
     const sb = getClient();
     if (!sb) return null;
     try {
-      const { data, error } = await sb.from('announcements').delete().eq('id', String(annId));
+      const { data, error } = await sb.from('announcements').delete().eq('id', String(annId)).select();
       if (error) throw error;
       return data;
     } catch (err) {
