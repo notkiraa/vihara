@@ -630,18 +630,15 @@
         </div>
 
         <div style="background: rgba(30, 41, 59, 0.7); padding: 12px; border-radius: 8px; margin-bottom: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.1);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 0.8rem; font-weight: 600; color: #e2e8f0;">Kalibrasi GPS Otomatis</span>
             <button type="button" onclick="handleAutoCalibrateGeo()" id="btn-auto-calibrate-geo" class="btn btn-secondary" style="font-size: 0.75rem; padding: 4px 10px;">
               📍 Gunakan Lokasi Saya
             </button>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
-            <input type="checkbox" id="modal-geo-dev-bypass" style="cursor: pointer; width: 16px; height: 16px;">
-            <label for="modal-geo-dev-bypass" style="font-size: 0.785rem; color: #fde047; cursor: pointer; user-select: none;">
-              Mode Pengujian: Bypass Radius Lokasi (Untuk Uji Coba Pengembang)
-            </label>
-          </div>
+          <span style="font-size: 0.725rem; color: var(--color-text-muted); display: block; margin-top: 6px;">
+            Ambil koordinat GPS perangkat Anda saat ini secara otomatis untuk mengisi form di atas.
+          </span>
         </div>
 
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
@@ -671,12 +668,12 @@
 
   <!-- Supabase JS SDK & Integrasi Client Database -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/supabase-client.js?v=18.0"></script>
+  <script src="../js/supabase-client.js?v=19.0"></script>
 
   <!-- Scripts Modular -->
-  <script src="../js/geo.js?v=18.0"></script>
-  <script src="../js/data.js?v=18.0"></script>
-  <script src="../js/superadmin.js?v=18.0"></script>
+  <script src="../js/geo.js?v=19.0"></script>
+  <script src="../js/data.js?v=19.0"></script>
+  <script src="../js/superadmin.js?v=19.0"></script>
 </body>
 </html>
 

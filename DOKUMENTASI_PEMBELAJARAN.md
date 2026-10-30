@@ -13,6 +13,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 5. [Entri #04 — Integrasi Skill Security Audit Cloudflare & Kompatibilitas Windows](#entri-04--integrasi-skill-security-audit-cloudflare--kompatibilitas-windows)
 6. [Entri #05 — Pembatasan Presensi Mandiri Berbasis Geolocation & Geofencing 25 Meter](#entri-05--pembatasan-presensi-mandiri-berbasis-geolocation--geofencing-25-meter)
 7. [Entri #06 — Diagnosis & Penanganan Error Geolocation "User denied Geolocation"](#entri-06--diagnosis--penanganan-error-geolocation-user-denied-geolocation)
+8. [Entri #07 — Penghapusan Mode Uji Coba (Bypass) & Solusi Error Sensor Izin Geolocation](#entri-07--penghapusan-mode-uji-coba-bypass--solusi-error-sensor-izin-geolocation)
 
 ---
 
@@ -720,6 +721,169 @@ Jika pengguna menolak izin lokasi, jangan hanya tampilkan toast singkat yang mem
    - Pembaruan versi skrip ke `?v=18.0`.
 5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Penambahan catatan pembelajaran Entri #06.
+
+---
+
+## 📖 Entri #07 — Penghapusan Mode Uji Coba (Bypass) & Solusi Error Sensor Izin Geolocation
+
+### 1. 💬 Prompt User
+> *"tetep ada error, ini kan sbenernya latitude punya gw kan lokasi saat ini, tapi tetep gabisa, btw itu ilangin aja yg buat uji coba"*
+
+### 2. ⚠️ Gejala / Masalah
+1. Pengguna telah mengonfigurasi koordinat target (Latitude & Longitude) pada form Superadmin sesuai dengan koordinat posisi pengguna saat ini. Namun saat tombol *"Presensi Hadir Sekarang"* ditekan di dashboard umat, proses presensi tetap gagal dengan pesan error izin lokasi ditolak (*User denied Geolocation*).
+2. Pengguna meminta seluruh fitur dan antarmuka mode pengujian (*developer bypass mode*) dihilangkan secara menyeluruh dari kode sumber maupun antarmuka aplikasi, agar penegakan radius presensi 25 meter berjalan murni dan bersih untuk lingkungan produksi.
+
+---
+
+### 3. 🔍 Akar Masalah Teknis
+
+#### A. Perbedaan Mendasar: Lapisan Izin Sensor vs Lapisan Geofencing Jarak
+Kegagalan ini bersumber dari kesalahpahaman umum antara dua lapisan (*layer*) kerja pada fitur lokasi berbasis web:
+
+```
+[LAPISAN 1: IZIN HARDWARE & BROWSER (PERMISSION LAYER)]
+       │
+       ▼
+Apakah browser diizinkan mengakses sensor GPS/Wi-Fi perangkat?
+       ├── TIDAK  ──► Melempar Error: "User denied Geolocation" (Code 1)
+       │              (BERHENTI TOTAL: Perangkat TIDAK mengirimkan koordinat apa pun!)
+       │
+       └── YA     ──► Browser mengembalikan koordinat { latitude, longitude, accuracy }
+                         │
+                         ▼
+             [LAPISAN 2: KALKULASI GEOFENCING (CALCULATION LAYER)]
+                         │
+                         ▼
+             Hitung jarak Haversine(UserCoords, TargetCoords) <= 25 meter?
+                         ├── YA    ──► Presensi Berhasil!
+                         └── TIDAK ──► Muncul Modal: "Di Luar Area Vihara"
+```
+
+Ketika browser memblokir izin akses lokasi (*error.code === 1*), JavaScript **sama sekali tidak pernah menerima koordinat fisik pengguna**. Akibatnya, pemanggilan `await getCurrentPosition()` langsung berhenti di Lapisan 1 dan melempar error. Kode program **tidak pernah sempat mengevaluasi koordinat target yang telah diinput di Superadmin** (*Lapisan 2*). Mengubah nilai koordinat target di database tidak akan berpengaruh jika pintu masuk sensor di peramban masih terkunci rapat.
+
+#### B. Timeout GPS Akurasi Tinggi pada Perangkat Desktop/Laptop
+Pada laptop atau PC kantor tanpa receiver satelit GPS fisik, opsi `enableHighAccuracy: true` sering kali mengalami waktu tunggu habis (*Timeout*) atau *Position Unavailable* karena browser menunggu sinyal satelit yang tidak ada. Dibutuhkan mekanisme *fallback* otomatis ke pembacaan jaringan/Wi-Fi (*network-assisted location*) agar tidak melempar error palsu.
+
+#### C. Kebutuhan Menghapus Total Mode Bypass Developer
+Fitur bypass pengujian yang disematkan di antarmuka produksi dapat:
+1. Membuka celah kecurangan presensi (*integrity risk*).
+2. Membingungkan pengguna umum yang mengira presensi bermasalah atau memerlukan klik mode coba-coba.
+3. Menyimpan flag residual pada `localStorage` browser yang tidak terprediksi.
+
+---
+
+### 4. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Mekanisme 2-Stage Geolocation Fallback
+Sintaks JavaScript modern menggunakan *Promise* bertingkat untuk mencoba GPS satelit terlebih dahulu, lalu otomatis *fallback* ke jaringan jika gagal:
+
+```javascript
+// js/geo.js
+async function getCurrentPosition(customOptions = {}) {
+  if (!('geolocation' in navigator)) {
+    throw new Error('Browser tidak mendukung Geolocation GPS.');
+  }
+
+  // Tahap 1: Coba GPS Satelit Akurasi Tinggi (Timeout cepat: 7 detik)
+  const highAccuracyOpts = {
+    enableHighAccuracy: true,
+    timeout: 7000,
+    maximumAge: 0,
+    ...customOptions
+  };
+
+  try {
+    return await _queryBrowserPosition(highAccuracyOpts);
+  } catch (firstErr) {
+    const code = Number(firstErr && firstErr.code);
+
+    // Jika pengguna secara sadar memblokir izin (Code 1), JANGAN RETRY!
+    if (code === 1) {
+      const permErr = new Error('Izin lokasi ditolak oleh browser...');
+      permErr.code = 1;
+      throw permErr;
+    }
+
+    // Tahap 2: Fallback ke Triangulasi Jaringan / Wi-Fi (Timeout: 10 detik)
+    console.info('[ViharaGeo] Fallback ke jaringan Wi-Fi/Seluler...');
+    const fallbackOpts = {
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 30000,
+      ...customOptions
+    };
+
+    return await _queryBrowserPosition(fallbackOpts);
+  }
+}
+```
+
+#### B. Pembersihan Residu State Browser (`localStorage.removeItem`)
+Untuk memastikan browser pengguna bersih dari sisa-sisa pengujian masa lalu:
+```javascript
+try {
+  localStorage.removeItem('vihara_dev_location_bypass');
+} catch (_) {}
+```
+
+#### C. Validasi Batas Derajat Koordinat Bola Bumi (*Spherical Bounds*)
+Menjaga validitas input agar superadmin tidak salah memasukkan angka:
+```javascript
+// Nilai Latitude valid: -90° (Kutub Selatan) hingga +90° (Kutub Utara)
+if (lat < -90 || lat > 90) {
+  showToast('Nilai Latitude harus berada di antara -90 dan 90 derajat!', 'warning');
+  return;
+}
+
+// Nilai Longitude valid: -180° hingga +180° (Garis Bujur Internasional)
+if (lng < -180 || lng > 180) {
+  showToast('Nilai Longitude harus berada di antara -180 dan 180 derajat!', 'warning');
+  return;
+}
+```
+
+---
+
+### 5. 🛠️ Alur & Cara Kerja Solusi
+
+1. **Pembersihan Seluruh Kode & UI Mode Uji Coba**:
+   - Menghapus tombol *"⚙️ Uji Coba: Aktifkan Mode Bypass Pengembang"* pada `#modal-location-permission-denied` di `index.html`.
+   - Menghapus *checkbox* *"Mode Pengujian: Bypass Radius Lokasi"* pada form pengaturan geofence di `superadmin/index.html` dan `superadmin.html`.
+   - Menghapus fungsi `isDevBypass()`, `setDevBypass()`, `BYPASS_KEY`, dan percabangan bypass di `js/geo.js`, `js/app.js`, serta `js/superadmin.js`.
+   - Menambahkan pembersihan otomatis token `vihara_dev_location_bypass` saat modul `js/geo.js` diinisialisasi.
+
+2. **Penyempurnaan Penanganan Izin di Modal Edukasi**:
+   - Panduan visual langkah demi langkah cara mengaktifkan kembali izin lokasi:
+     * **Desktop Chrome/Brave/Edge**: Klik ikon **Gembok 🔒** atau **Setelan Situs ⚙️** di sisi kiri bilah URL, ubah perizinan *Location* menjadi *Allow*, lalu klik *Coba Presensi Lagi*.
+     * **Windows Settings**: Pastikan *Settings -> Privacy & security -> Location -> Location services* bernilai *ON*.
+   - Menyediakan tombol responsif *"Coba Presensi Lagi"* dan *"Muat Ulang Halaman"*.
+
+3. **Inisialisasi Sinkronisasi Konfigurasi Otomatis**:
+   - Memanggil `ViharaGeo.initSync()` saat halaman `index.html` pertama kali dimuat sehingga koordinat vihara yang baru saja disimpan oleh Superadmin langsung aktif tanpa perlu login ulang.
+
+---
+
+### 6. 📂 File yang Diperbarui
+1. [`js/geo.js`](file:///c:/AKU_NYOBA\appvihara/js/geo.js)
+   - Penghapusan total konstanta, fungsi, dan percabangan bypass pengembang.
+   - Penambahan helper `_queryBrowserPosition` dan implementasi *2-Stage Geolocation Acquisition Fallback*.
+   - Penambahan pembersihan otomatis `localStorage.removeItem('vihara_dev_location_bypass')`.
+2. [`js/app.js`](file:///c:/AKU_NYOBA\appvihara/js/app.js)
+   - Penghapusan evaluasi `geoResult.isBypass` pada alur check-in dan kartu verifikasi.
+   - Penghapusan fungsi global `window.enableDevLocationBypassAndCheckin`.
+   - Pemanggilan `ViharaGeo.initSync()` pada startup aplikasi untuk menarik koordinat terbaru.
+3. [`js/superadmin.js`](file:///c:/AKU_NYOBA\appvihara/js/superadmin.js)
+   - Penghapusan referensi `modal-geo-dev-bypass` pada `handleOpenGeoConfig` dan `handleSaveGeoConfig`.
+   - Penambahan validasi batas derajat koordinat: Latitude $[-90, 90]$ dan Longitude $[-180, 180]$.
+4. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html)
+   - Penghapusan tombol bypass uji coba pada modal izin lokasi.
+   - Pembaruan teks panduan aktivasi izin dan tombol coba ulang.
+   - Peningkatan versi skrip modular ke `?v=19.0`.
+5. [`superadmin/index.html`](file:///c:/AKU_NYOBA\appvihara/superadmin/index.html) & [`superadmin.html`](file:///c:/AKU_NYOBA\appvihara/superadmin.html)
+   - Penghapusan elemen *checkbox* dan label bypass pengujian.
+   - Peningkatan versi skrip modular ke `?v=19.0`.
+6. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Dokumentasi pembelajaran Entri #07.
 
 ---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*

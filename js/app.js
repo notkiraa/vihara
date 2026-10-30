@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const geoResult = await ViharaGeo.verifyCheckInDistance();
 
       // Cek apakah di luar radius geofencing (25 meter)
-      if (!geoResult.isWithinRadius && !geoResult.isBypass) {
+      if (!geoResult.isWithinRadius) {
         const distEl = document.getElementById('modal-geo-current-distance');
         const radiusEl = document.getElementById('modal-geo-max-radius');
         const accEl = document.getElementById('modal-geo-gps-accuracy');
@@ -472,19 +472,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const geoStatusEl = document.getElementById('modal-checkin-geo-verified');
       if (geoStatusEl) {
-        if (geoResult.isBypass) {
-          geoStatusEl.innerHTML = `
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span>Bypass Dev Mode (${geoResult.formattedDistance})</span>
-          `;
-          geoStatusEl.style.color = '#eab308';
-        } else {
-          geoStatusEl.innerHTML = `
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span>Terverifikasi di Lokasi (${geoResult.formattedDistance})</span>
-          `;
-          geoStatusEl.style.color = 'var(--success)';
-        }
+        geoStatusEl.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Terverifikasi di Lokasi (${geoResult.formattedDistance})</span>
+        `;
+        geoStatusEl.style.color = 'var(--success)';
       }
 
       openModal('modal-success-checkin');
@@ -504,16 +496,6 @@ document.addEventListener('DOMContentLoaded', () => {
         checkinBtn.disabled = false;
         checkinBtn.innerHTML = originalBtnHtml;
       }
-    }
-  };
-
-  // Helper pengembang: aktifkan bypass dev dan lanjutkan presensi
-  window.enableDevLocationBypassAndCheckin = function() {
-    if (typeof ViharaGeo !== 'undefined') {
-      ViharaGeo.setDevBypass(true);
-      closeModal('modal-location-permission-denied');
-      showToast('Mode Pengujian Pengembang Aktif: Pengecekan radius GPS dilewati.', 'info');
-      handleUmatCheckIn();
     }
   };
 
@@ -2744,6 +2726,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     });
+  }
+
+  // Sinkronisasi konfigurasi titik lokasi & radius geofencing Vihara
+  if (typeof ViharaGeo !== 'undefined' && typeof ViharaGeo.initSync === 'function') {
+    ViharaGeo.initSync();
   }
 
   const session = ViharaAuth.currentUser();

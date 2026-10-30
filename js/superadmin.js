@@ -203,12 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const latInput = document.getElementById('modal-geo-lat');
     const lngInput = document.getElementById('modal-geo-lng');
     const radiusInput = document.getElementById('modal-geo-radius');
-    const bypassCheckbox = document.getElementById('modal-geo-dev-bypass');
 
     if (latInput) latInput.value = config.latitude;
     if (lngInput) lngInput.value = config.longitude;
     if (radiusInput) radiusInput.value = config.radiusMeters || 25;
-    if (bypassCheckbox) bypassCheckbox.checked = ViharaGeo.isDevBypass();
 
     openModal('modal-geo-config');
   };
@@ -244,10 +242,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const lat = parseFloat(document.getElementById('modal-geo-lat').value);
     const lng = parseFloat(document.getElementById('modal-geo-lng').value);
     const radius = parseInt(document.getElementById('modal-geo-radius').value, 10);
-    const bypass = document.getElementById('modal-geo-dev-bypass').checked;
 
     if (isNaN(lat) || isNaN(lng) || isNaN(radius)) {
       showToast('Harap masukkan nilai latitude, longitude, dan radius yang valid!', 'warning');
+      return;
+    }
+
+    if (lat < -90 || lat > 90) {
+      showToast('Nilai Latitude harus berada di antara -90 dan 90 derajat!', 'warning');
+      return;
+    }
+
+    if (lng < -180 || lng > 180) {
+      showToast('Nilai Longitude harus berada di antara -180 dan 180 derajat!', 'warning');
       return;
     }
 
@@ -256,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       await ViharaGeo.saveConfig({ latitude: lat, longitude: lng, radiusMeters: radius });
-      ViharaGeo.setDevBypass(bypass);
       showToast('Konfigurasi Geolocation Vihara berhasil disimpan!', 'success');
       closeModal('modal-geo-config');
     } catch (err) {

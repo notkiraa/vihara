@@ -18,7 +18,11 @@ const ViharaGeo = (() => {
   };
 
   const STORAGE_KEY = 'vihara_geo_config';
-  const BYPASS_KEY = 'vihara_dev_location_bypass';
+
+  // Bersihkan sisa flag bypass uji coba jika sebelumnya pernah tersimpan
+  try {
+    localStorage.removeItem('vihara_dev_location_bypass');
+  } catch (_) {}
 
   // 1. Ambil Konfigurasi Murni Koordinat (Latitude, Longitude, Radius)
   function getConfig() {
@@ -67,20 +71,7 @@ const ViharaGeo = (() => {
     return updated;
   }
 
-  // 3. Status Mode Pengujian / Bypass Radius untuk Developer
-  function isDevBypass() {
-    return localStorage.getItem(BYPASS_KEY) === 'true';
-  }
-
-  function setDevBypass(enable) {
-    if (enable) {
-      localStorage.setItem(BYPASS_KEY, 'true');
-    } else {
-      localStorage.removeItem(BYPASS_KEY);
-    }
-  }
-
-  // 4. Perhitungan Jarak Dua Koordinat Menggunakan Rumus Haversine (Hasil dalam Meter)
+  // 3. Perhitungan Jarak Dua Koordinat Menggunakan Rumus Haversine (Hasil dalam Meter)
   // Rumus matematika: d = 2R * asin(sqrt(sin^2(dlat/2) + cos(lat1)*cos(lat2)*sin^2(dlon/2)))
   function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371000; // Radius rata-rata bumi dalam satuan meter
@@ -109,75 +100,98 @@ const ViharaGeo = (() => {
     return `${(meters / 1000).toFixed(2)} km`;
   }
 
-  // 6. Dapatkan Posisi GPS Perangkat Pengguna Saat Ini via HTML5 Geolocation API
-  function getCurrentPosition(customOptions = {}) {
+  // Helper internal: Bungkus navigator.geolocation.getCurrentPosition ke Promise
+  function _queryBrowserPosition(opts) {
     return new Promise((resolve, reject) => {
-      if (!('geolocation' in navigator)) {
-        reject(new Error('Perangkat atau browser Anda tidak mendukung fitur lokasi (Geolocation GPS).'));
-        return;
-      }
-
-      const options = {
-        enableHighAccuracy: true, // Wajib aktif untuk presisi GPS tinggi
-        timeout: 12000,           // Maksimal tunggu sinyal GPS 12 detik
-        maximumAge: 0,            // Jangan gunakan cache lokasi lama
-        ...customOptions
-      };
-
       navigator.geolocation.getCurrentPosition(
-        position => {
+        pos => {
           resolve({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: Math.round(position.coords.accuracy || 0),
-            timestamp: position.timestamp
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: Math.round(pos.coords.accuracy || 0),
+            timestamp: pos.timestamp
           });
         },
-        error => {
-          let errorMessage = 'Gagal mendeteksi lokasi GPS.';
-          const code = Number(error && error.code);
-          switch (code) {
-            case 1: // PERMISSION_DENIED
-              errorMessage = 'Izin lokasi (GPS) ditolak atau diblokir oleh browser. Harap izinkan akses lokasi pada browser Anda.';
-              break;
-            case 2: // POSITION_UNAVAILABLE
-              errorMessage = 'Informasi lokasi GPS tidak tersedia pada perangkat Anda. Pastikan GPS/Location aktif.';
-              break;
-            case 3: // TIMEOUT
-              errorMessage = 'Waktu deteksi GPS habis. Pastikan Anda berada di area terbuka dengan sinyal GPS baik lalu coba lagi.';
-              break;
-            default:
-              errorMessage = `Terjadi kendala lokasi (${error.message || 'Error GPS'}).`;
-              break;
-          }
-          const err = new Error(errorMessage);
-          err.code = code;
-          reject(err);
-        },
-        options
+        err => reject(err),
+        opts
       );
     });
   }
 
-  // 7. Evaluasi Apakah Posisi Pengguna Berada dalam Radius Geofence Vihara (25 Meter)
-  async function verifyCheckInDistance() {
-    const config = getConfig();
-    const bypass = isDevBypass();
-
-    // Jika mode pengujian bypass aktif, lewati pembacaan sensor GPS agar developer dapat menguji dari mana saja
-    if (bypass) {
-      return {
-        isWithinRadius: true,
-        isBypass: true,
-        distance: 0,
-        formattedDistance: '0 meter (Mode Bypass Developer)',
-        maxRadius: config.radiusMeters,
-        userCoords: { latitude: config.latitude, longitude: config.longitude, accuracy: 5 },
-        targetCoords: config
-      };
+  // 5. Dapatkan Posisi GPS Perangkat Pengguna dengan Mekanisme 2-Stage Fallback
+  // Tahap 1: Coba GPS presisi tinggi (enableHighAccuracy: true, timeout 7 detik).
+  // Tahap 2: Jika sinyal satelit lemah/timeout/di PC desktop, otomatis fallback ke Wi-Fi / Jaringan Seluler (enableHighAccuracy: false).
+  async function getCurrentPosition(customOptions = {}) {
+    if (!('geolocation' in navigator)) {
+      throw new Error('Perangkat atau browser Anda tidak mendukung fitur lokasi (Geolocation GPS).');
     }
 
+    // Opsi Tahap 1: Presisi Tinggi (GPS Satelit Hardware)
+    const highAccuracyOpts = {
+      enableHighAccuracy: true,
+      timeout: 7000,
+      maximumAge: 0,
+      ...customOptions
+    };
+
+    try {
+      return await _queryBrowserPosition(highAccuracyOpts);
+    } catch (firstErr) {
+      const code = Number(firstErr && firstErr.code);
+
+      // JIKA IZIN DITOLAK (Code 1 = PERMISSION_DENIED):
+      // Jangan retry, karena browser secara mutlak memblokir akses lokasi.
+      if (code === 1) {
+        const permErr = new Error('Izin lokasi (GPS) ditolak atau diblokir oleh browser. Harap aktifkan izin lokasi di setelan browser Anda.');
+        permErr.code = 1;
+        throw permErr;
+      }
+
+      // Jika error karena TIMEOUT (3) atau POSITION_UNAVAILABLE (2), coba Tahap 2 (Fallback Jaringan / Wi-Fi)
+      console.info('[ViharaGeo] GPS satelit belum terkunci, mencoba fallback jaringan Wi-Fi/Seluler...');
+      const fallbackOpts = {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 30000,
+        ...customOptions
+      };
+
+      try {
+        return await _queryBrowserPosition(fallbackOpts);
+      } catch (secondErr) {
+        const finalCode = Number(secondErr && secondErr.code);
+        let errorMessage = 'Gagal mendeteksi lokasi GPS.';
+
+        switch (finalCode) {
+          case 1:
+            errorMessage = 'Izin lokasi (GPS) ditolak atau diblokir oleh browser. Harap izinkan akses lokasi pada browser Anda.';
+            break;
+          case 2:
+            errorMessage = 'Informasi lokasi tidak tersedia pada perangkat Anda. Pastikan fitur Lokasi / GPS perangkat dalam status aktif.';
+            break;
+          case 3:
+            errorMessage = 'Waktu pencarian sinyal lokasi habis (Timeout). Pastikan koneksi internet stabil atau berada di area dengan sinyal baik.';
+            break;
+          default:
+            errorMessage = `Kendala lokasi: ${secondErr.message || 'Error GPS'}.`;
+            break;
+        }
+
+        const err = new Error(errorMessage);
+        err.code = finalCode;
+        throw err;
+      }
+    }
+  }
+
+  // 6. Evaluasi Apakah Posisi Pengguna Berada dalam Radius Geofence Vihara (25 Meter)
+  async function verifyCheckInDistance() {
+    const config = getConfig();
+
+    // Dapatkan koordinat fisik perangkat pengguna saat ini
     const userCoords = await getCurrentPosition();
+
+    // Hitung jarak garis lurus bumi (Great-Circle Distance) menggunakan rumus Haversine
     const distance = calculateDistance(
       userCoords.latitude,
       userCoords.longitude,
@@ -189,7 +203,6 @@ const ViharaGeo = (() => {
 
     return {
       isWithinRadius: isWithinRadius,
-      isBypass: false,
       distance: distance,
       formattedDistance: formatDistance(distance),
       maxRadius: config.radiusMeters,
@@ -198,14 +211,14 @@ const ViharaGeo = (() => {
     };
   }
 
-  // 8. Sinkronisasi Data Konfigurasi Lokasi dari Supabase saat Aplikasi Dibuka
+  // 7. Sinkronisasi Data Konfigurasi Lokasi dari Supabase saat Aplikasi Dibuka
   async function initSync() {
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.getConfiguration === 'function') {
       try {
         const remoteValue = await ViharaSupabase.getConfiguration('vihara_geo_config');
         if (remoteValue) {
           const parsed = typeof remoteValue === 'string' ? JSON.parse(remoteValue) : remoteValue;
-          if (parsed && parsed.latitude && parsed.longitude) {
+          if (parsed && typeof parsed.latitude === 'number' && typeof parsed.longitude === 'number') {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
           }
         }
@@ -219,8 +232,6 @@ const ViharaGeo = (() => {
     DEFAULT_CONFIG,
     getConfig,
     saveConfig,
-    isDevBypass,
-    setDevBypass,
     calculateDistance,
     formatDistance,
     getCurrentPosition,
