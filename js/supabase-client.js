@@ -273,17 +273,25 @@ const ViharaSupabase = (() => {
       }
       if (updates.role !== undefined) payload.role = updates.role;
       if (updates.avatar !== undefined) payload.avatar_url = updates.avatar || null;
+      if (updates.password_hash !== undefined) payload.password_hash = updates.password_hash;
+      if (updates.must_change_password !== undefined) payload.must_change_password = updates.must_change_password;
+      payload.updated_at = new Date().toISOString();
+
+      const strId = String(phoneOrId).trim();
+      const cleanDigits = strId.replace(/[^0-9]/g, '');
 
       let query = sb.from('profiles').update(payload);
-      const strId = String(phoneOrId);
-      if (strId.startsWith('USR_') || strId.startsWith('ADM_') || /^\d+$/.test(strId)) {
+      if (strId.startsWith('USR_') || strId.startsWith('ADM_') || strId.startsWith('CFG_')) {
         query = query.eq('id', strId);
+      } else if (cleanDigits.length >= 8) {
+        query = query.eq('phone', cleanDigits);
       } else {
-        query = query.eq('phone', strId.replace(/[^0-9]/g, ''));
+        query = query.or(`id.eq.${strId},phone.eq.${cleanDigits}`);
       }
-      const { data, error } = await query.select().maybeSingle();
+
+      const { data, error } = await query.select();
       if (error) throw error;
-      return data;
+      return data && data.length > 0 ? data[0] : null;
     } catch (err) {
       console.warn('[Supabase] Gagal update profile:', err.message);
     }
@@ -295,13 +303,18 @@ const ViharaSupabase = (() => {
     const sb = getClient();
     if (!sb) return false;
     try {
-      const strId = String(phoneOrId);
+      const strId = String(phoneOrId).trim();
+      const cleanDigits = strId.replace(/[^0-9]/g, '');
+
       let query = sb.from('profiles').delete();
-      if (strId.startsWith('USR_') || strId.startsWith('ADM_') || /^\d+$/.test(strId)) {
+      if (strId.startsWith('USR_') || strId.startsWith('ADM_') || strId.startsWith('CFG_')) {
         query = query.eq('id', strId);
+      } else if (cleanDigits.length >= 8) {
+        query = query.eq('phone', cleanDigits);
       } else {
-        query = query.eq('phone', strId.replace(/[^0-9]/g, ''));
+        query = query.or(`id.eq.${strId},phone.eq.${cleanDigits}`);
       }
+
       const { error } = await query;
       if (error) throw error;
       return true;

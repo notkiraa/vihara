@@ -346,13 +346,23 @@ const ViharaData = (() => {
     if (!user) return null;
     user.role = newRole;
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+
+    // Update active session jika user yang sedang login diubah
+    const session = getSession();
+    if (session && (session.id === userId || session.phone === user.phone)) {
+      const isRem = localStorage.getItem(STORAGE_KEYS.REMEMBER_ME) === 'true';
+      setSession({ ...session, role: newRole }, isRem);
+    }
+
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
-      ViharaSupabase.updateProfile(user.phone || userId, { role: newRole }).catch(() => {});
+      ViharaSupabase.updateProfile(user.id || user.phone, { role: newRole }).catch(err => {
+        console.warn('[Supabase] Gagal update role profile:', err);
+      });
     }
     return user;
   }
 
-  function updateUser(userId, { name, phone, email, avatar, role }) {
+  function updateUser(userId, { name, phone, email, avatar, role, password_hash, must_change_password }) {
     const users = getUsers();
     const user = users.find(u => u.id === userId);
     if (!user) return null;
@@ -361,18 +371,20 @@ const ViharaData = (() => {
     if (email !== undefined) user.email = email.trim().toLowerCase();
     if (avatar !== undefined) user.avatar = avatar;
     if (role !== undefined) user.role = role;
+    if (password_hash !== undefined) user.password_hash = password_hash;
+    if (must_change_password !== undefined) user.must_change_password = must_change_password;
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 
     // Update active session jika user yang sedang login diubah
     const session = getSession();
-    if (session && session.id === userId) {
+    if (session && (session.id === userId || session.phone === user.phone)) {
       const isRem = localStorage.getItem(STORAGE_KEYS.REMEMBER_ME) === 'true';
       setSession({ ...session, ...user }, isRem);
     }
 
     // Sinkronisasi pembaruan profil ke database Supabase
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
-      ViharaSupabase.updateProfile(user.phone || userId, { name, phone, email, avatar, role }).catch(err => {
+      ViharaSupabase.updateProfile(user.id || user.phone, { name, phone, email, avatar, role, password_hash, must_change_password }).catch(err => {
         console.warn('[Supabase] Warning saat update profil di cloud:', err);
       });
     }

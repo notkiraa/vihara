@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   // ROLE SWITCHER (SET PENGURUS / ADMIN & UMAT)
   // ==========================================================================
-  window.handleToggleRole = function(userId, targetRole) {
+  window.handleToggleRole = async function(userId, targetRole) {
     const users = ViharaData.getUsers();
     const user = users.find(u => u.id === userId);
     if (!user) return;
@@ -442,6 +442,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const updated = ViharaData.updateUserRole(userId, targetRole);
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
+      try {
+        await ViharaSupabase.updateProfile(user.id || user.phone, { role: targetRole });
+      } catch (err) {
+        console.warn('[Supabase] Gagal sync role ke database:', err);
+      }
+    }
+
     if (updated) {
       const roleText = targetRole === 'admin' ? 'Pengurus / Admin' : 'Umat Biasa';
       showToast(`Hak akses ${updated.name} berhasil diubah menjadi ${roleText}.`, 'success');
@@ -513,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
     openModal('modal-edit-user');
   };
 
-  window.handleEditUserSubmit = function(e) {
+  window.handleEditUserSubmit = async function(e) {
     if (e) e.preventDefault();
     const userId = document.getElementById('modal-edit-id').value;
     const name = document.getElementById('modal-edit-name').value.trim();
@@ -526,9 +534,28 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Proteksi: jangan demote admin bawaan jika itu satu-satunya admin
+    const users = ViharaData.getUsers();
+    const user = users.find(u => u.id === userId);
+    if (user && role === 'umat' && user.role === 'admin') {
+      const remainingAdmins = users.filter(u => u.role === 'admin' && u.id !== userId);
+      if (remainingAdmins.length === 0) {
+        showToast('Tidak bisa mengubah role! Harus ada minimal 1 Pengurus/Admin di Vihara.', 'warning');
+        return;
+      }
+    }
+
     const updated = ViharaData.updateUser(userId, { name, phone, email, role });
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
+      try {
+        await ViharaSupabase.updateProfile(user ? (user.id || user.phone) : userId, { name, phone, email, role });
+      } catch (err) {
+        console.warn('[Supabase] Gagal sync user profile ke database:', err);
+      }
+    }
+
     if (updated) {
-      showToast(`Data pengguna ${updated.name} (Nama, Telepon, Email) berhasil diperbarui oleh Super Admin.`, 'success');
+      showToast(`Data pengguna ${updated.name} berhasil diperbarui oleh Super Admin.`, 'success');
       closeModal('modal-edit-user');
       renderDashboard();
     }
