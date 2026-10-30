@@ -92,6 +92,8 @@ function parseCSV(content) {
         name: name.trim(),
         phone: normalizePhone(phone),
         email: email.trim() && email.includes('@') ? email.trim().toLowerCase() : null,
+        password_hash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+        must_change_password: true,
         role: role.toLowerCase().includes('admin') || role.toLowerCase().includes('pengurus') ? 'admin' : 'umat'
       });
     }
@@ -135,6 +137,32 @@ async function uploadToSupabase(users) {
 
       if (!response.ok) {
         const errorText = await response.text();
+        if (errorText.includes('PGRST204') || errorText.includes('must_change_password') || errorText.includes('password_hash')) {
+          // Retry tanpa kolom password jika SQL migration belum dijalankan di Supabase
+          const fallbackChunk = chunk.map(u => ({
+            name: u.name,
+            phone: u.phone,
+            email: u.email,
+            role: u.role
+          }));
+          const fallbackRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=phone`, {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates,return=representation'
+            },
+            body: JSON.stringify(fallbackChunk)
+          });
+          if (fallbackRes.ok) {
+            const inserted = await fallbackRes.json();
+            console.log(`✅ BERHASIL via fallback (${inserted.length} data tersimpan).`);
+            console.log(`   💡 Catatan: Kolom password_hash belum dibuat di Supabase. Jalankan script supabase/migration_add_user_password.sql di SQL Editor.`);
+            successCount += inserted.length;
+            continue;
+          }
+        }
         console.log(`❌ GAGAL: ${errorText}`);
         failCount += chunk.length;
       } else {
@@ -219,6 +247,8 @@ Meilani Chen,081299990000,meilani@gmail.com,umat
           name: (u.name || '').trim(),
           phone: normalizePhone(u.phone),
           email: u.email && u.email.includes('@') ? u.email.trim().toLowerCase() : null,
+          password_hash: u.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+          must_change_password: u.must_change_password !== false,
           role: u.role === 'admin' ? 'admin' : 'umat'
         })).filter(u => u.name && u.phone);
       }
@@ -244,3 +274,4 @@ Meilani Chen,081299990000,meilani@gmail.com,umat
 main().catch(err => {
   console.error('Fatal Error:', err);
 });
+

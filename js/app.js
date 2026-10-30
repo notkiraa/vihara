@@ -1243,9 +1243,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHomeDhammaQuote();
   }
 
+  window.toggleLoginPasswordVisibility = function() {
+    const inp = document.getElementById('login-input-password');
+    if (inp) {
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+  };
+
   window.handleLoginSubmit = async function(event) {
     event.preventDefault();
-    const phone = document.getElementById('login-input-phone').value.trim();
+    const phone = (document.getElementById('login-input-phone')?.value || '').trim();
+    const password = (document.getElementById('login-input-password')?.value || '').trim();
     const rememberCheckbox = document.getElementById('login-remember-me');
     const rememberMe = rememberCheckbox ? rememberCheckbox.checked : true;
 
@@ -1253,11 +1261,24 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Masukkan nomor telepon Anda.', 'warning');
       return;
     }
+    if (!password) {
+      showToast('Masukkan kata sandi akun Anda (Default: 123456).', 'warning');
+      return;
+    }
 
-    let res = ViharaAuth.loginWithPhone(phone, rememberMe);
-    if (!res.success && typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.fetchProfileByPhone === 'function') {
-      // Jika di lokal belum ada, cari ke database Supabase (Multi-Device Cloud Login)
-      try {
+    const submitBtn = document.getElementById('btn-login-submit');
+    const origHtml = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Memeriksa Akun...';
+    }
+
+    try {
+      // 1. Cek profil pengguna di lokal
+      let user = ViharaData.findUserByPhone(phone);
+
+      // 2. Jika belum ada di lokal, ambil data terbaru langsung dari Supabase
+      if (!user && typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.fetchProfileByPhone === 'function') {
         const remoteUser = await ViharaSupabase.fetchProfileByPhone(phone);
         if (remoteUser) {
           const users = ViharaData.getUsers();
@@ -1268,43 +1289,201 @@ document.addEventListener('DOMContentLoaded', () => {
             users.push(remoteUser);
           }
           localStorage.setItem('vihara_users', JSON.stringify(users));
-          ViharaData.setSession(remoteUser, rememberMe);
-          res = { success: true, user: remoteUser };
+          user = remoteUser;
         }
-      } catch (err) {
-        console.warn('[Supabase] Gagal login via remote:', err);
+      }
+
+      if (!user) {
+        showToast('Nomor telepon belum terdaftar. Silakan hubungi pengurus vihara untuk pembuatan akun.', 'error');
+        return;
+      }
+
+      // 3. Verifikasi Hash Kata Sandi
+      const isPasswordValid = await ViharaAuth.verifyPassword(user, password);
+      if (!isPasswordValid) {
+        showToast('Nomor telepon atau kata sandi tidak cocok. Silakan periksa kembali.', 'error');
+        return;
+      }
+
+      // 4. Deteksi apakah ini login pertama / kata sandi bawaan yang wajib diganti
+      const isDefault = !user.password_hash || 
+                        user.password_hash === ViharaAuth.DEFAULT_PASSWORD_HASH || 
+                        user.must_change_password === true;
+
+      if (isDefault) {
+        ViharaAuth.setPendingFirstLogin(user, rememberMe);
+        openModal('modal-force-change-password');
+        showToast('Login awal berhasil! Silakan buat kata sandi baru untuk melanjutkan.', 'warning');
+        return;
+      }
+
+      // 5. Login berhasil langsung ke Beranda
+      ViharaData.setSession(user, rememberMe);
+      showToast(`Selamat datang, ${user.name}!`, 'success');
+      navigateTo('view-umat');
+    } catch (err) {
+      console.error('Login error:', err);
+      showToast('Terjadi kesalahan saat masuk. Periksa jaringan Anda.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origHtml;
       }
     }
+  };
 
-    if (res.success) {
-      showToast(`Selamat datang, ${res.user.name}!`, 'success');
-      // Buka langsung ke Beranda (View Umat), bukan ke Buat Acara
+  // Handler Ganti Password Wajib (Login Pertama)
+  window.handleForceChangePasswordSubmit = async function(event) {
+    if (event) event.preventDefault();
+    const newPass = (document.getElementById('force-new-password')?.value || '').trim();
+    const confPass = (document.getElementById('force-confirm-password')?.value || '').trim();
+
+    if (!newPass || newPass.length < 6) {
+      showToast('Kata sandi baru harus minimal 6 karakter!', 'warning');
+      return;
+    }
+    if (newPass !== confPass) {
+      showToast('Konfirmasi kata sandi tidak cocok dengan kata sandi baru!', 'error');
+      return;
+    }
+    if (newPass === ViharaAuth.DEFAULT_PASSWORD_PLAIN) {
+      showToast('Kata sandi baru tidak boleh sama dengan kata sandi bawaan (123456)!', 'warning');
+      return;
+    }
+
+    const pending = ViharaAuth.getPendingFirstLogin();
+    if (!pending || !pending.user) {
+      showToast('Sesi autentikasi telah kedaluwarsa. Silakan masuk kembali.', 'error');
+      closeModal('modal-force-change-password');
+      return;
+    }
+
+    const saveBtn = document.getElementById('btn-save-force-password');
+    const origText = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Menyimpan ke Database...';
+    }
+
+    try {
+      const newHash = await ViharaAuth.hashPassword(newPass);
+
+      // Simpan ke Supabase jika terhubung
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfilePassword === 'function') {
+        await ViharaSupabase.updateProfilePassword(pending.user.phone, newHash);
+      }
+
+      // Perbarui user lokal
+      const updatedUser = {
+        ...pending.user,
+        password_hash: newHash,
+        must_change_password: false
+      };
+      ViharaData.updateUser(pending.user.id, {
+        password_hash: newHash,
+        must_change_password: false
+      });
+
+      // Aktifkan sesi login resmi
+      ViharaData.setSession(updatedUser, pending.rememberMe);
+      ViharaAuth.clearPendingFirstLogin();
+
+      closeModal('modal-force-change-password');
+      showToast(`Kata sandi baru berhasil disimpan! Selamat datang, ${updatedUser.name}.`, 'success');
       navigateTo('view-umat');
-    } else {
-      showToast(res.message, 'error');
+    } catch (err) {
+      console.error('Error simpan password baru:', err);
+      showToast('Gagal menyimpan kata sandi baru ke database.', 'error');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = origText;
+      }
+    }
+  };
+
+  // Handler Ganti Password Sukarela dari Profil
+  window.openUserChangePasswordModal = function() {
+    const oldInp = document.getElementById('user-old-password');
+    const newInp = document.getElementById('user-new-password');
+    const confInp = document.getElementById('user-confirm-password');
+    if (oldInp) oldInp.value = '';
+    if (newInp) newInp.value = '';
+    if (confInp) confInp.value = '';
+    openModal('modal-user-change-password');
+  };
+
+  window.handleUserChangePasswordSubmit = async function(event) {
+    if (event) event.preventDefault();
+    const cur = ViharaAuth.currentUser();
+    if (!cur) {
+      showToast('Silakan masuk terlebih dahulu.', 'warning');
+      return;
+    }
+
+    const oldPass = (document.getElementById('user-old-password')?.value || '').trim();
+    const newPass = (document.getElementById('user-new-password')?.value || '').trim();
+    const confPass = (document.getElementById('user-confirm-password')?.value || '').trim();
+
+    if (!oldPass) {
+      showToast('Masukkan kata sandi saat ini.', 'warning');
+      return;
+    }
+    const isOldValid = await ViharaAuth.verifyPassword(cur, oldPass);
+    if (!isOldValid) {
+      showToast('Kata sandi saat ini salah!', 'error');
+      return;
+    }
+
+    if (!newPass || newPass.length < 6) {
+      showToast('Kata sandi baru minimal 6 karakter.', 'warning');
+      return;
+    }
+    if (newPass !== confPass) {
+      showToast('Konfirmasi kata sandi tidak cocok!', 'error');
+      return;
+    }
+
+    const saveBtn = document.getElementById('btn-save-user-password');
+    const origText = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Menyimpan...';
+    }
+
+    try {
+      const newHash = await ViharaAuth.hashPassword(newPass);
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfilePassword === 'function') {
+        await ViharaSupabase.updateProfilePassword(cur.phone, newHash);
+      }
+
+      const updatedUser = {
+        ...cur,
+        password_hash: newHash,
+        must_change_password: false
+      };
+      ViharaData.updateUser(cur.id, {
+        password_hash: newHash,
+        must_change_password: false
+      });
+      ViharaData.setSession(updatedUser, true);
+
+      closeModal('modal-user-change-password');
+      showToast('Kata sandi akun Anda berhasil diperbarui!', 'success');
+    } catch (err) {
+      console.error('Error ganti password user:', err);
+      showToast('Gagal memperbarui kata sandi.', 'error');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = origText;
+      }
     }
   };
 
   window.handleRegisterSubmit = function(event) {
-    event.preventDefault();
-    const name = document.getElementById('reg-input-name').value.trim();
-    const phone = document.getElementById('reg-input-phone').value.trim();
-    const email = (document.getElementById('reg-input-email')?.value || '').trim();
-    const rememberCheckbox = document.getElementById('reg-remember-me');
-    const rememberMe = rememberCheckbox ? rememberCheckbox.checked : true;
-
-    if (!name || !phone) {
-      showToast('Nama dan nomor telepon wajib diisi.', 'warning');
-      return;
-    }
-
-    const res = ViharaAuth.register({ name, phone, email, role: 'umat', rememberMe });
-    if (res.success) {
-      showToast(`Pendaftaran berhasil! Akun tersimpan ke database Supabase. Selamat datang, ${res.user.name}.`, 'success');
-      navigateTo('view-umat');
-    } else {
-      showToast(res.message, 'error');
-    }
+    if (event) event.preventDefault();
+    showToast('Pendaftaran mandiri dinonaktifkan. Hubungi pengurus vihara.', 'info');
   };
 
   window.toggleAdminCodeField = function() {

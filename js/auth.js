@@ -42,10 +42,88 @@ const ViharaAuth = (() => {
     return !isAdmin();
   }
 
+  const DEFAULT_PASSWORD_PLAIN = '123456';
+  const DEFAULT_PASSWORD_HASH = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
+  let pendingFirstLoginUser = null;
+  let pendingRememberMe = true;
+
   // ==========================================================================
-  // [INDEX: JS-AUTH-02] LOGIN PENGGUNA BERBASIS NOMOR TELEPON / WHATSAPP
-  // Fungsi: Verifikasi nomor HP terdaftar dan aktivasi sesi login.
+  // HELPER HASHING SHA-256 (WEB CRYPTO STANDAR, HASIL SAMA PERSIS DENGAN PGCRYPTO)
   // ==========================================================================
+  async function hashPassword(plainText) {
+    if (!plainText) return '';
+    try {
+      const msgUint8 = new TextEncoder().encode(plainText);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+      console.error('Hashing error:', e);
+      return '';
+    }
+  }
+
+  async function verifyPassword(user, plainPassword) {
+    if (!user || !plainPassword) return false;
+    const inputHash = await hashPassword(plainPassword);
+    const storedHash = user.password_hash || DEFAULT_PASSWORD_HASH;
+    return inputHash === storedHash;
+  }
+
+  function setPendingFirstLogin(user, rememberMe = true) {
+    pendingFirstLoginUser = user;
+    pendingRememberMe = rememberMe;
+  }
+
+  function getPendingFirstLogin() {
+    return { user: pendingFirstLoginUser, rememberMe: pendingRememberMe };
+  }
+
+  function clearPendingFirstLogin() {
+    pendingFirstLoginUser = null;
+    pendingRememberMe = true;
+  }
+
+  // ==========================================================================
+  // [INDEX: JS-AUTH-02] LOGIN PENGGUNA BERBASIS NOMOR TELEPON & KATA SANDI
+  // Fungsi: Verifikasi nomor HP dan kecocokan hash password.
+  // ==========================================================================
+  async function loginWithCredentials(phone, password, rememberMe = true) {
+    const user = ViharaData.findUserByPhone(phone);
+    if (!user) {
+      return {
+        success: false,
+        message: 'Nomor telepon belum terdaftar. Silakan hubungi pengurus vihara untuk pembuatan akun.'
+      };
+    }
+
+    const isMatch = await verifyPassword(user, password);
+    if (!isMatch) {
+      return {
+        success: false,
+        message: 'Nomor telepon atau kata sandi tidak cocok. Silakan periksa kembali.'
+      };
+    }
+
+    // Cek apakah wajib ganti kata sandi (login pertama atau masih menggunakan default)
+    const isDefault = !user.password_hash || user.password_hash === DEFAULT_PASSWORD_HASH || user.must_change_password === true;
+    if (isDefault) {
+      setPendingFirstLogin(user, rememberMe);
+      return {
+        success: true,
+        mustChangePassword: true,
+        user: user
+      };
+    }
+
+    ViharaData.setSession(user, rememberMe);
+    return {
+      success: true,
+      mustChangePassword: false,
+      user: user
+    };
+  }
+
   function loginWithPhone(phone, rememberMe = true) {
     const user = ViharaData.findUserByPhone(phone);
     if (!user) {
@@ -154,11 +232,19 @@ const ViharaAuth = (() => {
   }
 
   return {
+    DEFAULT_PASSWORD_PLAIN,
+    DEFAULT_PASSWORD_HASH,
     currentUser,
     isLoggedIn,
     isAdmin,
     isUmat,
+    hashPassword,
+    verifyPassword,
+    loginWithCredentials,
     loginWithPhone,
+    setPendingFirstLogin,
+    getPendingFirstLogin,
+    clearPendingFirstLogin,
     register,
     logout,
     checkRouteAccess

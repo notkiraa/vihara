@@ -431,6 +431,16 @@
           </select>
         </div>
 
+        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: var(--radius-md); margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff;">Kata Sandi (Password) Akun</div>
+            <div style="font-size: 0.725rem; color: var(--color-text-subtle);">Reset kata sandi umat ke bawaan (123456).</div>
+          </div>
+          <button type="button" onclick="handleResetUserPassword()" class="btn btn-secondary" style="font-size: 0.75rem; padding: 6px 12px; border-color: rgba(234, 179, 8, 0.4); color: #fef08a;">
+            Reset ke 123456
+          </button>
+        </div>
+
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
           <button type="button" onclick="closeModal('modal-edit-user')" class="btn btn-secondary">
             Batal
@@ -588,10 +598,10 @@
 
   <!-- Supabase JS SDK & Integrasi Client Database -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=12.0"></script>
+  <script src="js/supabase-client.js?v=13.0"></script>
 
   <!-- Scripts Modular -->
-  <script src="js/data.js?v=12.0"></script>
-  <script src="js/superadmin.js?v=12.0"></script>
+  <script src="js/data.js?v=13.0"></script>
+  <script src="js/superadmin.js?v=13.0"></script>
 </body>
 </html>

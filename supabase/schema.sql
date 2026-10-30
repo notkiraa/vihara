@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     name TEXT NOT NULL,
     phone TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE,
+    password_hash TEXT DEFAULT encode(digest('123456', 'sha256'), 'hex'),
+    must_change_password BOOLEAN DEFAULT true NOT NULL,
     role user_role NOT NULL DEFAULT 'umat',
     avatar_url TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,

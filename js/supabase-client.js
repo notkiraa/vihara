@@ -55,6 +55,8 @@ const ViharaSupabase = (() => {
           phone: p.phone,
           email: p.email || '',
           avatar: p.avatar_url || '',
+          password_hash: p.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+          must_change_password: p.must_change_password !== false,
           role: p.role || 'umat',
           registeredAt: p.created_at ? p.created_at.split('T')[0] : (typeof ViharaData !== 'undefined' ? ViharaData.getTodayKey() : '2026-01-01')
         }));
@@ -91,6 +93,8 @@ const ViharaSupabase = (() => {
         name: (user.name || '').trim(),
         phone: cleanPhone,
         email: cleanEmail,
+        password_hash: user.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+        must_change_password: user.must_change_password !== false,
         role: user.role || 'umat',
         avatar_url: user.avatar || null
       };
@@ -99,11 +103,23 @@ const ViharaSupabase = (() => {
         payload.id = String(user.id);
       }
 
-      const { data, error } = await sb
+      let { data, error } = await sb
         .from('profiles')
         .upsert([payload], { onConflict: 'phone' })
         .select()
         .single();
+
+      if (error && (error.code === 'PGRST204' || error.message.includes('password_hash') || error.message.includes('must_change_password'))) {
+        delete payload.password_hash;
+        delete payload.must_change_password;
+        const retryRes = await sb
+          .from('profiles')
+          .upsert([payload], { onConflict: 'phone' })
+          .select()
+          .single();
+        data = retryRes.data;
+        error = retryRes.error;
+      }
 
       if (error) throw error;
       console.info('[Supabase] Akun berhasil tersimpan ke database tabel profiles:', data);
@@ -136,6 +152,8 @@ const ViharaSupabase = (() => {
           phone: data.phone,
           email: data.email || '',
           avatar: data.avatar_url || '',
+          password_hash: data.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+          must_change_password: data.must_change_password !== false,
           role: data.role || 'umat',
           registeredAt: data.created_at ? data.created_at.split('T')[0] : (typeof ViharaData !== 'undefined' ? ViharaData.getTodayKey() : '2026-01-01')
         };
@@ -166,6 +184,8 @@ const ViharaSupabase = (() => {
           name: cleanName,
           phone: cleanPhone,
           email: cleanEmail,
+          password_hash: u.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+          must_change_password: u.must_change_password !== false,
           role: u.role === 'admin' ? 'admin' : 'umat',
           avatar_url: u.avatar || null
         };
@@ -177,10 +197,26 @@ const ViharaSupabase = (() => {
         return { success: false, message: 'Tidak ada data valid dengan Nama & No. HP.' };
       }
 
-      const { data, error } = await sb
+      let { data, error } = await sb
         .from('profiles')
         .upsert(validProfiles, { onConflict: 'phone' })
         .select();
+
+      if (error && (error.code === 'PGRST204' || error.message.includes('password_hash') || error.message.includes('must_change_password'))) {
+        const fallback = validProfiles.map(u => ({
+          name: u.name,
+          phone: u.phone,
+          email: u.email,
+          role: u.role,
+          avatar_url: u.avatar_url
+        }));
+        const retryRes = await sb
+          .from('profiles')
+          .upsert(fallback, { onConflict: 'phone' })
+          .select();
+        data = retryRes.data;
+        error = retryRes.error;
+      }
 
       if (error) throw error;
 
@@ -194,6 +230,34 @@ const ViharaSupabase = (() => {
     } catch (err) {
       console.error('[Supabase] Gagal batch insert profiles:', err);
       return { success: false, message: err.message };
+    }
+  }
+
+  // 0e. Update Kata Sandi Pengguna (Hashed SHA-256)
+  async function updateProfilePassword(phoneOrId, newPasswordHash) {
+    const sb = getClient();
+    if (!sb) return false;
+    try {
+      const cleanPhone = String(phoneOrId).replace(/[^0-9]/g, '');
+      const payload = {
+        password_hash: newPasswordHash,
+        must_change_password: false,
+        updated_at: new Date().toISOString()
+      };
+
+      let query = sb.from('profiles').update(payload);
+      if (cleanPhone.length >= 8) {
+        query = query.eq('phone', cleanPhone);
+      } else {
+        query = query.eq('id', String(phoneOrId));
+      }
+
+      const { error } = await query;
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('[Supabase] Gagal update password profile:', err.message);
+      return false;
     }
   }
 
@@ -710,6 +774,7 @@ const ViharaSupabase = (() => {
     fetchProfileByPhone,
     batchInsertProfiles,
     updateProfile,
+    updateProfilePassword,
     deleteProfile,
     syncEvents,
     insertEvent,

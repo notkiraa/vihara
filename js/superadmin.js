@@ -534,6 +534,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.handleResetUserPassword = async function() {
+    const userId = document.getElementById('modal-edit-id')?.value;
+    if (!userId) return;
+    if (!confirm('Apakah Anda yakin ingin me-reset kata sandi pengguna ini ke bawaan (123456)?')) {
+      return;
+    }
+
+    const defaultHash = '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92';
+    const users = ViharaData.getUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfilePassword === 'function') {
+      await ViharaSupabase.updateProfilePassword(user.phone, defaultHash);
+    }
+
+    ViharaData.updateUser(userId, {
+      password_hash: defaultHash,
+      must_change_password: true
+    });
+    showToast(`Kata sandi akun ${user.name} berhasil di-reset ke default (123456).`, 'success');
+  };
+
   // ==========================================================================
   // [INDEX: JS-SUPER-05] HAPUS PENGGUNA PERMANEN DENGAN MODAL KONFIRMASI AMAN
   // Fungsi: Proteksi minimal 1 admin dan dialog konfirmasi penghapusan akun.
@@ -663,6 +686,8 @@ document.addEventListener('DOMContentLoaded', () => {
           name: name,
           phone: cleanPhone,
           email: email.includes('@') ? email.toLowerCase() : '',
+          password_hash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
+          must_change_password: true,
           role: role.toLowerCase().includes('admin') ? 'admin' : 'umat'
         });
       }
