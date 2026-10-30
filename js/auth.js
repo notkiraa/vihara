@@ -216,7 +216,15 @@ var ViharaAuth = (() => {
       }
     }
 
-    // view-guest & view-login terbuka untuk umum
+    if (targetView === 'view-guest') {
+      return {
+        allowed: false,
+        reason: 'qr_required',
+        message: 'Pengisian buku tamu kini dilakukan dengan memindai Kode QR di meja Dhammasala.'
+      };
+    }
+
+    // view-login terbuka untuk umum
     return { allowed: true };
   }
 

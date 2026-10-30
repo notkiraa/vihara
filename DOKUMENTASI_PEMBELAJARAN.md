@@ -1615,6 +1615,110 @@ Berdasarkan audit statis dan dinamis secara menyeluruh terhadap seluruh modul ap
    - **15 / 15 Skenario Lulus (100% PASS)**: Seluruh fitur QR Dhammasala meja resepsionis dan scan presensi instan berfungsi optimal.
 
 ---
+
+## 📖 Entri #13 — Penghapusan Akses Publik Bebas Buku Tamu & Standarisasi Pintu Masuk Tunggal via QR Code Dhammasala
+
+### 1. 💬 Prompt User
+> *"ini hapus,maunya tamu ini diaksesnya dari qr, jadi habis scan qr dia cek logged in / belom kalo udah langusng k absen, kalo belom langsung yg form"*
+
+---
+
+### 2. ⚠️ Gejala / Masalah
+1. Pada halaman login publik (`#view-login`), terdapat tombol *"Isi Buku Tamu (Pengunjung Luar)"* yang dapat diakses siapa saja secara bebas dari peramban tanpa harus berada di lokasi fisik vihara.
+2. Pengguna menginstruksikan agar tombol tersebut dihilangkan total dari antarmuka login. Seluruh akses pencatatan buku tamu bagi pengunjung maupun presensi umat wajib melalui pemindaian **Kode QR Dhammasala** yang terpajang di meja resepsionis/pintu masuk.
+3. Alur kerja yang diinginkan setelah pemindaian QR:
+   - Sistem memeriksa status autentikasi pengguna (*logged in* vs *not logged in*).
+   - **Jika sudah login**: Langsung otomatis mencatat presensi kebaktian (*instant check-in*), tanpa perlu mengisi formulir apa pun.
+   - **Jika belum login**: Langsung menampilkan formulir identitas kilat (*quick register / visitor form*) di tempat, mencatat kehadiran ke daftar hadir acara, lalu memberikan umpan balik sukses tanpa meminta proses otentikasi rumit.
+
+---
+
+### 3. 🔍 Akar Masalah Teknis & Desain UX
+
+1. **Aksesibilitas Tanpa Validasi Lokasi Fisik**:
+   - Tautan navigasi terbuka `data-nav="view-guest"` di beranda login memfasilitasi pengisian buku tamu tanpa bukti kehadiran fisik di Dhammasala.
+2. **Duplikasi Pintu Masuk (*Scattered Entry Points*)**:
+   - Keberadaan dua jalur masuk (tombol buku tamu manual vs tombol pemindai QR) membingungkan umat lansia dan pengunjung luar kota. Menyatukan seluruh alur kehadiran ke dalam pemindaian QR Code menghasilkan *user experience* yang jauh lebih intuitif dan terkontrol.
+3. **Penanganan Alur Pengguna Belum Login (*Unauthenticated State*)**:
+   - Pada implementasi modal sukses sebelumnya, tombol *"Masuk ke Beranda"* memicu navigasi ke `#view-umat` yang secara otomatis memicu pesan peringatan *"Silakan masuk atau daftar terlebih dahulu"* jika pengunjung belum login. Diperlukan penyesuaian tombol aksi kontekstual (*"Masuk ke Beranda"* untuk umat login vs *"Selesai"* untuk tamu).
+
+---
+
+### 4. 🛠️ Solusi & Implementasi Teknis
+
+#### A. Penghapusan Tombol Publik Buku Tamu pada Halaman Login (`index.html`)
+- Menghapus blok pemisah `"atau"` serta tombol `<button data-nav="view-guest">Isi Buku Tamu (Pengunjung Luar)</button>` pada `#view-login`.
+- Menghapus bilah navigasi tamu `desktop-nav-guest` pada desktop header ketika pengguna dalam keadaan *logged out*.
+
+#### B. Penguncian Akses Rute `view-guest` (`js/auth.js`)
+- Mengubah fungsi `checkRouteAccess('view-guest')` agar menolak navigasi langsung:
+  ```javascript
+  if (targetView === 'view-guest') {
+    return {
+      allowed: false,
+      reason: 'qr_required',
+      message: 'Pengisian buku tamu kini dilakukan dengan memindai Kode QR di meja Dhammasala.'
+    };
+  }
+  ```
+  Pengguna yang mencoba mengakses rute ini secara manual akan dialihkan kembali ke `#view-login` dengan panduan untuk menggunakan tombol *"Pindai QR Hadir Dhammasala"*.
+
+#### C. Standarisasi Alur Pemindaian QR Cerdas (`js/qr.js`)
+- **Pengecekan Status Login**:
+  ```javascript
+  const isLoggedIn = typeof ViharaAuth !== 'undefined' && ViharaAuth.isLoggedIn();
+  const currentUser = typeof ViharaAuth !== 'undefined' && ViharaAuth.currentUser();
+
+  if (isLoggedIn && currentUser) {
+    // SUDAH LOGIN: Langsung presensi instan
+    processLoggedInUmatCheckIn(currentUser, targetEvent);
+  } else {
+    // BELUM LOGIN: Langsung buka formulir identitas kilat
+    processGuestOrUnregisteredCheckIn(targetEvent);
+  }
+  ```
+- **Formulir Identitas Kilat (`#modal-qr-quick-register`)**:
+  - Menyediakan opsi pilihan: *"Umat Vihara Amurwa Bhumi"* vs *"Pengunjung / Tamu Luar Kota"*.
+  - Field *"Kota Asal / Domisili"* otomatis muncul dinamis saat opsi tamu dipilih via handler `handleQuickRoleChange(role)`.
+  - Integrasi pencatatan tamu ke `ViharaData.addGuestRecord` yang secara eksplisit mengikat data kehadiran ke `eventId` acara kebaktian aktif.
+  - Dilengkapi proteksi anti-duplikasi: nomor telepon yang sama tidak dapat mengisi ganda pada acara kebaktian yang sama.
+
+#### D. Penyesuaian Tombol Umpan Balik Sukses Presensi (`#modal-qr-success`)
+- Menambahkan fungsi `handleQrSuccessDone()`:
+  - Jika pengguna *logged in*: Mengarahkan ke dasbor utama (`#view-umat`).
+  - Jika pengguna *guest / walk-in*: Menutup modal dengan tenang dan memunculkan toast apresiasi tanpa memicu pesan error otentikasi.
+
+---
+
+### 5. 📂 File yang Diperbarui
+1. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html)
+   - Penghapusan tombol *"Isi Buku Tamu (Pengunjung Luar)"* dan divider `"atau"` di form login.
+   - Penghapusan elemen navigasi `desktop-nav-guest` dari header.
+   - Penambahan handler dinamis kategori dan domisili pada `#modal-qr-quick-register`.
+   - Pembaruan tombol aksi kontekstual `#modal-qr-success-action-btn`.
+2. [`js/auth.js`](file:///c:/AKU_NYOBA\appvihara/js/auth.js)
+   - Penguncian rute `view-guest` agar wajib melalui QR Code (`reason: 'qr_required'`).
+3. [`js/qr.js`](file:///c:/AKU_NYOBA\appvihara/js/qr.js)
+   - Implementasi `handleQuickRoleChange`, validasi ganda duplikasi nomor telepon pengunjung, pengikatan `eventId` pada `addGuestRecord`, serta penyesuaian label tombol modal sukses.
+4. [`js/data.js`](file:///c:/AKU_NYOBA\appvihara/js/data.js)
+   - Pembaruan fungsi `addGuestRecord` agar menerima parameter `eventId` dari sesi pemindaian QR.
+5. [`scratch/test_qr_feature.cjs`](file:///c:/AKU_NYOBA\appvihara/scratch/test_qr_feature.cjs)
+   - Penambahan skenario uji 7 (Pengunjung / Tamu Luar Kota via Form QR & Anti-Duplikasi) dan skenario uji 8 (Verifikasi Kebijakan Akses Buku Tamu Wajib QR).
+6. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Penambahan catatan pembelajaran Entri #13.
+
+---
+
+### 6. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis
+1. **Security Audit Suite (`scratch/test_security_audit.cjs`)**:
+   - `11 / 11 PASSED (100%)`
+2. **Scenario Test Suite (`scratch/run_scenario_test.cjs`)**:
+   - `16 / 16 PASSED (100%)`
+3. **QR Fallback & Guest Workflow Suite (`scratch/test_qr_feature.cjs`)**:
+   - `21 / 21 PASSED (100%)`
+- **Total Pengujian Keseluruhan**: `48 / 48 Skenario Berhasil (100% Lulus)`.
+
+---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
 
 

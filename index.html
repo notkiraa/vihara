@@ -120,17 +120,6 @@
           </div>
         </a>
 
-        <!-- Menu Navigasi Saat Belum Login (PC Mode dengan Glider Geser) -->
-        <nav class="desktop-nav-guest" id="desktop-nav-guest">
-          <div class="nav-sliding-pill" id="desktop-nav-guest-sliding-pill" aria-hidden="true"></div>
-          <button type="button" class="nav-link active" data-target="view-umat" onclick="navigateTo('view-umat')">
-            <span>Presensi Umat</span>
-          </button>
-          <button type="button" class="nav-link" data-target="view-guest" onclick="navigateTo('view-guest')">
-            <span>Buku Tamu</span>
-          </button>
-        </nav>
-
         <!-- Menu Navigasi Desktop / Landscape Saat Login (Pill Items dengan Sliding Glider) -->
         <nav class="desktop-nav" id="desktop-nav-menu">
           <!-- Glider Pill Indikator Geser Interaktif (Spring Elastic Easing) -->
@@ -279,20 +268,6 @@
                   Belum memiliki akun? Hubungi <strong>Pengurus Vihara</strong> untuk pendaftaran data umat.
                 </div>
               </form>
-
-              <div data-ui style="position: relative; text-align: center; margin: 1.25rem 0;">
-                <hr data-ui style="border: none; border-top: 1px solid var(--line);">
-                <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 12px; font-size: 0.75rem; color: var(--ink-50); text-transform: uppercase; font-weight: 700;">atau</span>
-              </div>
-
-              <!-- Tombol Tamu Luar (Buku Tamu) -->
-              <button data-nav="view-guest" class="btn btn-ghost btn-block">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
-                <span>Isi Buku Tamu (Pengunjung Luar)</span>
-              </button>
 
             </div>
           </div>
@@ -1980,14 +1955,20 @@
           <label class="form-label">Kategori Kehadiran:</label>
           <div class="qr-quick-radio-group">
             <label class="qr-quick-radio-card">
-              <input type="radio" name="qr_quick_role" id="qr-radio-umat" value="umat" checked>
+              <input type="radio" name="qr_quick_role" id="qr-radio-umat" value="umat" checked onchange="ViharaQR.handleQuickRoleChange(this.value)">
               <span>◉ Umat Vihara Amurwa Bhumi</span>
             </label>
             <label class="qr-quick-radio-card">
-              <input type="radio" name="qr_quick_role" id="qr-radio-guest" value="guest">
+              <input type="radio" name="qr_quick_role" id="qr-radio-guest" value="guest" onchange="ViharaQR.handleQuickRoleChange(this.value)">
               <span>○ Pengunjung / Tamu Luar Kota</span>
             </label>
           </div>
+        </div>
+
+        <!-- Field Kota Asal / Domisili khusus Tamu/Pengunjung -->
+        <div class="form-group" id="qr-quick-domicile-wrap" style="margin-top: 10px; display: none;">
+          <label class="form-label" for="qr-quick-input-domicile">Kota Asal / Domisili *</label>
+          <input type="text" id="qr-quick-input-domicile" class="form-input" placeholder="Contoh: Cibinong, Bogor, Jakarta Barat">
         </div>
 
         <div style="display: flex; gap: 8px; margin-top: 16px;">
@@ -2022,7 +2003,7 @@
         Namo Buddhaya. Kehadiran Anda telah berhasil dicatat. Selamat beribadah dengan tenang dan bahagia.
       </p>
 
-      <button onclick="closeModal('modal-qr-success'); if (typeof navigateTo === 'function') navigateTo('view-umat');" class="btn btn-primary btn-block">
+      <button id="modal-qr-success-action-btn" onclick="ViharaQR.handleQrSuccessDone()" class="btn btn-primary btn-block">
         Masuk ke Beranda
       </button>
     </div>

@@ -685,14 +685,42 @@
     // Reset Form
     const nameInput = document.getElementById('qr-quick-input-name');
     const phoneInput = document.getElementById('qr-quick-input-phone');
+    const domicileInput = document.getElementById('qr-quick-input-domicile');
+    const domicileWrap = document.getElementById('qr-quick-domicile-wrap');
+
     if (nameInput) nameInput.value = '';
     if (phoneInput) phoneInput.value = '';
+    if (domicileInput) {
+      domicileInput.value = '';
+      domicileInput.required = false;
+    }
+    if (domicileWrap) domicileWrap.style.display = 'none';
 
     // Default pilihan ke 'umat'
     const radioUmat = document.getElementById('qr-radio-umat');
     if (radioUmat) radioUmat.checked = true;
 
     safeOpenModal('modal-qr-quick-register');
+  }
+
+  /**
+   * Handler Perubahan Kategori Form Kilat (Umat vs Tamu Luar)
+   */
+  function handleQuickRoleChange(role) {
+    const domicileWrap = document.getElementById('qr-quick-domicile-wrap');
+    const domicileInput = document.getElementById('qr-quick-input-domicile');
+    if (domicileWrap) {
+      if (role === 'guest') {
+        domicileWrap.style.display = 'block';
+        if (domicileInput) domicileInput.required = true;
+      } else {
+        domicileWrap.style.display = 'none';
+        if (domicileInput) {
+          domicileInput.required = false;
+          domicileInput.value = '';
+        }
+      }
+    }
   }
 
   /**
@@ -704,10 +732,14 @@
     const nameInput = document.getElementById('qr-quick-input-name');
     const phoneInput = document.getElementById('qr-quick-input-phone');
     const radioUmat = document.getElementById('qr-radio-umat');
+    const domicileInput = document.getElementById('qr-quick-input-domicile');
 
     const name = nameInput ? nameInput.value.trim() : '';
     const phone = phoneInput ? phoneInput.value.trim() : '';
     const isUmat = radioUmat ? radioUmat.checked : true;
+    const domicile = domicileInput && domicileInput.value.trim()
+      ? domicileInput.value.trim()
+      : (isUmat ? 'Umat Vihara Amurwa Bhumi' : 'Pengunjung / Tamu Luar Kota');
 
     if (!name || !phone) {
       if (typeof showToast === 'function') {
@@ -760,13 +792,26 @@
         });
       }
     } else {
+      // Cek apakah tamu ini sudah pernah mengisi di acara yang sama
+      const guestList = typeof ViharaData !== 'undefined' ? ViharaData.getGuestList() : [];
+      const alreadyGuest = guestList.some(g =>
+        g.phone === phone && String(g.eventId) === String(event.id)
+      );
+
+      if (alreadyGuest) {
+        safeCloseModal('modal-qr-quick-register');
+        showScanErrorModal('Anda sudah tercatat hadir pada kebaktian ini sebelumnya. Terima kasih atas partisipasi kebajikan Anda.');
+        return;
+      }
+
       // Sebagai Buku Tamu / Pengunjung Luar Kota
       if (typeof ViharaData !== 'undefined' && typeof ViharaData.addGuestRecord === 'function') {
         ViharaData.addGuestRecord({
           name: name,
           phone: phone,
-          domicile: 'Pengunjung / Tamu Luar Kota',
-          purpose: `Puja Bakti QR Dhammasala (${event.name})`
+          domicile: domicile,
+          purpose: `Puja Bakti QR Dhammasala (${event.name})`,
+          eventId: event.id
         });
       }
     }
@@ -787,7 +832,28 @@
       msgEl.innerHTML = `Namo Buddhaya, <strong>${escapeHTML(userName)}</strong>. Kehadiran Anda pada <strong>${escapeHTML(eventName)}</strong> telah berhasil dicatat. Selamat beribadah dengan tenang dan bahagia.`;
     }
 
+    const actionBtn = document.getElementById('modal-qr-success-action-btn');
+    const isLoggedIn = typeof ViharaAuth !== 'undefined' && typeof ViharaAuth.isLoggedIn === 'function' ? ViharaAuth.isLoggedIn() : false;
+    if (actionBtn) {
+      actionBtn.textContent = isLoggedIn ? 'Masuk ke Beranda' : 'Selesai';
+    }
+
     safeOpenModal('modal-qr-success');
+  }
+
+  /**
+   * Selesai dari Modal Sukses Presensi QR
+   */
+  function handleQrSuccessDone() {
+    safeCloseModal('modal-qr-success');
+    const isLoggedIn = typeof ViharaAuth !== 'undefined' && typeof ViharaAuth.isLoggedIn === 'function' ? ViharaAuth.isLoggedIn() : false;
+    if (isLoggedIn) {
+      if (typeof navigateTo === 'function') navigateTo('view-umat');
+    } else {
+      if (typeof showToast === 'function') {
+        showToast('Terima kasih. Selamat beribadah di Vihara Amurwa Bhumi 🙏', 'success');
+      }
+    }
   }
 
   /**
@@ -859,7 +925,9 @@
     openScannerModal,
     closeScannerModal,
     switchCamera,
+    handleQuickRoleChange,
     handleQuickRegisterSubmit,
+    handleQrSuccessDone,
     handleHeaderQrClick,
     handleScannedData,
     initUrlScanHandler

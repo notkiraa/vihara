@@ -617,9 +617,10 @@ var ViharaData = (() => {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.GUESTS) || '[]');
   }
 
-  function addGuestRecord({ name, phone, domicile, purpose }) {
+  function addGuestRecord({ name, phone, domicile, purpose, eventId }) {
     const list = getGuestList();
-    const targetEvent = findEventForCurrentTime();
+    const events = getEvents();
+    const targetEvent = (eventId ? events.find(e => String(e.id) === String(eventId)) : null) || findEventForCurrentTime();
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
 
@@ -627,8 +628,8 @@ var ViharaData = (() => {
       id: 'GST_' + String(list.length + 1).padStart(3, '0'),
       name: name.trim(),
       phone: phone.trim(),
-      domicile: domicile.trim(),
-      purpose: purpose || 'Puja Bakti Umum',
+      domicile: (domicile || 'Pengunjung / Tamu').trim(),
+      purpose: purpose || (targetEvent ? `Puja Bakti (${targetEvent.name})` : 'Puja Bakti Umum'),
       eventId: targetEvent ? targetEvent.id : null,
       kebaktianName: targetEvent ? targetEvent.name : 'Kunjungan Vihara',
       speaker: targetEvent ? targetEvent.speaker : '-',

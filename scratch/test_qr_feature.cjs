@@ -205,12 +205,15 @@ async function runTests() {
   ViharaQR.handleScannedData(scanUrl);
   assert(openedModals.includes('modal-qr-quick-register'), 'Modal Form Identitas Kilat terbuka saat pengguna belum login');
 
-  // Simulasi submit form identitas kilat
+  // Simulasi submit form identitas kilat sebagai Umat Walk-In
   global.document.getElementById = function(id) {
     if (id === 'qr-quick-input-name') return { value: 'Tan Su Mei' };
     if (id === 'qr-quick-input-phone') return { value: '081377776666' };
     if (id === 'qr-radio-umat') return { checked: true };
+    if (id === 'qr-quick-domicile-wrap') return { style: {} };
+    if (id === 'qr-quick-input-domicile') return { value: '' };
     if (id === 'modal-qr-success-message') return { set innerHTML(val) { successMessage = val; }, get innerHTML() { return successMessage; } };
+    if (id === 'modal-qr-success-action-btn') return { textContent: '' };
     return null;
   };
 
@@ -220,6 +223,42 @@ async function runTests() {
   const walkinRecord = updatedAttendances.find(a => a.userPhone === '081377776666' && String(a.eventId) === 'EVT_READY');
   assert(!!walkinRecord, 'Walk-in umat belum login berhasil dicatat kehadirannya', `Nama: ${walkinRecord ? walkinRecord.userName : 'NONE'}`);
   assert(walkinRecord && walkinRecord.method === 'qr_dhammasala', 'Metode presensi walk-in adalah qr_dhammasala');
+
+  // Test 7: Skenario Pengunjung / Tamu Luar Kota via Form QR
+  console.log('\n--- 7. Skenario Pengunjung / Tamu Luar Kota via Form QR ---');
+  ViharaQR.handleScannedData(scanUrl);
+
+  global.document.getElementById = function(id) {
+    if (id === 'qr-quick-input-name') return { value: 'Budi Santoso' };
+    if (id === 'qr-quick-input-phone') return { value: '081912345678' };
+    if (id === 'qr-radio-umat') return { checked: false };
+    if (id === 'qr-quick-domicile-wrap') return { style: {} };
+    if (id === 'qr-quick-input-domicile') return { value: 'Jakarta Barat' };
+    if (id === 'modal-qr-success-message') return { set innerHTML(val) { successMessage = val; }, get innerHTML() { return successMessage; } };
+    if (id === 'modal-qr-success-action-btn') return { textContent: '' };
+    if (id === 'modal-qr-error-message') return { set textContent(val) { errorMessage = val; }, get textContent() { return errorMessage; } };
+    return null;
+  };
+
+  ViharaQR.handleQuickRegisterSubmit({ preventDefault: () => {} });
+
+  const guestList = ViharaData.getGuestList();
+  const guestRecord = guestList.find(g => g.phone === '081912345678' && String(g.eventId) === 'EVT_READY');
+  assert(!!guestRecord, 'Pengunjung luar berhasil tercatat di buku tamu via QR', `Nama: ${guestRecord ? guestRecord.name : 'NONE'}`);
+  assert(guestRecord && guestRecord.domicile === 'Jakarta Barat', 'Domisili tamu tercatat sesuai isian form QR (Jakarta Barat)');
+
+  // Uji anti-duplikasi presensi tamu
+  ViharaQR.handleQuickRegisterSubmit({ preventDefault: () => {} });
+  assert(errorMessage.includes('Anda sudah tercatat hadir pada kebaktian ini sebelumnya'), 'Sistem menolak duplikasi presensi untuk nomor tamu yang sama');
+
+  // Test 8: Verifikasi Proteksi Akses Buku Tamu Wajib QR
+  console.log('\n--- 8. Verifikasi Kebijakan Akses: Buku Tamu Wajib Melalui QR ---');
+  const indexHtmlContent = fs.readFileSync('index.html', 'utf8');
+  assert(!indexHtmlContent.includes('Isi Buku Tamu (Pengunjung Luar)'), 'Tombol publik Isi Buku Tamu di halaman login telah dihapus');
+  assert(!indexHtmlContent.includes('desktop-nav-guest'), 'Menu navigasi tamu bebas di header telah dihapus');
+
+  const directAccess = ViharaAuth.checkRouteAccess('view-guest');
+  assert(directAccess.allowed === false && directAccess.reason === 'qr_required', 'Akses langsung ke view-guest diblokir dengan status qr_required');
 
   console.log('\n======================================================');
   console.log(`🎉 HASIL PENGUJIAN: ${passedTests} / ${totalTests} SKENARIO BERHASIL! (100% PASS)`);
