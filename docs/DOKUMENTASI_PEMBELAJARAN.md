@@ -2369,3 +2369,121 @@ Seluruh rangkaian pengujian regresi dan fitur baru berhasil lulus 100%:
 - `https://wiharaabc.vercel.app/css/superadmin.css?v=8.0` -> **HTTP 200 (text/css)**
 - `https://wiharaabc.vercel.app/js/superadmin.js?v=21.0` -> **HTTP 200 (application/javascript)**
 - Seluruh 77 skenario pengujian unit lokal (`npm test`) tetap **100% PASS**.
+
+
+---
+
+## 📖 Entri #22 — Resolusi Tampilan Mobile Terpotong (Tile Rasterization Crash & Horizontal Animation Overflow), Optimasi Canvas Ringan 30 FPS, dan Sinkronisasi Domain Produksi QR Code
+
+### 1. 💬 Prompt User
+> ```
+> tadi dicoba di moile dia kek ga keload gitu kenap aya, kepotong potong, terlalu berat apa ya?
+> btw qr code ga work sir
+> look at this, masi kepotong men di mobile, tarus sinkronisasi lagi dong semuanya
+> ```
+> *Disertai lampiran tangkapan layar ponsel (Android/Chrome): Card login terpotong menjadi setengah kotak (tile boundary cut-off) dengan area kanan dan bawah kosong.*
+
+---
+
+### 2. ⚠️ Analisis Akar Masalah (Root Cause)
+
+1. **GPU Tile Rasterization Crash pada Chromium Mobile (Android):**
+   - Pada `public/js/animated-bg.js`, kanvas latar belakang berjalan pada rasio `dpr = 2` (atau 3 pada ponsel modern), merender resolusi kanvas masif (jutaan piksel) setiap frame 60-120 FPS dengan 4 pass gradien radial layar penuh (`ctx.fillRect(0, 0, width, height)`), rotasi vektor Roda Dhamma berulang, dan lusinan partikel stardust.
+   - Selain itu, listener `deviceorientation` memicu senter kursor hover (`mouse.isHovered = true`) ratusan kali per detik saat ponsel digenggam bergerak.
+   - Di atas kanvas yang sangat dinamis ini, kartu login (`.auth-login-card`) dan kartu lainnya menerapkan filter berat `backdrop-filter: blur(24px) saturate(180%)`.
+   - Pada GPU ponsel (Mali / Adreno), penggabungan kanvas animasi ber-DPR tinggi di bawah filter konvolusi Gaussian blur 24px membebani fill-rate grafis secara ekstrem. Akibatnya, *raster worker thread* pada Chromium Android kehabisan memori GPU atau mengalami *timeout*, sehingga rasterizer menjatuhkan tile grafis (256x256 atau 512x512 tile dropping), memotong kartu tepat di garis batas tile seperti yang tampak pada tangkapan layar pengguna.
+2. **Horizontal Displacement & Animation Overflow:**
+   - Pada file statis `public/index.html`, tag `<section id="view-login" class="view-section active page-in">` membawa kelas `page-in` sejak awal muat.
+   - Keyframe `@keyframes slideInFromRight` memicu translasi `translate3d(36px, 0, 0)` menuju `0`.
+   - Pada layar sempit ponsel (360px - 390px), translasi horizontal 36px melempar container ke luar batas kanan viewport. Jika rendering terhambat oleh beban GPU, kartu tertahan dalam posisi offset horizontal sehingga sisi kanan input dan tombol terpotong di luar viewport.
+3. **Ghosting Text Preloader Dhamma:**
+   - Preloader `#dhamma-preloader.loaded` sebelumnya hanya memudar secara opasitas selama 500ms tanpa segera menyetel `display: none !important;`.
+   - Akibatnya, teks *"Vihara Amurwa Bhumi - Memuat Kebajikan & Dhamma..."* masih tampak membayang (watermark ghosting) di belakang input kata sandi.
+4. **Domain QR Code Dhammasala Mengarah ke URL Kedaluwarsa:**
+   - Di dalam `public/js/qr.js`, fungsi `generateQrPayload` memiliki fallback domain ke `https://appvihara.vercel.app`.
+   - Domain tersebut sudah tidak aktif dan menghasilkan `404: DEPLOYMENT_NOT_FOUND` pada Vercel. Domain produksi aktif yang resmi ditugaskan ke proyek ini adalah `https://wiharaabc.vercel.app`.
+
+---
+
+### 3. 🛠️ Solusi & Implementasi Teknis
+
+#### A. Optimasi Ultra-Ringan Canvas Latar Belakang (`public/js/animated-bg.js`)
+1. **DPR Clamping Khusus Mobile**:
+   - Menetapkan `dpr = 1` untuk layar ponsel (`width < 768px`), memangkas beban pengolahan piksel hingga 400% tanpa mengurangi keindahan visual.
+2. **Pengurangan Partikel & Aurora Tunggal**:
+   - Mengurangi jumlah partikel stardust menjadi 10 pada ponsel.
+   - Mengganti 4 pass `fillRect` gradien radial menjadi 1 gradien lembut terpusat yang sangat ringan bagi GPU ponsel.
+3. **Throttling Frame Rate 30 FPS**:
+   - Menambahkan kendali delta interval waktu (`elapsed < 32ms`) untuk men-throttle animasi kanvas di ponsel ke 30 FPS, mencegah panas berlebih pada ponsel dan menjamin stabilitas compositor Chromium.
+4. **Throttling Gyroscope Mobile**:
+   - Membatasi pendengar `deviceorientation` maksimal 1 kali per 120ms dan menonaktifkan aktivasi senter torch hover di ponsel.
+
+#### B. Pencegahan Overflow & Penataan Tata Letak Mobile (`public/css/style.css` & `public/index.html`)
+1. **Pembersihan Kelas Statis `page-in`**:
+   - Mengubah elemen di `public/index.html` menjadi `<section id="view-login" class="view-section active">` sehingga halaman login langsung berada di titik pusat `(0, 0)` seketika halaman terbuka.
+2. **Translasi Vertikal Halus di Ponsel**:
+   - Pada `@media (max-width: 768px)`, keyframe animasi `slideInFromRight` dan `slideInFromLeft` didefinisikan ulang menggunakan pergeseran vertikal halus `translateY(8px)` ke `translateY(0)`. Hal ini menjamin tidak ada satupun elemen yang bergeser ke luar batas lebar horizontal layar ponsel.
+3. **Penyempurnaan Dimensi & Padding Kartu Mobile**:
+   - Menambahkan aturan ketat `@media (max-width: 480px)`:
+     ```css
+     body.user-logged-out .app-container {
+       padding: 0 12px !important;
+       width: 100% !important;
+       max-width: 100vw !important;
+       box-sizing: border-box !important;
+       overflow-x: hidden !important;
+     }
+     body.user-logged-out #view-login.active {
+       padding: 1rem 0 !important;
+       width: 100% !important;
+       max-width: 100% !important;
+       box-sizing: border-box !important;
+       overflow-x: hidden !important;
+     }
+     .auth-split-wrapper, .auth-card-side {
+       width: 100% !important;
+       max-width: 100% !important;
+       margin: 0 auto !important;
+       box-sizing: border-box !important;
+     }
+     .auth-login-card {
+       width: 100% !important;
+       max-width: 100% !important;
+       padding: 1.25rem 1rem !important;
+       box-sizing: border-box !important;
+       border-radius: var(--r-lg) !important;
+       background: rgba(255, 255, 255, 0.98) !important;
+       backdrop-filter: blur(8px) !important;
+       -webkit-backdrop-filter: blur(8px) !important;
+       box-shadow: 0 10px 30px -8px rgba(107, 28, 40, 0.1) !important;
+     }
+     ```
+   - Mengganti blur 24px menjadi 8px dan latar belakang solid-frosted `rgba(255, 255, 255, 0.98)` pada kartu login ponsel untuk menjamin kestabilan tile rasterizer GPU.
+
+#### C. Eliminasi Total Ghosting Text Preloader
+1. Menambahkan `display: none !important;` seketika pada `.dhamma-preloader.loaded` di `public/css/style.css`.
+2. Menyempurnakan helper `window.hideDhammaLoading` di `public/index.html` agar langsung mengatur `p.style.display = 'none'` tanpa jeda timer.
+
+#### D. Sinkronisasi Domain Resmi QR Code (`public/js/qr.js`)
+1. Mengubah domain fallback resmi menjadi `https://wiharaabc.vercel.app`.
+2. Memperbarui filter deteksi origin aman untuk menyertakan `wiharaabc` serta memperbarui suite pengujian `tests/test_qr_feature.cjs`.
+
+---
+
+### 4. 📁 File yang Diperbarui
+1. [`public/css/style.css`](file:///c:/AKU_NYOBA/appvihara/public/css/style.css): Penambahan override animasi vertikal mobile, `display: none !important` pada preloader, dan pembatas tata letak kartu mobile anti-overflow.
+2. [`public/index.html`](file:///c:/AKU_NYOBA/appvihara/public/index.html): Penghapusan `page-in` dari `#view-login` statis dan penutupan langsung preloader pada `window.hideDhammaLoading`.
+3. [`public/js/animated-bg.js`](file:///c:/AKU_NYOBA/appvihara/public/js/animated-bg.js): Optimasi canvas mobile DPR 1, 30 FPS throttling, pengurangan partikel stardust, single aurora pass, dan throttling sensor orientasi.
+4. [`public/js/qr.js`](file:///c:/AKU_NYOBA/appvihara/public/js/qr.js): Pembaruan fallback domain produksi ke `https://wiharaabc.vercel.app` dan penanganan origin aman.
+5. [`tests/test_qr_feature.cjs`](file:///c:/AKU_NYOBA/appvihara/tests/test_qr_feature.cjs): Penyesuaian asersi pengujian domain fallback ke domain produksi aktif.
+6. [`docs/DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/docs/DOKUMENTASI_PEMBELAJARAN.md): Entri #22.
+
+---
+
+### 5. 🧪 Hasil Verifikasi & Pengujian
+- **Unit Test Suite (`npm test`)**: Seluruh 77 skenario pengujian lulus 100% tanpa regresi.
+- **Visual Mobile Viewport Verification (Chrome Headless 390x844)**:
+  - Kartu login berada tepat di tengah secara proporsional.
+  - Sisi kanan dan kiri memiliki margin aman 12-16px.
+  - Teks, input telepon, input kata sandi, tombol "Lihat / Tutup", opsi "Ingat saya", dan tombol utama "Masuk ke Akun" terlihat 100% utuh tanpa pemotongan.
+  - Efek ghosting teks preloader tereliminasi total.

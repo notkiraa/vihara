@@ -116,10 +116,10 @@
       origin.startsWith('file:') ||
       origin === 'null' ||
       /:\d{4,5}$/.test(origin) ||
-      (origin.startsWith('http://') && !origin.includes('appvihara'));
+      (origin.startsWith('http://') && !origin.includes('appvihara') && !origin.includes('wiharaabc'));
 
     if (isLocalOrDev) {
-      origin = 'https://appvihara.vercel.app';
+      origin = 'https://wiharaabc.vercel.app';
       pathname = pathname && pathname.endsWith('.html') ? pathname : (pathname === '/' ? '/' : '/index.html');
     }
 

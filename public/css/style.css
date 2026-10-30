@@ -196,6 +196,29 @@ body {
   }
 }
 
+@media (max-width: 768px) {
+  @keyframes slideInFromRight {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slideInFromLeft {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
 .slide-in-right,
 .view-section.active.slide-in-right {
   animation: slideInFromRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -280,9 +303,10 @@ body {
 }
 
 .dhamma-preloader.loaded {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  display: none !important;
 }
 
 .dhamma-preloader-content {
@@ -4417,5 +4441,54 @@ body.user-logged-out #view-guest.active {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+/* Mobile Auth & Login View Constraints (Anti-Overflow & Smooth Tile Rasterization) */
+@media (max-width: 480px) {
+  body.user-logged-out .app-container {
+    padding: 0 12px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  body.user-logged-out #view-login.active {
+    padding: 1rem 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+  .auth-split-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+  .auth-card-side {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .auth-login-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 1.25rem 1rem !important;
+    box-sizing: border-box !important;
+    border-radius: var(--r-lg) !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    box-shadow: 0 10px 30px -8px rgba(107, 28, 40, 0.1) !important;
+  }
+  .form-group {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .form-input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
   }
 }

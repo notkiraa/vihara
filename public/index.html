@@ -102,9 +102,9 @@
     // Early global helpers untuk modal & preloader dismissal agar aman dari race conditions di ponsel
     window.hideDhammaLoading = function() {
       var p = document.getElementById('dhamma-preloader');
-      if (p && !p.classList.contains('loaded')) {
+      if (p) {
         p.classList.add('loaded');
-        setTimeout(function() { p.style.display = 'none'; }, 400);
+        p.style.display = 'none';
       }
     };
     window.openModal = window.openModal || function(id) {
@@ -225,7 +225,7 @@
      Fungsi: Autentikasi No. HP, tab masuk vs daftar baru, dan kartu Mutiara Dhammapada.
      ID Terkait: #view-login, #form-login-phone, #form-register-umat, #dhammapada-quote-text
      ========================================================================== -->
-      <section id="view-login" class="view-section active page-in">
+      <section id="view-login" class="view-section active">
         <div class="auth-split-wrapper">
           
           <!-- KOLOM KIRI: Card Masuk & Daftar Umat -->

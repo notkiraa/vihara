@@ -88,11 +88,15 @@
     ];
 
     function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const isMobile = window.innerWidth < 768;
+      dpr = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      if (ctx.setTransform) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }
       ctx.scale(dpr, dpr);
       createParticles();
     }
@@ -154,7 +158,7 @@
     }
 
     function createParticles() {
-      const count = width < 768 ? 32 : 55;
+      const count = width < 768 ? 10 : 55;
       particles = [];
       for (let i = 0; i < count; i++) {
         particles.push(new StardustParticle());
@@ -168,6 +172,17 @@
     let auroraTime = 0;
     function drawAmbientAurora() {
       auroraTime += 0.005;
+
+      // Optimasi mobile: 1 gradien halus tunggal untuk mencegah kehabisan GPU memori & tile dropping
+      if (width < 768) {
+        const gSoft = ctx.createRadialGradient(width * 0.5, height * 0.35, 10, width * 0.5, height * 0.35, Math.min(width, height) * 0.75);
+        gSoft.addColorStop(0, 'rgba(245, 175, 45, 0.16)');
+        gSoft.addColorStop(0.5, 'rgba(235, 77, 95, 0.07)');
+        gSoft.addColorStop(1, 'rgba(235, 77, 95, 0)');
+        ctx.fillStyle = gSoft;
+        ctx.fillRect(0, 0, width, height);
+        return;
+      }
 
       // Aurora 1: Deep Rose-Coral (Kiri Atas)
       const a1x = width * 0.18 + Math.sin(auroraTime) * 35 + mouse.normX * 45;
@@ -375,8 +390,17 @@
     // [INDEX: JS-BG-06] 60 FPS RENDER LOOP CONTROLLER, EVENT LISTENERS & VISIBILITY
     // Fungsi: Siklus animasi requestAnimationFrame 60 FPS dan pendengar resize/mouse.
     // ==========================================================================
-    function animate() {
-      // Damping halus (Lerp) untuk gerakan mouse yang tenang
+    let lastFrameTime = 0;
+    function animate(currentTime = 0) {
+      animationFrameId = requestAnimationFrame(animate);
+
+      // Throttling 30 FPS di mobile untuk kenyamanan baterai dan kompositor GPU
+      const elapsed = currentTime - lastFrameTime;
+      if (width < 768 && elapsed < 32) {
+        return;
+      }
+      lastFrameTime = currentTime;
+
       mouse.x += (mouse.targetX - mouse.x) * 0.08;
       mouse.y += (mouse.targetY - mouse.y) * 0.08;
       mouse.normX += (mouse.targetNormX - mouse.normX) * 0.05;
@@ -421,13 +445,16 @@
     }
 
     // Dukungan Gyroscope Mobile (Jika ada)
+    let lastGyro = 0;
     function onDeviceOrientation(e) {
+      const now = Date.now();
+      if (now - lastGyro < 120) return;
+      lastGyro = now;
       if (e.gamma !== null && e.beta !== null) {
         const g = Math.max(-30, Math.min(30, e.gamma));
         const b = Math.max(-30, Math.min(30, e.beta - 45));
         mouse.targetNormX = g / 30;
         mouse.targetNormY = b / 30;
-        mouse.isHovered = true;
       }
     }
 
