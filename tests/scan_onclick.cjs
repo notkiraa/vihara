@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-['js/app.js', 'js/admin.js', 'js/superadmin.js', 'js/qr.js'].forEach(f => {
+['public/js/app.js', 'public/js/admin.js', 'public/js/superadmin.js', 'public/js/qr.js'].forEach(f => {
   const content = fs.readFileSync(f, 'utf8');
   const lines = content.split('\n');
   lines.forEach((l, i) => {

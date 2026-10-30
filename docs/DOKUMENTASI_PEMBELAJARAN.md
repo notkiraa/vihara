@@ -1719,7 +1719,94 @@ Berdasarkan audit statis dan dinamis secara menyeluruh terhadap seluruh modul ap
 - **Total Pengujian Keseluruhan**: `48 / 48 Skenario Berhasil (100% Lulus)`.
 
 ---
+
+## 📝 ENTRI #14: REFAKTORING STRUKTUR FOLDER — ISOLASI FILE ESENSIAL WEB KE DIREKTORI `public/` & PENATAAN FOLDER SEJENIS (`docs/`, `tests/`)
+
+### 1. 📌 Konteks & Kebutuhan Pengguna
+- **Kebutuhan**:
+  Memisahkan file-file dalam repositori ke dalam folder yang sejenis dan menempatkan seluruh file esensial yang digunakan langsung oleh aplikasi web ke dalam satu folder khusus yang terisolasi dan bersih.
+- **Tantangan Arsitektur**:
+  1. Sebelumnya, root direktori bercampur antara file produksi web (`index.html`, `superadmin.html`, `css/`, `js/`, `assets/`), berkas dokumentasi (`.md`), skrip pengujian (`scratch/`), migrasi database (`supabase/`), dan template data (`data/`).
+  2. Pemindahan file web ke subdirektori tidak boleh merusak kompatibilitas hosting (seperti Vercel) maupun peramban pengembang lokal (seperti VS Code Live Server di port `5500`).
+  3. Seluruh skrip pengujian otomatis harus tetap berjalan mulus dengan jalur file (*path references*) yang telah disesuaikan.
+
+---
+
+### 2. 🔍 Analisis & Perancangan Arsitektur Baru
+Berdasarkan konfirmasi dan rancangan standar industri, struktur proyek direorganisasi sebagai berikut:
+1. **Folder Khusus Web (`public/`)**:
+   Menampung seluruh file esensial yang diperlukan untuk menjalankan situs web dan portal:
+   - `public/index.html`: Aplikasi utama presensi umat, buku tamu digital, dan panel pengurus.
+   - `public/superadmin.html` & `public/superadmin/index.html`: Portal Master Super Administrator.
+   - `public/css/`: Berkas style (`style.css`, `superadmin.css`).
+   - `public/js/`: Skrip logika modular (`auth.js`, `geo.js`, `qr.js`, `data.js`, `admin.js`, `superadmin.js`, `supabase-client.js`, `animated-bg.js`) serta pustaka scanner pihak ketiga di `public/js/libs/`.
+   - `public/assets/`: Berkas logo dan grafis identitas vihara (`logo.svg`, `logo.jpg`).
+2. **Folder Dokumentasi (`docs/`)**:
+   Menampung seluruh dokumentasi teknis dan panduan:
+   - `docs/DOKUMENTASI_PEMBELAJARAN.md`: Jurnal teknis & rekam jejak arsitektur.
+   - `docs/ALURBESAR.md`: Alur sistem dan logika bisnis besar.
+   - `docs/GLOSSARY.md`: Kamus istilah sistem presensi dan vihara.
+   - `docs/ScenarioTest.md`: Dokumen skenario verifikasi operasional.
+3. **Folder Pengujian Otomatis (`tests/`)**:
+   Menggantikan folder `scratch/` untuk menstandarisasi seluruh unit & scenario test suite:
+   - `tests/run_scenario_test.cjs`: Validasi 16 skenario pengujian fungsional.
+   - `tests/test_security_audit.cjs`: Validasi 11 skenario proteksi keamanan dan hak akses.
+   - `tests/test_qr_feature.cjs`: Validasi 21 skenario alur presensi fallback QR Dhammasala.
+   - `tests/scan_onclick.cjs` & `tests/scan_xss.cjs`: Scanner statis linting keamanan kode.
+   - `tests/mock_supabase.cjs`: Mock in-memory client Supabase.
+4. **Folder Database & Skrip Pemeliharaan**:
+   - `supabase/`: Skema DDL dan file migrasi database cloud.
+   - `scripts/`: Skrip batch input data umat (`batch-input-users.js`).
+   - `data/`: Template file impor (`users_template.csv`, `users_template.json`).
+5. **Konfigurasi Lingkungan & Hosting**:
+   - `vercel.json`: Dikonfigurasi dengan `"outputDirectory": "public"` agar Vercel langsung melayani folder `public/` sebagai root domain produksi secara otomatis.
+   - Root `index.html`: Fallback redirector otomatis berkecepatan 0 detik yang memindahkan peramban lokal (Live Server `127.0.0.1:5500`) langsung ke `./public/`.
+   - `package.json`: Menambahkan skrip standar `npm test`, `npm run test:scenarios`, `npm run test:security`, dan `npm run test:qr`.
+   - Root `README.md`: Panduan direktori komprehensif bagi pengembang.
+
+---
+
+### 3. 🛠️ Tindakan Teknis & Eksekusi Perubahan
+1. **Pemindahan File Bersejarah (`git mv`)**:
+   - Menggunakan `git mv` untuk memindahkan seluruh file web ke `public/`, file dokumentasi ke `docs/`, dan berkas pengujian ke `tests/` guna mempertahankan riwayat *commit history*.
+2. **Pembaruan Path di Seluruh Test Suite**:
+   - Menyesuaikan `fs.readFileSync('js/...')` menjadi `fs.readFileSync('public/js/...')`.
+   - Menyesuaikan `require('../js/...')` menjadi `require('../public/js/...')`.
+   - Menyesuaikan pembacaan template HTML di `test_qr_feature.cjs` menjadi `public/index.html`.
+3. **Penyempurnaan Konfigurasi Vercel & Live Server**:
+   - Menetapkan `outputDirectory: "public"`, `cleanUrls: true`, dan `trailingSlash: true` pada `vercel.json`.
+   - Menuliskan halaman redirector responsif pada root `index.html`.
+
+---
+
+### 4. 📂 Ringkasan File yang Terpengaruh
+1. [`public/`](file:///c:/AKU_NYOBA\appvihara/public)
+   - Berisi seluruh aset esensial web (`index.html`, `superadmin.html`, `superadmin/`, `css/`, `js/`, `assets/`).
+2. [`docs/`](file:///c:/AKU_NYOBA\appvihara/docs)
+   - Berisi `DOKUMENTASI_PEMBELAJARAN.md`, `ALURBESAR.md`, `GLOSSARY.md`, `ScenarioTest.md`.
+3. [`tests/`](file:///c:/AKU_NYOBA\appvihara/tests)
+   - Berisi seluruh skrip pengujian modular dan mock Supabase.
+4. [`vercel.json`](file:///c:/AKU_NYOBA\appvihara/vercel.json)
+   - Penambahan direktori output publik untuk hosting cloud.
+5. [`package.json`](file:///c:/AKU_NYOBA\appvihara/package.json)
+   - Penambahan skrip eksekusi `npm test`.
+6. [`README.md`](file:///c:/AKU_NYOBA\appvihara/README.md)
+   - Panduan arsitektur direktori baru.
+7. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html)
+   - Halaman fallback redirector lokal.
+
+---
+
+### 5. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis Pasca-Refaktor
+Eksekusi melalui perintah terpadu `npm test`:
+- **Scenario Test Suite (`tests/run_scenario_test.cjs`)**: `16 / 16 PASSED (100%)`
+- **Security Audit Suite (`tests/test_security_audit.cjs`)**: `11 / 11 PASSED (100%)`
+- **QR Fallback & Guest Workflow Suite (`tests/test_qr_feature.cjs`)**: `21 / 21 PASSED (100%)`
+- **Total Keseluruhan**: `48 / 48 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
+
+---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
+
 
 
 

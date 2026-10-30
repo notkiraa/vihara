@@ -1,13 +1,13 @@
 const fs = require('fs');
 
 const files = [
-  'js/app.js',
-  'js/admin.js',
-  'js/superadmin.js',
-  'js/qr.js',
-  'js/data.js',
-  'js/auth.js',
-  'js/supabase-client.js'
+  'public/js/app.js',
+  'public/js/admin.js',
+  'public/js/superadmin.js',
+  'public/js/qr.js',
+  'public/js/data.js',
+  'public/js/auth.js',
+  'public/js/supabase-client.js'
 ];
 
 console.log('=== XSS / INJECTION SCANNER ===');

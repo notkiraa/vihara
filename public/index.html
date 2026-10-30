@@ -1,0 +1,2114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Vihara Amurwa Bhumi Cibinong - Presensi Umat & Buku Tamu Digital</title>
+  
+  <!-- Font Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Custom Stylesheet dengan Cache-Busting -->
+  <link rel="stylesheet" href="css/style.css?v=11.0">
+</head>
+<body class="user-logged-out">
+
+  <!-- ==========================================================================
+     VIHARA AMURWA BHUMI CIBINONG - PRESENSI UMAT & BUKU TAMU DIGITAL
+     ==========================================================================
+     FILE INDEKS & GLOSARIUM NAVIGASI CEPAT (QUICK LOOKUP GLOSSARY):
+     Gunakan pencarian ID tag [INDEX: HTML-XX] untuk langsung menuju baris kode terkait.
+     --------------------------------------------------------------------------
+     [INDEX: HTML-01] Preloader Sakral Roda Dhamma (Dharmachakra Loading Screen)
+     [INDEX: HTML-02] Canvas Animasi Latar Belakang (Interactive Particles & Glow)
+     [INDEX: HTML-03] Top Header & Floating Capsule Navbar (Desktop & Mobile)
+     [INDEX: HTML-04] View 1: Masuk (Login) & Daftar Umat Baru + Mutiara Dhammapada
+     [INDEX: HTML-05] View 2: Beranda Umat (Dashboard, Status Presensi & Mutiara Dhamma Lebar)
+     [INDEX: HTML-06] View 3: Riwayat Kehadiran Umat (Filter Bulan & Clean Cards)
+     [INDEX: HTML-07] View 4: Pengumuman & Warta Kabar Vihara (Editorial Grid 2-Kolom)
+     [INDEX: HTML-08] View 5: Buku Tamu Digital (Kunjungan Umat Luar)
+     [INDEX: HTML-09] View 6: Buat Acara Baru & Manajemen Event (Khusus Admin)
+     [INDEX: HTML-10] View 7: Profil Umat (Halaman Dedikasi Akun Pengguna)
+     [INDEX: HTML-11] Floating Bottom Navigation Bar (Glassmorphism Mobile Bar)
+     [INDEX: HTML-12] Modal Popup: Daftar Hadir Per Acara & Assign Presensi (Admin)
+     [INDEX: HTML-13] Modal Popup: Konfirmasi Check-in Berhasil (Umat)
+     [INDEX: HTML-14] Modal Popup: Konfirmasi Buku Tamu Berhasil (Pengunjung)
+     [INDEX: HTML-15] Modal Popup: Detail Lengkap Pengumuman & Warta Vihara
+     [INDEX: HTML-16] Toast Notifikasi & Skrip Modular Runtime Aplikasi
+     ========================================================================== -->
+
+  <!-- ==========================================================================
+     [INDEX: HTML-01] PRELOADER SAKRAL RODA DHAMMA (DHARMACHAKRA LOADING SCREEN)
+     Fungsi: Menampilkan animasi putaran anggun 8 jari-jari sebelum konten siap.
+     ID Terkait: #dhamma-preloader, .dhamma-wheel-svg, .dhamma-preloader-content
+     ========================================================================== -->
+  <div id="dhamma-preloader" class="dhamma-preloader" aria-label="Memuat aplikasi...">
+    <div class="dhamma-preloader-content">
+      <!-- Glow Aura Latar Belakang -->
+      <div class="dhamma-wheel-glow"></div>
+      
+      <!-- Roda Dhamma (Dharmachakra 8 Jari-Jari) Animasi Berputar Tenang -->
+      <div class="dhamma-wheel-container">
+        <svg class="dhamma-wheel-svg" viewBox="0 0 100 100" fill="none">
+          <!-- Lingkaran Luar Ganda (Cakka) -->
+          <circle cx="50" cy="50" r="46" class="wheel-outer-rim" stroke="#d4981d" stroke-width="2.4"/>
+          <circle cx="50" cy="50" r="38" class="wheel-inner-rim" stroke="#721c2a" stroke-width="1.8"/>
+          
+          <!-- 8 Permata Penanda Arah Dhamma (Ariya Atthangika Magga) -->
+          <circle cx="50" cy="7.5" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          <circle cx="80" cy="20" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          <circle cx="92.5" cy="50" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          <circle cx="80" cy="80" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          <circle cx="50" cy="92.5" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          <circle cx="20" cy="80" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          <circle cx="7.5" cy="50" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          <circle cx="20" cy="20" r="3" class="wheel-jewel" fill="#e5a729" stroke="#ffffff" stroke-width="0.8"/>
+          
+          <!-- Lingkaran Pusat (Hub / Nabhi) -->
+          <circle cx="50" cy="50" r="14" class="wheel-hub-outer" stroke="#d4981d" stroke-width="2"/>
+          <circle cx="50" cy="50" r="7.5" class="wheel-hub-inner" stroke="#721c2a" stroke-width="1.6"/>
+          <circle cx="50" cy="50" r="3.2" class="wheel-bindu" fill="#e5a729"/>
+          
+          <!-- 8 Jari-Jari Ariya Atthangika Magga (Spokes) -->
+          <line x1="50" y1="36" x2="50" y2="14" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="59.9" y1="40.1" x2="75.5" y2="24.5" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="64" y1="50" x2="86" y2="50" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="59.9" y1="59.9" x2="75.5" y2="75.5" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="50" y1="64" x2="50" y2="86" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="40.1" y1="59.9" x2="24.5" y2="75.5" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="36" y1="50" x2="14" y2="50" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="40.1" y1="40.1" x2="24.5" y2="24.5" class="wheel-spoke" stroke="#721c2a" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <!-- Teks Identitas Suci Vihara -->
+      <div class="dhamma-preloader-text">
+        <h3 class="dhamma-preloader-title">Vihara Amurwa Bhumi</h3>
+        <p class="dhamma-preloader-subtitle">Memuat Kebajikan &amp; Dhamma...</p>
+      </div>
+
+      <!-- Indikator Loading Bar Halus Bertema Emas & Marun -->
+      <div class="dhamma-preloader-track">
+        <div class="dhamma-preloader-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+     [INDEX: HTML-02] CANVAS ANIMASI LATAR BELAKANG (INTERACTIVE PARTICLES & GLOW)
+     Fungsi: Merender kanvas partikel debu dupa emas & parallax Roda Dhamma 60 FPS.
+     ID Terkait: #animated-bg-canvas
+     ========================================================================== -->
+  <canvas id="animated-bg-canvas"></canvas>
+
+  <!-- ==========================================================================
+     [INDEX: HTML-03] TOP HEADER & FLOATING CAPSULE NAVBAR (DESKTOP & PROFILE)
+     Fungsi: Header melayang kapsul navigasi desktop, sliding glider, & profil user.
+     ID/Class: .top-header, #desktop-nav-menu, #desktop-nav-sliding-pill, #header-user-profile
+     ========================================================================== -->
+  <header class="site-header">
+    <div class="header-inner">
+      
+      <!-- SECTION KIRI: Logo Vihara (Diperbesar) + Nav Menu -->
+      <div class="header-section-left">
+        <!-- Logo / Monogram Circle (Diperbesar & Bercahaya) -->
+        <a class="brand-wrapper" data-nav="view-umat" id="brand-link" title="Vihara Amurwa Bhumi Cibinong">
+          <div class="brand-logo-badge">
+            <img src="assets/logo.svg" alt="Logo Vihara" class="brand-logo-img">
+          </div>
+        </a>
+
+        <!-- Menu Navigasi Desktop / Landscape Saat Login (Pill Items dengan Sliding Glider) -->
+        <nav class="desktop-nav" id="desktop-nav-menu">
+          <!-- Glider Pill Indikator Geser Interaktif (Spring Elastic Easing) -->
+          <div class="nav-sliding-pill" id="desktop-nav-sliding-pill" aria-hidden="true"></div>
+
+          <button type="button" class="nav-link active" data-nav="view-umat" data-target="view-umat">
+            <span>Beranda</span>
+          </button>
+          <button type="button" class="nav-link" data-nav="view-history" data-target="view-history">
+            <span>Riwayat</span>
+          </button>
+          <button type="button" class="nav-link" id="desktop-nav-announcement-btn" data-nav="view-announcements" data-target="view-announcements">
+            <span>Pengumuman</span>
+          </button>
+          <!-- Menu Admin (Hanya muncul jika Role = Admin) -->
+          <button type="button" class="nav-link admin-nav-item" data-nav="view-admin" data-target="view-admin" onclick="navigateTo('view-admin')" style="display: none;">
+            <span>Buat Acara</span>
+          </button>
+          <button type="button" class="nav-link admin-nav-item" id="desktop-nav-qr-btn" onclick="ViharaQR.openShowQrModal()" title="Tampilkan QR Presensi Dhammasala" style="display: none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>QR Dhammasala</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- SECTION KANAN: Menu Profil & Logout -->
+      <div class="header-section-right">
+        <div id="header-user-profile" class="user-profile-header" style="display: none;">
+          <div class="profile-menu-pill" data-nav="view-profile" data-target="view-profile" title="Buka Profil Saya">
+            <div id="header-user-avatar" class="user-avatar">VA</div>
+            <div class="user-info-desktop">
+              <div id="header-user-name" class="user-info-name">Nama Umat</div>
+              <span id="header-user-role" class="user-role-pill umat">Umat</span>
+            </div>
+            <svg class="profile-pill-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+
+          <button onclick="handleLogout()" class="btn-logout" title="Keluar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span class="btn-logout-text">Keluar</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       KONTEN UTAMA APLIKASI
+       ======================================================================== -->
+  <main class="main-content">
+    <div class="app-container">
+
+      <!-- ==========================================================================
+     [INDEX: HTML-04] VIEW 1: MASUK (LOGIN) & DAFTAR UMAT BARU + MUTIARA DHAMMAPADA
+     Fungsi: Autentikasi No. HP, tab masuk vs daftar baru, dan kartu Mutiara Dhammapada.
+     ID Terkait: #view-login, #form-login-phone, #form-register-umat, #dhammapada-quote-text
+     ========================================================================== -->
+      <section id="view-login" class="view-section active page-in">
+        <div class="auth-split-wrapper">
+          
+          <!-- KOLOM KIRI: Card Masuk & Daftar Umat -->
+          <div class="auth-card-side">
+            <div class="card auth-login-card rise d1">
+              <!-- Logo Resmi Vihara Amurwa Bhumi -->
+              <div class="auth-logo-header" style="text-align: center; margin-bottom: 1.25rem;">
+                <div class="auth-logo-badge" data-ui style="width: 72px; height: 72px; border-radius: 20px; background: #ffffff; border: 1.5px solid var(--line); padding: 6px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; box-shadow: 0 6px 18px rgba(94, 21, 38, 0.12);">
+                  <img src="assets/logo.svg" alt="Logo Vihara Amurwa Bhumi Cibinong" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+                <h2 class="card-title auth-card-title" style="font-size: 1.35rem; font-weight: 800; color: var(--maroon-800);">Vihara Amurwa Bhumi</h2>
+                <p class="card-subtitle auth-card-subtitle" style="font-size: 0.85rem; color: var(--ink-70);">Sistem Presensi Umat & Buku Tamu Digital</p>
+              </div>
+
+              <!-- Tombol Cepat Pindai QR di Meja Dhammasala (Fallback GPS / Belum Login) -->
+              <div class="auth-quick-qr-wrap" style="margin-bottom: 1.25rem;">
+                <button type="button" class="btn-quick-qr-dhammasala" onclick="ViharaQR.openScannerModal()" title="Pindai QR Hadir">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                  <span>Pindai QR Hadir Dhammasala</span>
+                </button>
+              </div>
+
+              <!-- Header Form Masuk (Hanya Login Akun Terdaftar) -->
+              <p style="font-size: 0.85rem; color: var(--ink-70); text-align: center; margin-bottom: 1.25rem; line-height: 1.45;">
+                Silakan masukkan nomor telepon dan kata sandi akun Anda untuk masuk.
+              </p>
+
+              <!-- FORM: MASUK (LOGIN DENGAN PASSWORD) -->
+              <form id="auth-form-login" onsubmit="handleLoginSubmit(event)">
+                <div class="form-group">
+                  <label class="form-label" for="login-input-phone">Nomor Telepon / WhatsApp</label>
+                  <div class="input-with-icon">
+                    <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    <input type="tel" id="login-input-phone" class="form-input" placeholder="Contoh: 08123456789" required autocomplete="tel">
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label class="form-label" for="login-input-password" style="margin-bottom: 0;">Kata Sandi (Password)</label>
+                    <button type="button" onclick="toggleLoginPasswordVisibility()" style="background: none; border: none; color: var(--maroon-700); font-size: 0.75rem; cursor: pointer; text-decoration: underline; font-weight: 600;">
+                      Lihat / Tutup
+                    </button>
+                  </div>
+                  <div class="input-with-icon">
+                    <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <input type="password" id="login-input-password" class="form-input" placeholder="Masukkan kata sandi" required autocomplete="current-password">
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--ink-50); margin-top: 5px;">
+                    Login pertama kali? Gunakan kata sandi bawaan: <strong>123456</strong>
+                  </div>
+                </div>
+
+                <!-- Opsi Ingat Saya (Remember Me) -->
+                <div class="form-remember-wrap" style="margin-top: 10px;">
+                  <label class="remember-label" for="login-remember-me">
+                    <input type="checkbox" id="login-remember-me" class="remember-checkbox" checked>
+                    <span>Ingat saya di perangkat ini</span>
+                  </label>
+                </div>
+
+                <button type="submit" id="btn-login-submit" class="btn btn-primary btn-block btn-lg" style="margin-bottom: 0.5rem; margin-top: 0.75rem;">
+                  Masuk ke Akun
+                </button>
+                <div style="font-size: 0.775rem; color: var(--ink-50); text-align: center; margin-top: 8px; line-height: 1.4;">
+                  Belum memiliki akun? Hubungi <strong>Pengurus Vihara</strong> untuk pendaftaran data umat.
+                </div>
+              </form>
+
+            </div>
+          </div>
+
+          <!-- KOLOM KANAN: Quotes Buddhis & Dhammapada (Sesuai Sketsa Gambar) -->
+          <div class="auth-quote-side">
+            <div class="quote-card rise d2">
+              
+              <!-- Watermark Sakral Roda Dhamma (Dharmachakra 8 Jari-Jari Ariya Atthangika Magga) -->
+              <svg class="quote-card-watermark" viewBox="0 0 100 100" fill="none" stroke="currentColor">
+                <!-- Lingkaran Luar Ganda (Cakka) -->
+                <circle cx="50" cy="50" r="46" stroke-width="2"/>
+                <circle cx="50" cy="50" r="38" stroke-width="1.5"/>
+                <!-- 8 Permata Penanda Arah Dhamma -->
+                <circle cx="50" cy="8" r="2.5" fill="currentColor"/>
+                <circle cx="79.7" cy="20.3" r="2.5" fill="currentColor"/>
+                <circle cx="92" cy="50" r="2.5" fill="currentColor"/>
+                <circle cx="79.7" cy="79.7" r="2.5" fill="currentColor"/>
+                <circle cx="50" cy="92" r="2.5" fill="currentColor"/>
+                <circle cx="20.3" cy="79.7" r="2.5" fill="currentColor"/>
+                <circle cx="8" cy="50" r="2.5" fill="currentColor"/>
+                <circle cx="20.3" cy="20.3" r="2.5" fill="currentColor"/>
+                <!-- Lingkaran Pusat (Hub / Nabhi) -->
+                <circle cx="50" cy="50" r="14" stroke-width="1.8"/>
+                <circle cx="50" cy="50" r="7" stroke-width="1.4"/>
+                <circle cx="50" cy="50" r="3" fill="currentColor"/>
+                <!-- 8 Jari-Jari Utama (Spokes / Ara) -->
+                <line x1="50" y1="36" x2="50" y2="14" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="59.9" y1="40.1" x2="75.5" y2="24.5" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="64" y1="50" x2="86" y2="50" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="59.9" y1="59.9" x2="75.5" y2="75.5" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="50" y1="64" x2="50" y2="86" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="40.1" y1="59.9" x2="24.5" y2="75.5" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="36" y1="50" x2="14" y2="50" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="40.1" y1="40.1" x2="24.5" y2="24.5" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+
+              <!-- Header Kartu Quote -->
+              <div class="quote-header">
+                <div class="quote-pill-badge">
+                  <svg class="ui-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                    <path d="M2 12h20"></path>
+                  </svg>
+                  <span>Mutiara Dhamma Hari Ini</span>
+                </div>
+
+                <button type="button" class="btn-refresh-quote" onclick="cycleDhammapadaQuote()" title="Ganti Petikan Dhamma">
+                  <svg class="ui-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                  </svg>
+                  <span>Kutipan Lain</span>
+                </button>
+              </div>
+
+              <!-- Isi Kutipan Dhammapada -->
+              <div class="quote-body">
+                <svg class="quote-decor-mark" width="42" height="42" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9.983 3v7.391c0 5.704-3.731 9.57-8.983 10.609l-.995-2.151c2.432-.917 3.995-3.638 3.995-5.849h-4v-10h9.983zm14.017 0v7.391c0 5.704-3.748 9.57-9 10.609l-.996-2.151c2.433-.917 3.996-3.638 3.996-5.849h-3.983v-10h9.983z"/>
+                </svg>
+
+                <blockquote id="dhammapada-quote-text" class="quote-translation-text">
+                  Pikiran adalah pelopor dari segala sesuatu, pikiran adalah pemimpin, pikiran adalah pembentuk. Bila seseorang berbicara atau bertindak dengan pikiran murni, kebahagiaan akan menyertainya laksana bayang-bayang yang tak pernah meninggalkan badannya.
+                </blockquote>
+
+                <div class="quote-pali-box">
+                  <div id="dhammapada-quote-pali" class="quote-pali-text">
+                    "Manopubbaṅgamā dhammā, manoseṭṭhā manomayā; Manasā ce pasannena, bhāsati vā karoti vā; Tato naṁ sukhamanveti, chāyāva anapāyinī."
+                  </div>
+                </div>
+
+                <div class="quote-source-wrap">
+                  <div class="quote-source-bar"></div>
+                  <div>
+                    <span id="dhammapada-quote-source" class="quote-source-title">Dhammapada: Yamakavagga (Bait 2)</span>
+                    <span class="quote-source-sub">Sabbe satta bhavantu sukhitatta &bull; Semoga semua makhluk berbahagia</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer Kartu Quote -->
+              <div class="quote-card-footer">
+                <div class="quote-footer-left">
+                  <span>Vihara Amurwa Bhumi Cibinong</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+
+      
+
+      <!-- ==========================================================================
+     [INDEX: HTML-05] VIEW 2: BERANDA UMAT (DASHBOARD, STATUS PRESENSI & AKSI CEPAT)
+     Fungsi: Hero Glass Status Card hari ini, 3 kolom metrik, dan grid 2x2 aksi cepat.
+     ID Terkait: #view-umat, #umat-kebaktian-title, #btn-umat-checkin, .glass-stats-grid
+     ========================================================================== -->
+      <section id="view-umat" class="view-section page-in">
+        
+        <!-- Top Bar Mobile (Avatar, Greeting, Role Badge) -->
+        <div class="mobile-top-bar rise d1">
+          <div class="mobile-greeting-wrap">
+            <div id="umat-mobile-avatar" class="mobile-avatar-circle" data-nav="view-profile" style="cursor: pointer;" title="Buka Profil Saya">VA</div>
+            <div class="mobile-greeting-text">
+              <span class="mobile-greeting-label">Namo buddhaya,</span>
+              <span id="umat-greeting-name" class="mobile-greeting-name">Nama Umat</span>
+            </div>
+          </div>
+
+          <!-- Bagian Kanan Mobile: Tombol QR & Role Badge -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" id="mobile-top-qr-btn" class="mobile-qr-header-btn" onclick="ViharaQR.handleHeaderQrClick()" title="Pindai QR Hadir">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span id="mobile-top-qr-label" class="mobile-qr-btn-text">QR Hadir</span>
+            </button>
+            <div class="mobile-role-wrap">
+              <span id="umat-mobile-role" class="mobile-role-pill umat">Umat</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Glass Status Card (STATUS HARI INI) - Matching Image 1 -->
+        <div class="card-glass rise d2">
+          <div style="font-size: 0.725rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.78); margin-bottom: 4px;">
+            STATUS HARI INI
+          </div>
+          <h2 id="umat-kebaktian-title" class="status-title-hero">Belum Absen</h2>
+          <div id="umat-kebaktian-date" class="status-date-hero">Rabu, 28 Oktober 2026</div>
+
+          <!-- Hidden elements for JS compatibility -->
+          <div style="display: none;">
+            <span id="umat-kebaktian-speaker">-</span>
+            <span id="umat-kebaktian-time">-</span>
+            <span id="umat-kebaktian-dhammasala">Dhammasala Utama</span>
+          </div>
+
+          <!-- 3 Kolom Metrik di Glass Card (Matching Image 1) -->
+          <div class="glass-stats-grid">
+            <div>
+              <div id="stat-umat-total" class="glass-stat-value">0</div>
+              <div class="glass-stat-label">Hadir bulan ini</div>
+            </div>
+            <div>
+              <div id="stat-umat-active-events" class="glass-stat-value">1</div>
+              <div class="glass-stat-label">Kegiatan aktif</div>
+            </div>
+            <div>
+              <div id="stat-umat-rate" class="glass-stat-value">100%</div>
+              <div class="glass-stat-label">Kehadiran</div>
+            </div>
+          </div>
+
+          <!-- Tombol Presensi Langsung (Matching Image 1 Primary Button) -->
+          <button id="btn-umat-checkin" onclick="handleUmatCheckIn()" class="btn btn-primary btn-block btn-lg" style="margin-top: 14px;">
+            Presensi Hadir Sekarang
+          </button>
+
+          <!-- Indikator Geolocation Geofence Radius 25 Meter -->
+          <div id="umat-location-indicator" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.88); background: rgba(0, 0, 0, 0.18); padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.15);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>Presensi hanya aktif dalam radius <strong>25 meter</strong> dari Vihara</span>
+          </div>
+        </div>
+
+        <!-- Sheet Putih Konten Utama (Matching Image 1) -->
+        <div class="main-sheet rise d3">
+          
+          <!-- Kartu Mutiara Dhamma Lebar (Pengganti Aksi Cepat Sesuai Permintaan) -->
+          <div class="dhamma-quote-card-wide rise d2">
+            <!-- Watermark Sakral Dharmachakra Latar Belakang -->
+            <svg class="quote-wide-watermark" viewBox="0 0 100 100" fill="none" stroke="currentColor" aria-hidden="true">
+              <circle cx="50" cy="50" r="46" stroke-width="2"/>
+              <circle cx="50" cy="50" r="38" stroke-width="1.5"/>
+              <circle cx="50" cy="8" r="2.5" fill="currentColor"/>
+              <circle cx="79.7" cy="20.3" r="2.5" fill="currentColor"/>
+              <circle cx="92" cy="50" r="2.5" fill="currentColor"/>
+              <circle cx="79.7" cy="79.7" r="2.5" fill="currentColor"/>
+              <circle cx="50" cy="92" r="2.5" fill="currentColor"/>
+              <circle cx="20.3" cy="79.7" r="2.5" fill="currentColor"/>
+              <circle cx="8" cy="50" r="2.5" fill="currentColor"/>
+              <circle cx="20.3" cy="20.3" r="2.5" fill="currentColor"/>
+              <circle cx="50" cy="50" r="14" stroke-width="1.8"/>
+              <circle cx="50" cy="50" r="7" stroke-width="1.4"/>
+              <circle cx="50" cy="50" r="3" fill="currentColor"/>
+              <line x1="50" y1="36" x2="50" y2="14" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="59.9" y1="40.1" x2="75.5" y2="24.5" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="64" y1="50" x2="86" y2="50" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="59.9" y1="59.9" x2="75.5" y2="75.5" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="50" y1="64" x2="50" y2="86" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="40.1" y1="59.9" x2="24.5" y2="75.5" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="36" y1="50" x2="14" y2="50" stroke-width="2.2" stroke-linecap="round"/>
+              <line x1="40.1" y1="40.1" x2="24.5" y2="24.5" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+
+            <!-- Header Kutipan Dhamma -->
+            <div class="dhamma-quote-header">
+              <div class="dhamma-quote-badge">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                  <path d="M2 12h20"></path>
+                </svg>
+                <span>Mutiara Dhamma Hari Ini</span>
+              </div>
+
+              <button type="button" class="btn-refresh-quote-wide" onclick="cycleHomeDhammaQuote()" title="Ganti Petikan Dhamma">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>Kutipan Lain</span>
+              </button>
+            </div>
+
+            <!-- Konten Kutipan -->
+            <div class="dhamma-quote-body">
+              <blockquote id="home-quote-text" class="dhamma-quote-text">
+                "Pikiran adalah pelopor dari segala sesuatu, pikiran adalah pemimpin, pikiran adalah pembentuk. Bila seseorang berbicara atau bertindak dengan pikiran murni, kebahagiaan akan menyertainya laksana bayang-bayang yang tak pernah meninggalkan badannya."
+              </blockquote>
+
+              <div class="dhamma-quote-pali-box">
+                <div id="home-quote-pali" class="dhamma-quote-pali">
+                  "Manopubbaṅgamā dhammā, manoseṭṭhā manomayā; Manasā ce pasannena, bhāsati vā karoti vā; Tato naṁ sukhamanveti, chāyāva anapāyinī."
+                </div>
+              </div>
+
+              <div class="dhamma-quote-footer-bar">
+                <div class="dhamma-quote-bar-gold"></div>
+                <div>
+                  <span id="home-quote-source" class="dhamma-quote-source">Dhammapada: Yamakavagga (Bait 2)</span>
+                  <span class="dhamma-quote-sub">Sabbe satta bhavantu sukhitatta &bull; Semoga semua makhluk berbahagia</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aktivitas Terakhir (Matching Image 1) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; margin-top: 0.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--ink);">Aktivitas Terakhir</h3>
+            <button type="button" data-nav="view-history" style="background: none; border: none; font-size: 0.825rem; font-weight: 700; color: var(--maroon-700); cursor: pointer;">
+              Lihat semua
+            </button>
+          </div>
+
+          <div id="umat-recent-activity-container">
+            <!-- Diisi via app.js -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      
+
+      <!-- ==========================================================================
+     [INDEX: HTML-06] VIEW 3: RIWAYAT KEHADIRAN UMAT (FILTER BULAN & CLEAN CARDS)
+     Fungsi: Rekam jejak presensi kebaktian umat per bulan tanpa garis kisi semrawut.
+     ID Terkait: #view-history, #history-filter-select, #umat-history-cards-container
+     ========================================================================== -->
+      <section id="view-history" class="view-section page-in">
+        
+        <!-- Header Riwayat (Matching Image 2) -->
+        <div class="history-top-header rise d1" style="padding: 10px 4px 18px 4px;">
+          <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--maroon-900); line-height: 1.2; letter-spacing: -0.01em;">Riwayat Kehadiran</h2>
+          <p style="font-size: 0.85rem; color: var(--ink-70); margin-top: 2px; margin-bottom: 14px;">Rekam jejak kehadiranmu</p>
+
+          <!-- 3 Metrik Image 2 (Bulan ini, Total, Kehadiran) -->
+          <div class="glass-stats-grid" data-ui style="margin: 0; background: #ffffff; border-radius: var(--r-md); border: 1.5px solid var(--line); box-shadow: var(--shadow-card);">
+            <div>
+              <div id="history-metric-month" class="glass-stat-value" style="color: var(--maroon-800);">0</div>
+              <div class="glass-stat-label" style="color: var(--ink-50);">Bulan ini</div>
+            </div>
+            <div>
+              <div id="history-metric-total" class="glass-stat-value" style="color: var(--maroon-800);">0</div>
+              <div class="glass-stat-label" style="color: var(--ink-50);">Total</div>
+            </div>
+            <div>
+              <div id="history-metric-rate" class="glass-stat-value" style="color: var(--success);">100%</div>
+              <div class="glass-stat-label" style="color: var(--ink-50);">Kehadiran</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Sheet Riwayat (Matching Image 2) -->
+        <div class="main-sheet rise d2">
+          
+          <!-- Filter Berdasarkan Periode Bulan (Sesuai Permintaan: Bukan Kategori) -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 1.25rem;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--ink-70);">Pilih Periode Bulan:</div>
+            <select id="history-month-filter" class="form-select" style="max-width: 220px; padding: 8px 14px; font-size: 0.85rem; border-radius: var(--r-full); background-color: #ffffff; border: 1.5px solid var(--line); font-weight: 600; color: var(--maroon-900);" onchange="filterHistoryByMonth(this.value)">
+              <option value="all">Semua Bulan</option>
+            </select>
+          </div>
+
+          <!-- Tampilan Tabel (Desktop) -->
+          <div class="table-responsive" id="umat-history-table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama Acara / Kebaktian</th>
+                  <th>Tanggal</th>
+                  <th>Jam Presensi</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="umat-history-tbody">
+                <!-- Diisi via app.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tampilan Riwayat Bersih Bebas Garis (Mobile) -->
+          <div class="history-cards-list" id="umat-history-mobile-list">
+            <!-- Diisi via app.js dengan icon box, title, pin lokasi, ✓ Terverifikasi, dan waktu -->
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      
+
+            <!-- ==========================================================================
+     [INDEX: HTML-07] VIEW 4: PENGUMUMAN & WARTA KABAR VIHARA (EDITORIAL GRID 2-KOLOM)
+     Fungsi: Feed warta kebajikan vihara, filter kategori chips, dan form admin penerbitan.
+     ID Terkait: #view-announcements, #page-announcements-feed, #panel-create-announcement
+     ========================================================================== -->
+      <section id="view-announcements" class="view-section page-in">
+        <div class="announcements-page-wrapper">
+          
+          <!-- Header Halaman Pengumuman (Back Button, Judul, & Tombol Buat Pengumuman Admin) -->
+          <div class="announcements-header-bar rise d1">
+            <div class="announcements-header-left">
+              <button type="button" class="btn-circle-back" data-nav="view-umat" title="Kembali ke Beranda">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+              </button>
+              <div>
+                <h2 class="announcements-page-title">Pengumuman Vihara</h2>
+                <p class="announcements-page-subtitle">Warta kegiatan & kabar kebajikan</p>
+              </div>
+            </div>
+
+            <!-- Tombol Admin Buat Pengumuman Baru (Hanya Muncul untuk Admin) -->
+            <button type="button" id="btn-toggle-create-announcement" class="btn-create-announcement admin-only-action" onclick="toggleCreateAnnouncementPanel()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span id="btn-create-announcement-text">Buat Pengumuman</span>
+            </button>
+          </div>
+
+          <!-- PANEL PEMBUATAN PENGUMUMAN BARU (KHUSUS ADMIN) -->
+          <div id="panel-create-announcement" class="card rise d2" data-ui style="display: none; margin-bottom: 1.5rem; border: 2px solid var(--maroon-100); background: #ffffff; box-shadow: 0 10px 30px rgba(94, 21, 38, 0.08); border-radius: 20px; padding: 22px;">
+            <div data-ui style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.15rem; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: var(--r-full); background: var(--maroon-50); color: var(--maroon-700); display: flex; align-items: center; justify-content: center;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--maroon-900); margin: 0;">Terbitkan Pengumuman Baru</h3>
+                  <p style="font-size: 0.75rem; color: var(--ink-50); margin: 0;">Dipublikasikan ke seluruh umat Vihara Amurwa Bhumi</p>
+                </div>
+              </div>
+              <button type="button" onclick="toggleCreateAnnouncementPanel(false)" class="btn-modal-close-round" title="Tutup">&times;</button>
+            </div>
+
+            <form id="form-page-create-announcement" onsubmit="handlePageCreateAnnouncementSubmit(event)">
+              <!-- BANNER IMAGE UPLOAD (OPSIONAL) -->
+              <div class="form-group" style="margin-bottom: 1.15rem;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>Foto / Banner Pengumuman</span>
+                  <span style="font-size: 0.725rem; font-weight: 600; color: var(--ink-50);">(Opsional)</span>
+                </label>
+                
+                <div id="announcement-banner-dropzone" class="banner-upload-dropzone" onclick="document.getElementById('page-announcement-banner-input').click()">
+                  <div id="banner-dropzone-empty">
+                    <div class="banner-upload-icon">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                    </div>
+                    <div style="font-size: 0.875rem; font-weight: 700; color: var(--maroon-900);">Pilih atau Unggah Foto Banner</div>
+                    <div style="font-size: 0.75rem; color: var(--ink-50); margin-top: 3px;">Klik untuk memilih gambar JPG, PNG, atau WebP</div>
+                    <div data-ui style="display: inline-block; margin-top: 8px; font-size: 0.72rem; color: var(--maroon-700); background: var(--maroon-50); padding: 3px 10px; border-radius: 9999px; border: 1px solid var(--maroon-100);">Bisa juga dikosongkan jika hanya teks</div>
+                  </div>
+                  <div id="banner-preview-wrap" style="display: none; position: relative;">
+                    <img id="banner-preview-img" src="" alt="Pratinjau Banner" class="banner-preview-img" />
+                    <button type="button" onclick="event.stopPropagation(); handleRemoveAnnouncementBanner();" class="btn-remove-banner" title="Hapus Banner">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      <span>Hapus Banner</span>
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="page-announcement-banner-input" accept="image/*" style="display: none;" onchange="handleAnnouncementBannerUpload(event)">
+              </div>
+
+              <!-- DUA KOLOM DESKTOP: JUDUL & KATEGORI -->
+              <div class="announcement-form-grid">
+                <!-- JUDUL PENGUMUMAN -->
+                <div class="form-group" style="margin-bottom: 0.95rem;">
+                  <label style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; display: block;">Judul Pengumuman *</label>
+                  <input type="text" id="page-announcement-title" class="input" placeholder="Contoh: Jadwal Puja Bakti Khusus & Pelimpahan Jasa" required />
+                </div>
+
+                <!-- KATEGORI PENGUMUMAN -->
+                <div class="form-group" style="margin-bottom: 0.95rem;">
+                  <label style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; display: block;">Kategori Pengumuman</label>
+                  <select id="page-announcement-category" class="input">
+                    <option value="Kegiatan Kebaktian">Kegiatan Kebaktian</option>
+                    <option value="Bakti Sosial & Umum">Bakti Sosial & Umum</option>
+                    <option value="Dhamma & SMB">Dhamma & SMB</option>
+                    <option value="Pemberitahuan Pengurus">Pemberitahuan Pengurus</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- RINCIAN / ISI PENGUMUMAN -->
+              <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; display: block;">Rincian Pengumuman *</label>
+                <textarea id="page-announcement-message" class="input" rows="5" placeholder="Tuliskan isi warta atau detail kegiatan vihara yang ingin disampaikan kepada seluruh umat..." required style="resize: vertical; line-height: 1.5;"></textarea>
+              </div>
+
+              <div class="announcement-form-btn-row">
+                <button type="button" onclick="toggleCreateAnnouncementPanel(false)" class="btn-form-action btn-form-cancel">
+                  Batal
+                </button>
+                <button type="submit" class="btn-form-action btn-form-submit">
+                  Terbitkan Sekarang
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- FILTER KATEGORI PENGUMUMAN -->
+          <div class="announcement-filter-bar rise d2">
+            <button type="button" class="announcement-filter-chip active" data-category="all" onclick="handleFilterAnnouncements('all')">Semua</button>
+            <button type="button" class="announcement-filter-chip" data-category="Kegiatan Kebaktian" onclick="handleFilterAnnouncements('Kegiatan Kebaktian')">Kebaktian</button>
+            <button type="button" class="announcement-filter-chip" data-category="Bakti Sosial & Umum" onclick="handleFilterAnnouncements('Bakti Sosial & Umum')">Bakti Sosial</button>
+            <button type="button" class="announcement-filter-chip" data-category="Dhamma & SMB" onclick="handleFilterAnnouncements('Dhamma & SMB')">Dhamma & SMB</button>
+            <button type="button" class="announcement-filter-chip" data-category="Pemberitahuan Pengurus" onclick="handleFilterAnnouncements('Pemberitahuan Pengurus')">Pemberitahuan</button>
+            <!-- Filter Arsip Pengurus (Hanya Muncul untuk Admin) -->
+            <button type="button" id="chip-filter-archived-announcements" class="announcement-filter-chip chip-archive-admin admin-only-action" data-category="archived" onclick="handleFilterAnnouncements('archived')" style="display: none;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                <rect x="1" y="3" width="22" height="5"></rect>
+                <line x1="10" y1="12" x2="14" y2="12"></line>
+              </svg>
+              <span>Arsip Pengurus</span>
+              <span id="announcement-archive-count-badge" class="archive-count-badge">0</span>
+            </button>
+          </div>
+
+          <!-- FEED DAFTAR PENGUMUMAN (2 KOLOM DI DESKTOP, 1 KOLOM DI MOBILE) -->
+          <div id="page-announcements-feed" class="rise d3">
+            <!-- Diisi secara dinamis via app.js -->
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+     [INDEX: HTML-07B] VIEW 4B: DETAIL WARTA & PENGUMUMAN VIHARA (DEDICATED PAGE VIEW)
+     Fungsi: Tampilan halaman utuh membaca warta pengumuman (bukan modal popup).
+     ID Terkait: #view-announcement-detail, #page-detail-title, #page-detail-content
+     ========================================================================== -->
+      <section id="view-announcement-detail" class="view-section page-in">
+        <div class="announcement-detail-page-wrapper">
+          
+          <!-- Detail Top Navigation Bar -->
+          <div class="announcements-header-bar rise d1">
+            <div class="announcements-header-left">
+              <button type="button" class="btn-circle-back" data-nav="view-announcements" onclick="navigateTo('view-announcements')" title="Kembali ke Daftar Pengumuman">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+              </button>
+              <div>
+                <h2 class="announcements-page-title">Warta &amp; Pengumuman</h2>
+                <p class="announcements-page-subtitle">Vihara Amurwa Bhumi Cibinong</p>
+              </div>
+            </div>
+            
+            <button type="button" class="btn-back-pill" data-nav="view-announcements" onclick="navigateTo('view-announcements')">
+              <span>Semua Warta</span>
+            </button>
+          </div>
+
+          <!-- Main Article Sheet -->
+          <article class="announcement-detail-card card rise d2">
+            <!-- Banner / Header Image (Bisa Ada, Bisa Engga) -->
+            <div id="page-detail-banner-wrap" class="detail-banner-wrap" style="display: none;">
+              <img id="page-detail-banner-img" src="" alt="Banner Pengumuman" class="detail-banner-img">
+              <div class="detail-banner-overlay"></div>
+            </div>
+
+            <div class="detail-content-body">
+              <!-- Meta Row: Category Badge & Published Date -->
+              <div class="detail-meta-row">
+                <span id="page-detail-badge" class="announcement-badge">Warta Vihara</span>
+                <span id="page-detail-date" class="detail-meta-date">Hari ini</span>
+              </div>
+
+              <!-- Main Title -->
+              <h1 id="page-detail-title" class="detail-article-title">Judul Pengumuman</h1>
+
+              <!-- Publisher Byline -->
+              <div class="detail-byline">
+                <div class="detail-byline-avatar">VA</div>
+                <div>
+                  <div class="detail-byline-author">Pengurus Vihara Amurwa Bhumi</div>
+                  <div class="detail-byline-sub">Sekretariat Pelayanan Umat Cibinong</div>
+                </div>
+              </div>
+
+              <!-- Article Content Paragraphs -->
+              <div id="page-detail-content" class="detail-body-prose">
+                <!-- Diisi secara dinamis -->
+              </div>
+
+              <!-- Action Bar -->
+              <div class="detail-action-bar">
+                <button type="button" id="page-detail-btn-share" class="btn-announcement-share">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                  <span>Bagikan Warta Ini</span>
+                </button>
+
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" id="page-detail-btn-delete" class="btn btn-ghost" style="display: none; color: #e11d48;" title="Hapus Pengumuman Ini (Admin)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    <span>Hapus Warta</span>
+                  </button>
+                  <button type="button" data-nav="view-announcements" onclick="navigateTo('view-announcements')" class="btn btn-ghost">
+                    Kembali
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+      <!-- ==========================================================================
+     [INDEX: HTML-08] VIEW 5: BUKU TAMU DIGITAL (KUNJUNGAN UMAT LUAR)
+     Fungsi: Form pencatatan tamu non-umat tanpa perlu registrasi akun tetap.
+     ID Terkait: #view-guest, #guest-name, #guest-phone, #guest-domicile, #guest-purpose
+     ========================================================================== -->
+      <section id="view-guest" class="view-section page-in">
+        <div style="max-width: 520px; margin: 0 auto;">
+          
+          <!-- Tombol Navigasi Kembali Pojok Kiri Atas -->
+          <div class="guest-top-bar rise d1">
+            <button data-nav="view-login" class="btn-back-pill" title="Kembali">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span>Kembali</span>
+            </button>
+          </div>
+
+          <div class="card rise d2">
+            <div style="margin-bottom: 1.25rem;">
+              <h2 class="card-title" style="color: var(--maroon-800); font-weight: 800;">Buku Tamu Digital</h2>
+              <p class="card-subtitle">Selamat datang di Vihara Amurwa Bhumi Cibinong. Silakan isi data kunjungan Anda.</p>
+            </div>
+
+            <form onsubmit="handleGuestFormSubmit(event)">
+              <div class="form-group">
+                <label class="form-label" for="guest-input-name">Nama Lengkap Tamu *</label>
+                <div class="input-with-icon">
+                  <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <input type="text" id="guest-input-name" class="form-input" placeholder="Nama lengkap Anda" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="guest-input-phone">Nomor WhatsApp / Telepon *</label>
+                <div class="input-with-icon">
+                  <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  <input type="tel" id="guest-input-phone" class="form-input" placeholder="Contoh: 08123456789" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="guest-input-domicile">Kota Asal / Domisili *</label>
+                <div class="input-with-icon">
+                  <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  <input type="text" id="guest-input-domicile" class="form-input" placeholder="Contoh: Cibinong, Bogor, Jakarta" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="guest-input-purpose">Keperluan Kunjungan</label>
+                <select id="guest-input-purpose" class="form-select">
+                  <option value="Ikut Puja Bakti Umum">Ikut Puja Bakti Umum</option>
+                  <option value="Konsultasi Dhamma / Bhante">Konsultasi Dhamma / Bhante</option>
+                  <option value="Kunjungan Keluarga / Wisata Religi">Kunjungan Keluarga / Wisata Religi</option>
+                  <option value="Pelayanan Sosial / Dana Paramita">Pelayanan Sosial / Dana Paramita</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+                Kirim Presensi Buku Tamu
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+
+
+      
+
+      <!-- ==========================================================================
+     [INDEX: HTML-09] VIEW 6: BUAT ACARA BARU & MANAJEMEN EVENT (KHUSUS ADMIN)
+     Fungsi: Panel pengurus vihara untuk merilis jadwal kebaktian & mengelola kehadiran.
+     ID Terkait: #view-admin, #form-create-event, #admin-events-list-container
+     ========================================================================== -->
+      <section id="view-admin" class="view-section page-in">
+        
+        <!-- Header Buat Acara (Matching Image 3: Arrow Circle, Title, Subtitle) -->
+        <div style="display: flex; align-items: center; gap: 14px; padding: 10px 4px 18px 4px;" class="rise d1">
+          <button type="button" class="btn-circle-back" data-nav="view-umat" title="Kembali ke Beranda">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+          <div>
+            <h2 style="font-size: 1.45rem; font-weight: 800; color: var(--maroon-900); line-height: 1.2;">Buat Acara</h2>
+            <p style="font-size: 0.825rem; color: var(--ink-70); margin-top: 2px;">Jadwalkan kegiatan vihara</p>
+          </div>
+        </div>
+
+        <!-- Main Sheet Form (Matching Image 3) -->
+        <div class="main-sheet rise d2">
+          
+          <form id="form-create-event" onsubmit="handleAdminCreateEventSubmit(event)">
+            
+            <!-- SECTION 1: INFORMASI ACARA (Matching Image 3) -->
+            <div class="form-section-title">Informasi Acara</div>
+
+            <div class="form-group">
+              <label class="form-label" for="event-input-name">Nama Acara *</label>
+              <div class="input-with-icon">
+                <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <input type="text" id="event-input-name" class="form-input" placeholder="Kebaktian Minggu Pagi" required>
+              </div>
+            </div>
+
+            <!-- Chips Jenis Pembicara (Matching Image 3) -->
+            <div class="form-group">
+              <label class="form-label">Jenis Pembicara</label>
+              <div class="chips-row" id="speaker-type-chips" style="margin-top: 4px; margin-bottom: 8px;">
+                <button type="button" class="chip active" onclick="selectSpeakerType('Bhikkhu Sangha', this)">Bhikkhu</button>
+                <button type="button" class="chip" onclick="selectSpeakerType('Romo / Pandita', this)">Romo</button>
+                <button type="button" class="chip" onclick="selectSpeakerType('Penceramah Tamu', this)">Penceramah</button>
+                <button type="button" class="chip" onclick="selectSpeakerType('Tidak Ada', this)">Tidak Ada</button>
+              </div>
+              <select id="event-input-title" class="form-select" style="display: none;">
+                <option value="Bhikkhu Sangha" selected>Bhikkhu Sangha</option>
+                <option value="Romo / Pandita">Romo / Pandita</option>
+                <option value="Upasaka / Upasika">Upasaka / Upasika</option>
+                <option value="Pengurus Vihara">Pengurus Vihara</option>
+                <option value="Penceramah Tamu">Penceramah Tamu</option>
+                <option value="Tidak Ada">Tidak Ada</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="event-input-speaker">Nama Pembicara *</label>
+              <div class="input-with-icon">
+                <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <input type="text" id="event-input-speaker" class="form-input" placeholder="Bhikkhu Dhammavaro" required>
+              </div>
+            </div>
+
+            <!-- SECTION 2: WAKTU & TEMPAT (Matching Image 3) -->
+            <div class="form-section-title">Waktu & Tempat</div>
+
+            <div class="form-group">
+              <label class="form-label" for="event-input-date">Tanggal *</label>
+              <div class="input-with-icon">
+                <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <input type="date" id="event-input-date" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label" for="event-input-start">Jam Mulai *</label>
+                <div class="input-with-icon">
+                  <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <input type="time" id="event-input-start" class="form-input" value="09:00" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="event-input-end">Jam Selesai *</label>
+                <div class="input-with-icon">
+                  <svg class="input-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <input type="time" id="event-input-end" class="form-input" value="11:30" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Input Dhammasala / Ruangan -->
+            <input type="hidden" id="event-input-dhammasala" value="Dhammasala Utama">
+
+            <!-- Tombol Simpan Acara (Matching Image 3) -->
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 10px;">
+              <span>Simpan Acara</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+            </button>
+
+          </form>
+
+          <!-- Divider & Daftar Jadwal Kebaktian yang Ada -->
+          <div style="margin-top: 2rem;">
+            <div class="form-section-title">Daftar Jadwal Kebaktian</div>
+            <p style="font-size: 0.8rem; color: var(--ink-70); margin-bottom: 1rem;">
+              Pilih jadwal kebaktian untuk membuka popup presensi, cari umat, dan set kehadiran.
+            </p>
+
+            <!-- KPI Ringkas Admin -->
+            <div class="kpi-grid-2" style="margin-bottom: 1rem;">
+              <div class="stat-card">
+                <div class="stat-icon marun">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-label">Total Umat Terdaftar</div>
+                  <div id="admin-stat-total-umat" class="stat-number">0</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon emerald">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="stat-label">Total Jadwal Acara</div>
+                  <div id="admin-stat-total-events" class="stat-number">0</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION KHUSUS: QR Presensi Dhammasala (Display Meja Resepsionis) -->
+            <div class="qr-admin-section-card rise d2">
+              <div class="qr-admin-card-header">
+                <div>
+                  <h3 class="qr-admin-card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="14" width="7" height="7"></rect>
+                      <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span>QR Presensi Dhammasala (Display Meja Resepsionis)</span>
+                  </h3>
+                  <p class="qr-admin-card-subtitle">
+                    Tampilkan kode QR di monitor atau cetak untuk umat yang terkendala sinyal GPS.
+                  </p>
+                </div>
+              </div>
+              <div class="qr-admin-card-actions">
+                <button type="button" onclick="ViharaQR.openStandeeMode()" class="btn btn-primary" style="padding: 9px 18px; font-size: 0.85rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                  <span>📺 Buka Layar Penuh QR (Mode Standee)</span>
+                </button>
+                <button type="button" onclick="ViharaQR.openShowQrModal()" class="btn btn-secondary" style="padding: 9px 16px; font-size: 0.85rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>Tampilkan Modal QR</span>
+                </button>
+                <button type="button" onclick="ViharaQR.printQrStandee()" class="btn btn-ghost" style="padding: 9px 16px; font-size: 0.85rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                  <span>🖨️ Cetak Lembar QR</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- BAGIAN 1: Jadwal Sedang Aktif -->
+            <div class="events-split-section">
+              <div class="events-split-header">
+                <div class="events-split-title">
+                  <span class="live-pulse-dot"></span>
+                  <span>Jadwal Sedang Aktif</span>
+                </div>
+                <span class="events-split-subtitle">Kebaktian yang saat ini menerima presensi hadir</span>
+              </div>
+              <div id="admin-active-events-container">
+                <!-- Diisi dinamis via app.js -->
+              </div>
+            </div>
+
+            <!-- BAGIAN 2: Arsip & Riwayat Jadwal Kebaktian -->
+            <div class="events-split-section" style="margin-top: 1.75rem;">
+              <div class="events-split-header">
+                <div class="events-split-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                    <rect x="1" y="3" width="22" height="5"></rect>
+                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                  </svg>
+                  <span>Arsip & Riwayat Kebaktian</span>
+                  <span id="admin-archive-count-badge" class="archive-count-badge">0</span>
+                </div>
+                <span class="events-split-subtitle">Jadwal lampau atau yang telah selesai</span>
+              </div>
+              <div id="admin-archived-events-container">
+                <!-- Diisi dinamis via app.js -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      
+
+      <!-- ==========================================================================
+     [INDEX: HTML-10] VIEW 7: PROFIL PENGGUNA (HALAMAN DEDIKASI AKUN PENGGUNA)
+     Fungsi: Halaman akun umat dengan avatar inisial, info kontak, dan tombol keluar.
+     ID Terkait: #view-profile, #page-profile-name, #page-profile-phone, #page-profile-email
+     ========================================================================== -->
+      <section id="view-profile" class="view-section page-in">
+        <div style="max-width: 580px; margin: 0 auto;">
+          
+          <!-- Header Halaman Profil (Back Button, Title, Subtitle) -->
+          <div style="display: flex; align-items: center; gap: 14px; padding: 10px 4px 18px 4px;" class="rise d1">
+            <button type="button" class="btn-circle-back" data-nav="view-umat" title="Kembali ke Beranda">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </button>
+            <div>
+              <h2 style="font-size: 1.45rem; font-weight: 800; color: var(--maroon-900); line-height: 1.2;">Profil Saya</h2>
+              <p style="font-size: 0.825rem; color: var(--ink-70); margin-top: 2px;">Informasi akun & pengaturan presensi</p>
+            </div>
+          </div>
+
+          <!-- Main Glass Sheet Profil -->
+          <div class="main-sheet rise d2" style="text-align: center;">
+            
+            <!-- Avatar & Ganti Foto Profil -->
+            <div class="avatar-upload-wrapper" style="margin-top: 8px;">
+              <div id="page-profile-avatar" class="avatar-upload-circle">
+                VA
+              </div>
+              <button type="button" onclick="document.getElementById('page-profile-avatar-input').click()" class="btn-avatar-camera" title="Ganti Foto Profil">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
+              <input type="file" id="page-profile-avatar-input" accept="image/*" style="display: none;" onchange="handleProfilePhotoUpload(event)">
+            </div>
+
+            <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 1.5rem;">
+              <button type="button" onclick="document.getElementById('page-profile-avatar-input').click()" class="btn btn-primary" style="padding: 8px 18px; font-size: 0.825rem; width: auto; border-radius: var(--r-full); display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span>Ganti Foto Profil</span>
+              </button>
+              <button type="button" id="page-btn-remove-avatar" onclick="handleRemoveProfilePhoto()" class="btn btn-ghost" style="padding: 8px 14px; font-size: 0.825rem; width: auto; border-radius: var(--r-full); color: var(--danger); display: none;">
+                Hapus Foto
+              </button>
+            </div>
+
+            <!-- Card Informasi Akun (Read-Only: Sesuai Ketentuan Hanya Super Admin yang Mengubah Nama, Telp, Email) -->
+            <div style="background: var(--maroon-50); padding: 18px 20px; border-radius: var(--r-lg); border: 1.5px solid var(--maroon-100); text-align: left; margin-bottom: 1.5rem;">
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.725rem; font-weight: 800; color: var(--ink-50); text-transform: uppercase; letter-spacing: 0.05em;">Nama Lengkap</div>
+                <div id="page-profile-name" style="font-size: 1.05rem; font-weight: 800; color: var(--maroon-900); margin-top: 2px;">Nama Umat</div>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.725rem; font-weight: 800; color: var(--ink-50); text-transform: uppercase; letter-spacing: 0.05em;">Nomor Telepon / WhatsApp</div>
+                <div id="page-profile-phone" style="font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-top: 2px;">08123456789</div>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.725rem; font-weight: 800; color: var(--ink-50); text-transform: uppercase; letter-spacing: 0.05em;">Alamat Email</div>
+                <div id="page-profile-email" style="font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-top: 2px;">-</div>
+              </div>
+
+              <div data-ui style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--maroon-100);">
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--ink-70);">Status Hak Akses:</span>
+                <span id="page-profile-role" class="user-role-pill umat">Umat</span>
+              </div>
+
+              <div style="margin-top: 12px; font-size: 0.75rem; color: var(--ink-70); background: #ffffff; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); display: flex; align-items: center; gap: 8px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--maroon-700); flex-shrink: 0;">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>Nama, nomor telepon, dan email hanya dapat diubah oleh <strong>Super Administrator</strong>.</span>
+              </div>
+            </div>
+
+            <!-- Tombol Ganti Kata Sandi Akun -->
+            <button type="button" onclick="openUserChangePasswordModal()" class="btn btn-block" style="padding: 12px; font-size: 0.85rem; background: #ffffff; color: var(--maroon-800); border: 1.5px solid var(--line); border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <span>Ganti Kata Sandi Akun</span>
+            </button>
+
+            <!-- Tombol Keluar dari Akun (Logout) -->
+            <button type="button" onclick="handleLogout()" class="btn btn-block" style="padding: 13px; font-size: 0.9rem; background: var(--danger-bg); color: var(--danger); border: 1.5px solid var(--danger-border); border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              <span>Keluar dari Akun (Logout)</span>
+            </button>
+
+          </div>
+        </div>
+      </section>
+
+
+
+      
+
+    </div>
+  </main>
+
+  <!-- ==========================================================================
+     [INDEX: HTML-11] FLOATING BOTTOM NAVIGATION BAR (GLASSMORPHISM MOBILE BAR)
+     Fungsi: Navigasi melayang bawah untuk perangkat bergerak (Beranda, Riwayat, Acara, dll).
+     ID/Class: .bottom-nav, #bottom-nav-home-btn, #bottom-nav-fab-btn, #bottom-nav-announcement-btn
+     ========================================================================== -->
+  <nav class="bottom-nav" id="bottom-nav-bar">
+    <!-- Tab 1: Beranda -->
+    <button class="bottom-nav-item active" data-nav="view-umat" data-target="view-umat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </svg>
+      <span>Beranda</span>
+    </button>
+
+    <!-- Tab 2: Riwayat (Umat) / Histori (Admin) -->
+    <button class="bottom-nav-item" data-nav="view-history" data-target="view-history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span id="bottom-nav-history-text">Riwayat</span>
+    </button>
+
+    <!-- Center Floating Action Button (Admin Saja: '+' untuk Buat Acara) -->
+    <button class="bottom-nav-fab" id="bottom-nav-fab-btn" title="Buat Acara Baru" data-nav="view-admin">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+
+    <!-- Tab 4: Pengumuman (Tersedia untuk Umat & Admin) -->
+    <button class="bottom-nav-item" id="bottom-nav-announcement-btn" data-nav="view-announcements" data-target="view-announcements" title="Pengumuman Vihara" style="position: relative;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
+      <span>Pengumuman</span>
+      <span id="bell-unread-dot" class="bottom-nav-badge-dot" style="display: none;"></span>
+    </button>
+
+    <!-- Tab 5: Profil (Full Page View) -->
+    <button class="bottom-nav-item" id="bottom-nav-profile-btn" data-nav="view-profile" data-target="view-profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span>Profil</span>
+    </button>
+  </nav>
+
+  <!-- ==========================================================================
+     [INDEX: HTML-12] MODAL POPUP: DAFTAR HADIR PER ACARA & ASSIGN PRESENSI (ADMIN)
+     Fungsi: Dialog popup pengurus untuk meninjau hadir umat tetap & tamu per acara.
+     ID Terkait: #modal-event-attendance, #modal-event-title, #modal-tab-btn-umat
+     ========================================================================== -->
+  <div id="modal-event-attendance" class="modal-backdrop">
+    <div class="modal-box modal-box-large">
+      
+      <!-- Header Popup Event -->
+      <div class="modal-header-event">
+        <div style="min-width: 0; flex: 1;">
+          <span style="font-size: 0.7rem; font-weight: 700; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 9999px; text-transform: uppercase;">
+            Presensi Acara
+          </span>
+          <h3 id="modal-event-title" style="font-size: 1.15rem; font-weight: 800; margin-top: 4px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Nama Acara
+          </h3>
+          <div id="modal-event-meta" style="font-size: 0.775rem; color: rgba(255,255,255,0.9); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Detail waktu dan penceramah
+          </div>
+        </div>
+        <button onclick="closeModal('modal-event-attendance')" class="btn-modal-close-round" title="Tutup">
+          &times;
+        </button>
+      </div>
+
+      <!-- Tab Switcher di dalam Popup: Umat vs Buku Tamu -->
+      <div class="modal-tabs">
+        <button id="modal-tab-btn-umat" class="modal-tab-btn active" onclick="switchEventModalTab('umat')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon-svg">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Umat Tetap (<span id="modal-event-tab-umat-count">0</span>)</span>
+        </button>
+        <button id="modal-tab-btn-guest" class="modal-tab-btn" onclick="switchEventModalTab('guest')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon-svg">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span>Buku Tamu (<span id="modal-event-tab-guest-count">0</span>)</span>
+        </button>
+      </div>
+
+      <!-- Area Search & Filter di dalam Popup -->
+      <div style="padding: 0.85rem 1.25rem 0.25rem 1.25rem;">
+        <div class="admin-search-box" style="margin-bottom: 0;">
+          <svg class="admin-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="modal-event-search-input" class="admin-search-input" placeholder="Cari nama umat atau nomor HP...">
+        </div>
+      </div>
+
+      <!-- Body Scrollable List (Daftar Hadir & Tombol Set Hadir) -->
+      <div id="modal-event-body-content" class="modal-body-scroll">
+        <!-- Diisi dinamis via app.js -->
+      </div>
+
+      <!-- Tambah Umat Baru Walk-in di dalam Popup -->
+      <div style="padding: 0 1.25rem 0.85rem 1.25rem;">
+        <details class="modal-walkin-details">
+          <summary style="font-size: 0.825rem; font-weight: 700; color: var(--maroon-700); cursor: pointer;">
+            + Umat belum terdaftar? Tambahkan & langsung Set Hadir
+          </summary>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+            <input type="text" id="modal-new-umat-name" class="form-input" style="flex: 1; min-width: 130px; min-height: 40px; padding: 8px 12px; font-size: 0.85rem;" placeholder="Nama Lengkap">
+            <input type="tel" id="modal-new-umat-phone" class="form-input" style="flex: 1; min-width: 130px; min-height: 40px; padding: 8px 12px; font-size: 0.85rem;" placeholder="Nomor Telepon">
+            <button onclick="handleAddNewUmatInModal()" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.825rem;">
+              Set Hadir
+            </button>
+          </div>
+        </details>
+      </div>
+
+      <!-- Footer Popup: Download CSV & Tutup -->
+      <div class="modal-footer-event">
+        <button onclick="handleExportCurrentEventCSV()" class="btn btn-secondary btn-pill-sm">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Unduh Laporan (CSV)</span>
+        </button>
+        <button onclick="closeModal('modal-event-attendance')" class="btn btn-secondary btn-pill-sm">
+          Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-13] MODAL POPUP: KONFIRMASI CHECK-IN BERHASIL (UMAT)
+       Fungsi: Feedback visual sukses saat umat menekan tombol presensi mandiri.
+       ID Terkait: #modal-success-checkin, #modal-checkin-event, #modal-checkin-time
+       ========================================================================== -->
+  <div id="modal-success-checkin" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--success-bg); color: var(--success); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid var(--success-border);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--maroon-900); margin-bottom: 4px;">
+        Sadhu... Sadhu...
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--ink-70); margin-bottom: 1.25rem;">
+        Presensi kehadiran Anda telah berhasil tercatat di sistem Vihara Amurwa Bhumi Cibinong.
+      </p>
+
+      <div style="background: var(--maroon-50); padding: 14px; border-radius: var(--r-md); text-align: left; font-size: 0.825rem; margin-bottom: 1.25rem; border: 1px solid var(--maroon-100);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--ink-50);">Acara Kebaktian:</span>
+          <strong id="modal-checkin-event" style="color: var(--ink);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--ink-50);">Penceramah:</span>
+          <strong id="modal-checkin-speaker" style="color: var(--maroon-700);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--ink-50);">Waktu Presensi:</span>
+          <strong id="modal-checkin-time" style="color: var(--ink);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--maroon-100);">
+          <span style="color: var(--ink-50);">Lokasi Presensi:</span>
+          <strong id="modal-checkin-geo-verified" style="color: var(--success); display: inline-flex; align-items: center; gap: 4px;">-</strong>
+        </div>
+      </div>
+
+      <button onclick="closeModal('modal-success-checkin')" class="btn btn-primary btn-block">
+        Tutup & Selesai
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-13B] MODAL POPUP: DI LUAR RADIUS LOKASI VIHARA (GEOLOCATION GEOFENCE)
+       Fungsi: Menolak presensi mandiri jika umat berada di luar radius 25 meter dari Vihara.
+       ID Terkait: #modal-location-out-of-range, #modal-geo-current-distance, #modal-geo-max-radius
+       ========================================================================== -->
+  <div id="modal-location-out-of-range" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #fecaca;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+          <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke-width="2.5"></line>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: #991b1b; margin-bottom: 6px;">
+        Di Luar Area Vihara
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--ink-70); margin-bottom: 1.25rem; line-height: 1.5;">
+        Presensi mandiri hanya dapat dilakukan saat Anda sudah berada langsung di lingkungan <strong>Vihara Amurwa Bhumi Cibinong</strong> (radius maksimal <strong>25 meter</strong>).
+      </p>
+
+      <div style="background: #fef2f2; padding: 14px; border-radius: var(--r-md); text-align: left; font-size: 0.825rem; margin-bottom: 1.25rem; border: 1px solid #fee2e2;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #991b1b; font-weight: 600;">Jarak Anda Saat Ini:</span>
+          <strong id="modal-geo-current-distance" style="color: #b91c1c; font-size: 0.95rem;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--ink-50);">Batas Toleransi Radius:</span>
+          <strong id="modal-geo-max-radius" style="color: var(--ink);">25 meter</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--ink-50);">Akurasi GPS Perangkat:</span>
+          <span id="modal-geo-gps-accuracy" style="color: var(--ink); font-weight: 600;">±- m</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button onclick="closeModal('modal-location-out-of-range'); handleUmatCheckIn();" class="btn btn-primary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Coba Deteksi Ulang GPS</span>
+        </button>
+        <button onclick="closeModal('modal-location-out-of-range'); ViharaQR.openScannerModal();" class="btn btn-secondary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Pindai QR Code di Meja Resepsionis</span>
+        </button>
+        <button onclick="closeModal('modal-location-out-of-range')" class="btn btn-ghost btn-block">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-13C] MODAL POPUP: IZIN LOKASI DITOLAK / DIBLOKIR BROWSER
+       Fungsi: Panduan visual jika browser memblokir izin akses GPS saat presensi.
+       ID Terkait: #modal-location-permission-denied
+       ========================================================================== -->
+  <div id="modal-location-permission-denied" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #fde68a;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: #92400e; margin-bottom: 6px;">
+        Izin Lokasi (GPS) Ditolak
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--ink-70); margin-bottom: 1.25rem; line-height: 1.5;">
+        Browser mendeteksi bahwa izin akses lokasi untuk situs ini sedang <strong>diblokir</strong> atau <strong>ditolak</strong> (<em>User denied Geolocation</em>).
+      </p>
+
+      <div style="background: #fffbeb; padding: 14px; border-radius: var(--r-md); text-align: left; font-size: 0.825rem; margin-bottom: 1.25rem; border: 1px solid #fef3c7; line-height: 1.6;">
+        <div style="font-weight: 700; color: #92400e; margin-bottom: 6px;">Cara Mengaktifkan Izin Lokasi:</div>
+        <ol style="margin-left: 1.25rem; color: var(--ink-80); margin-bottom: 8px;">
+          <li>Pada pop-up browser yang muncul, pilih <strong>Continue allowing this site to access your location</strong> lalu klik tombol <strong>Done</strong>.</li>
+          <li><strong>PENTING:</strong> Klik tombol <strong>Muat Ulang Halaman</strong> di bawah (atau tekan F5). Browser memerlukan muat ulang halaman agar izin baru dapat langsung aktif.</li>
+          <li>Jika menggunakan laptop Windows, pastikan fitur <em>Location Services</em> di Windows Settings dalam keadaan <strong>ON</strong>.</li>
+        </ol>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button onclick="closeModal('modal-location-permission-denied'); handleUmatCheckIn();" class="btn btn-primary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <span>Coba Presensi Lagi</span>
+        </button>
+        <button onclick="closeModal('modal-location-permission-denied'); ViharaQR.openScannerModal();" class="btn btn-secondary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Pindai QR Code di Meja Resepsionis</span>
+        </button>
+        <button onclick="location.reload()" class="btn btn-secondary btn-block">
+          Muat Ulang Halaman
+        </button>
+        <button onclick="closeModal('modal-location-permission-denied')" class="btn btn-ghost btn-block">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-14] MODAL POPUP: KONFIRMASI BUKU TAMU BERHASIL (PENGUNJUNG)
+       Fungsi: Pesan selamat datang & konfirmasi saat pengunjung selesai mengisi buku tamu.
+       ID Terkait: #modal-guest-success, #modal-guest-name, #modal-guest-event
+       ========================================================================== -->
+  <div id="modal-guest-success" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--maroon-50); color: var(--maroon-700); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid var(--maroon-100);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v8"/>
+          <path d="M8 12h8"/>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--maroon-900); margin-bottom: 4px;">
+        Selamat Datang di Vihara
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--ink-70); margin-bottom: 1.25rem;">
+        Terima kasih, Saudara/i <strong id="modal-guest-name">Tamu</strong>. Data Buku Tamu Anda pada acara <strong id="modal-guest-event">Kebaktian</strong> telah tercatat pada pukul <span id="modal-guest-time">09:15 WIB</span>.
+      </p>
+      <button onclick="closeModal('modal-guest-success')" class="btn btn-primary btn-block">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+    <!-- ==========================================================================
+     [INDEX: HTML-15] MODAL POPUP: DETAIL LENGKAP PENGUMUMAN & WARTA VIHARA
+     Fungsi: Tampilan warta lengkap berserta banner foto, rincian paragraf, dan bagikan info.
+     ID Terkait: #modal-announcement-detail, #modal-announcement-title, #modal-announcement-message
+     ========================================================================== -->
+  <div id="modal-announcement-detail" class="modal-backdrop">
+    <div class="modal-box modal-box-announcement-detail">
+      <!-- Header Modal -->
+      <div class="announcement-modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="modal-announcement-badge" class="announcement-badge badge-kebaktian">Kegiatan Kebaktian</span>
+          <span id="modal-announcement-date" class="announcement-date-text">Hari ini</span>
+        </div>
+        <button type="button" onclick="closeModal('modal-announcement-detail')" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <!-- Banner Gambar (Jika Ada) -->
+      <div id="modal-announcement-banner-wrap" class="modal-announcement-banner-wrap" style="display: none;">
+        <img id="modal-announcement-banner-img" src="" alt="Banner Pengumuman" class="modal-announcement-banner-img">
+      </div>
+
+      <!-- Konten Rincian Pengumuman -->
+      <div class="modal-announcement-body">
+        <h3 id="modal-announcement-title" class="modal-announcement-title">Judul Pengumuman</h3>
+        
+        <div class="modal-announcement-meta-sub">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>Vihara Amurwa Bhumi Cibinong &bull; Warta Umat</span>
+        </div>
+
+        <div id="modal-announcement-message" class="modal-announcement-message">
+          <!-- Diisi via openAnnouncementDetail() -->
+        </div>
+      </div>
+
+      <!-- Footer Tombol Aksi -->
+      <div class="modal-announcement-footer">
+        <div id="modal-announcement-admin-actions" style="display: none;">
+          <button type="button" id="modal-btn-delete-announcement" class="btn-announcement-delete">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Hapus</span>
+          </button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-left: auto;">
+          <button type="button" id="modal-btn-share-announcement" class="btn-announcement-share">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            <span>Bagikan Info</span>
+          </button>
+          <button type="button" onclick="closeModal('modal-announcement-detail')" class="btn btn-ghost" style="padding: 7px 16px; font-size: 0.85rem; width: auto !important;">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: WAJIB BUAT KATA SANDI BARU (LOGIN PERTAMA KALI)
+       ======================================================================== -->
+  <div id="modal-force-change-password" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-800); display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--maroon-700);">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Buat Kata Sandi Baru</span>
+        </h3>
+      </div>
+
+      <form onsubmit="handleForceChangePasswordSubmit(event)">
+        <div style="background: var(--maroon-50); border: 1px solid var(--maroon-100); border-radius: var(--r-sm); padding: 12px; margin-bottom: 1.25rem;">
+          <p style="font-size: 0.825rem; color: var(--maroon-800); margin: 0; line-height: 1.45;">
+            Selamat datang! Demi keamanan akun Anda, silakan <strong>buat kata sandi pribadi baru</strong> untuk menggantikan kata sandi bawaan (123456).
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="force-new-password">Kata Sandi Baru *</label>
+          <input type="password" id="force-new-password" class="form-input" placeholder="Minimal 6 karakter" minlength="6" required autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="force-confirm-password">Konfirmasi Kata Sandi Baru *</label>
+          <input type="password" id="force-confirm-password" class="form-input" placeholder="Ketik ulang kata sandi baru" minlength="6" required autocomplete="new-password">
+        </div>
+
+        <button type="submit" id="btn-save-force-password" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.25rem;">
+          Simpan Kata Sandi & Lanjutkan
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: GANTI KATA SANDI (DARI MENU PROFIL)
+       ======================================================================== -->
+  <div id="modal-user-change-password" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-800); display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--maroon-700);">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Ganti Kata Sandi Akun</span>
+        </h3>
+        <button type="button" onclick="closeModal('modal-user-change-password')" class="btn-close-modal" title="Tutup">&times;</button>
+      </div>
+
+      <form onsubmit="handleUserChangePasswordSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="user-old-password">Kata Sandi Saat Ini *</label>
+          <input type="password" id="user-old-password" class="form-input" placeholder="Masukkan kata sandi lama" required autocomplete="current-password">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="user-new-password">Kata Sandi Baru *</label>
+          <input type="password" id="user-new-password" class="form-input" placeholder="Minimal 6 karakter" minlength="6" required autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="user-confirm-password">Konfirmasi Kata Sandi Baru *</label>
+          <input type="password" id="user-confirm-password" class="form-input" placeholder="Ketik ulang kata sandi baru" minlength="6" required autocomplete="new-password">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="button" onclick="closeModal('modal-user-change-password')" class="btn btn-secondary">
+            Batal
+          </button>
+          <button type="submit" id="btn-save-user-password" class="btn btn-primary">
+            Simpan Kata Sandi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-17] MODAL: TAMPILAN QR PRESENSI ADMIN (#modal-qr-display)
+       Fungsi: Menampilkan kode QR acara aktif untuk difoto/dipindai umat di meja resepsionis.
+       ========================================================================== -->
+  <div id="modal-qr-display" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 480px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
+          QR Presensi Masuk Dhammasala
+        </h3>
+        <button onclick="closeModal('modal-qr-display')" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <span id="modal-qr-display-badge" class="badge-pill-soft" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; font-size: 0.825rem; padding: 4px 14px; border-radius: 999px;">
+          🟢 Aktif • Memuat Acara...
+        </span>
+        <div id="modal-qr-display-event-meta" style="font-size: 0.775rem; color: var(--ink-70); margin-top: 6px;">
+          Dhammasala Utama
+        </div>
+      </div>
+
+      <!-- Container Canvas QR Code -->
+      <div id="modal-qr-code-canvas-container" class="qr-display-canvas-wrap"></div>
+
+      <!-- Panduan Sesuai Copywriting Resmi -->
+      <p style="font-size: 0.85rem; color: var(--ink-80); font-style: italic; margin: 12px 0; line-height: 1.45;">
+        "Arahkan kamera HP Anda ke kode QR ini untuk konfirmasi kehadiran langsung di Vihara Amurwa Bhumi."
+      </p>
+
+      <div style="background: var(--maroon-50); border: 1px solid var(--maroon-100); border-radius: var(--r-sm); padding: 10px; font-size: 0.75rem; color: var(--maroon-900); display: flex; flex-direction: column; gap: 4px; text-align: left; margin-bottom: 16px;">
+        <div>🕒 Berlaku khusus sesi kebaktian hari ini</div>
+        <div>🛡️ Dilengkapi enkripsi waktu (Anti-duplikasi)</div>
+      </div>
+
+      <!-- Tombol Aksi Admin -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button onclick="ViharaQR.printQrStandee()" class="btn btn-secondary" style="flex: 1; padding: 9px 12px; font-size: 0.825rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span>🖨️ Cetak Lembar QR</span>
+        </button>
+        <button onclick="closeModal('modal-qr-display'); ViharaQR.openStandeeMode();" class="btn btn-primary" style="flex: 1; padding: 9px 12px; font-size: 0.825rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <span>⛶ Layar Penuh (Monitor Meja)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-18] MODAL: LAYAR PEMINDAI KAMERA (#modal-qr-scanner)
+       Fungsi: Membuka sensor kamera HP untuk memindai QR code di meja resepsionis.
+       ========================================================================== -->
+  <div id="modal-qr-scanner" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
+          Pindai QR Presensi Vihara
+        </h3>
+        <button onclick="ViharaQR.closeScannerModal()" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <!-- Panduan Bidik -->
+      <p style="font-size: 0.85rem; color: var(--ink-80); margin-bottom: 12px;">
+        "Posisikan kode QR di meja resepsionis ke dalam bingkai kamera."
+      </p>
+
+      <!-- Viewport Kamera -->
+      <div id="qr-scanner-viewport" class="qr-camera-viewport"></div>
+
+      <!-- Teks Bantuan & Tips -->
+      <p id="qr-scanner-status-text" style="font-size: 0.775rem; color: var(--ink-70); margin: 12px 0 16px 0; line-height: 1.45;">
+        "Pastikan ruangan cukup terang dan lensa kamera bersih. Jika kamera tidak aktif, pastikan izin kamera di browser telah diizinkan."
+      </p>
+
+      <!-- Tombol Kontrol Bantuan -->
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <button type="button" id="btn-qr-switch-camera" onclick="ViharaQR.switchCamera()" class="btn btn-secondary" style="display: none; padding: 8px 16px; font-size: 0.825rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>🔄 Putar Kamera (Depan/Belakang)</span>
+        </button>
+        <button type="button" onclick="ViharaQR.closeScannerModal()" class="btn btn-ghost" style="padding: 8px 20px; font-size: 0.825rem;">
+          ✕ Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-19] MODAL: PILIHAN ADMIN MOBILE (#modal-qr-admin-choice)
+       ========================================================================== -->
+  <div id="modal-qr-admin-choice" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 400px;">
+      <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-900); margin-bottom: 6px;">
+        Presensi QR Dhammasala
+      </h3>
+      <p style="font-size: 0.825rem; color: var(--ink-70); margin-bottom: 16px;">
+        Sebagai pengurus, pilih mode presensi QR yang ingin dijalankan:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button onclick="closeModal('modal-qr-admin-choice'); ViharaQR.openShowQrModal();" class="btn btn-primary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Tampilkan QR Dhammasala</span>
+        </button>
+        <button onclick="closeModal('modal-qr-admin-choice'); ViharaQR.openScannerModal();" class="btn btn-secondary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+          </svg>
+          <span>Pindai QR Presensi (Buka Kamera)</span>
+        </button>
+        <button onclick="closeModal('modal-qr-admin-choice')" class="btn btn-ghost btn-block">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-20] MODAL: FORM IDENTITAS KILAT (#modal-qr-quick-register)
+       Fungsi: Untuk Umat Belum Login / Pengunjung yang scan QR di meja Dhammasala.
+       ========================================================================== -->
+  <div id="modal-qr-quick-register" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 460px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--maroon-900); margin: 0 0 4px 0;">
+            Selamat Datang di Vihara Amurwa Bhumi! 🙏
+          </h3>
+          <p style="font-size: 0.825rem; color: var(--ink-70); margin: 0; line-height: 1.4;">
+            Kode QR valid. Lengkapi nama Anda untuk pencatatan daftar hadir kebaktian:
+          </p>
+        </div>
+        <button onclick="closeModal('modal-qr-quick-register')" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <span id="qr-quick-form-event-name" class="qr-quick-event-pill">Puja Bakti</span>
+      </div>
+
+      <form onsubmit="ViharaQR.handleQuickRegisterSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="qr-quick-input-name">Nama Lengkap *</label>
+          <input type="text" id="qr-quick-input-name" class="form-input" placeholder="Contoh: Tan Su Mei" required autocomplete="name">
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label" for="qr-quick-input-phone">Nomor WhatsApp *</label>
+          <input type="tel" id="qr-quick-input-phone" class="form-input" placeholder="Contoh: 081234567890" required autocomplete="tel">
+        </div>
+
+        <!-- Pilihan Radio: Umat vs Pengunjung -->
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">Kategori Kehadiran:</label>
+          <div class="qr-quick-radio-group">
+            <label class="qr-quick-radio-card">
+              <input type="radio" name="qr_quick_role" id="qr-radio-umat" value="umat" checked onchange="ViharaQR.handleQuickRoleChange(this.value)">
+              <span>◉ Umat Vihara Amurwa Bhumi</span>
+            </label>
+            <label class="qr-quick-radio-card">
+              <input type="radio" name="qr_quick_role" id="qr-radio-guest" value="guest" onchange="ViharaQR.handleQuickRoleChange(this.value)">
+              <span>○ Pengunjung / Tamu Luar Kota</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Field Kota Asal / Domisili khusus Tamu/Pengunjung -->
+        <div class="form-group" id="qr-quick-domicile-wrap" style="margin-top: 10px; display: none;">
+          <label class="form-label" for="qr-quick-input-domicile">Kota Asal / Domisili *</label>
+          <input type="text" id="qr-quick-input-domicile" class="form-input" placeholder="Contoh: Cibinong, Bogor, Jakarta Barat">
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button type="submit" class="btn btn-primary btn-block">
+            Konfirmasi Kehadiran Saya
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-21] MODAL: KONFIRMASI SUKSES PRESENSI QR (#modal-qr-success)
+       ========================================================================== -->
+  <div id="modal-qr-success" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #a7f3d0;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+
+      <span class="badge-pill-soft" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; font-size: 0.775rem; padding: 4px 12px; border-radius: 999px;">
+        ✓ Hadir via QR Dhammasala
+      </span>
+
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--maroon-900); margin: 10px 0 8px 0;">
+        Presensi Berhasil Diverifikasi! 🙏
+      </h3>
+
+      <p id="modal-qr-success-message" style="font-size: 0.875rem; color: var(--ink-80); margin-bottom: 1.5rem; line-height: 1.55;">
+        Namo Buddhaya. Kehadiran Anda telah berhasil dicatat. Selamat beribadah dengan tenang dan bahagia.
+      </p>
+
+      <button id="modal-qr-success-action-btn" onclick="ViharaQR.handleQrSuccessDone()" class="btn btn-primary btn-block">
+        Masuk ke Beranda
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-22] MODAL: ERROR / KENDALA PRESENSI QR (#modal-qr-error)
+       ========================================================================== -->
+  <div id="modal-qr-error" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #fecaca;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+
+      <h3 style="font-size: 1.2rem; font-weight: 800; color: #991b1b; margin-bottom: 8px;">
+        Kendala Presensi QR
+      </h3>
+
+      <p id="modal-qr-error-message" style="font-size: 0.85rem; color: var(--ink-80); margin-bottom: 1.5rem; line-height: 1.5;">
+        Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.
+      </p>
+
+      <button onclick="closeModal('modal-qr-error')" class="btn btn-secondary btn-block">
+        Mengerti
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-23] OVERLAY STANDEE LAYAR PENUH (#qr-standee-overlay)
+       Fungsi: Monitor Display Standee Meja Resepsionis Vihara
+       ========================================================================== -->
+  <div id="qr-standee-overlay" class="standee-overlay-fullscreen">
+    <!-- Header Standee -->
+    <div class="standee-header-bar">
+      <div class="standee-brand-pill">
+        <span>☸️ Vihara Amurwa Bhumi Cibinong • Dhammasala Utama</span>
+      </div>
+      <h1 class="standee-temple-name">PRESENSI MANDIRI DHAMMASALA</h1>
+      <div class="standee-clock-box">
+        <div id="standee-digital-clock" class="standee-clock-time">00:00:00 WIB</div>
+        <div id="standee-current-date" class="standee-clock-date">Memuat tanggal...</div>
+      </div>
+    </div>
+
+    <!-- Body Tengah Standee (QR Code Besar & Detail Acara) -->
+    <div class="standee-center-body">
+      <div class="standee-qr-frame">
+        <div id="standee-qr-code-container"></div>
+      </div>
+
+      <div class="standee-event-card">
+        <span class="standee-event-badge">🟢 AKTIF SEKARANG</span>
+        <h2 id="standee-event-title" class="standee-event-title">Kebaktian</h2>
+        <p id="standee-event-speaker" class="standee-event-speaker">Bhikkhu Sangha</p>
+        <div id="standee-event-time" class="standee-event-time">09:00 - 11:30 WIB</div>
+      </div>
+
+      <div class="standee-guide-text">
+        "Arahkan kamera HP Anda ke kode QR ini untuk konfirmasi kehadiran langsung di Vihara Amurwa Bhumi."
+      </div>
+    </div>
+
+    <!-- Footer Bar Standee -->
+    <div class="standee-footer-bar">
+      <div style="font-size: 0.8rem; color: #e5e7eb; text-align: left;">
+        🕒 Berlaku khusus sesi kebaktian hari ini • 🛡️ Dilengkapi enkripsi waktu (Anti-duplikasi)
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="ViharaQR.printQrStandee()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.825rem;">
+          🖨️ Cetak Lembar Meja
+        </button>
+        <button onclick="ViharaQR.closeStandeeMode()" class="btn btn-ghost" style="padding: 8px 16px; font-size: 0.825rem; color: #ffffff; border: 1px solid rgba(255,255,255,0.3);">
+          ✕ Keluar Layar Penuh (ESC)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+     [INDEX: HTML-16] TOAST NOTIFIKASI & SKRIP RUNTIME APLIKASI
+     Fungsi: Wadah toast notifikasi melayang dan penyertaan skrip modular (v8.7).
+     ID Terkait: #toast-container, js/animated-bg.js, js/data.js, js/auth.js, js/admin.js, js/app.js
+     ========================================================================== -->
+  <div id="toast-container"></div>
+
+  <!-- Supabase JS SDK & Integrasi Client Database -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js?v=21.0"></script>
+
+  <!-- Modul QR Code Generator & Scanner -->
+  <script src="js/libs/qrcode.min.js"></script>
+  <script src="js/libs/html5-qrcode.min.js"></script>
+  <script src="js/qr.js?v=21.0"></script>
+
+  <!-- Canvas Animasi & Scripts Modular dengan Cache-Busting -->
+  <script src="js/animated-bg.js?v=21.0"></script>
+  <script src="js/geo.js?v=21.0"></script>
+  <script src="js/data.js?v=21.0"></script>
+  <script src="js/auth.js?v=21.0"></script>
+  <script src="js/admin.js?v=21.0"></script>
+  <script src="js/app.js?v=21.0"></script>
+</body>
+</html>

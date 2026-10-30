@@ -44,10 +44,10 @@ global.sessionStorage = {
 global.window = global;
 
 // Load Dependencies
-eval(fs.readFileSync('js/data.js', 'utf8'));
-eval(fs.readFileSync('js/auth.js', 'utf8'));
-eval(fs.readFileSync('js/geo.js', 'utf8'));
-eval(fs.readFileSync('js/admin.js', 'utf8'));
+eval(fs.readFileSync('public/js/data.js', 'utf8'));
+eval(fs.readFileSync('public/js/auth.js', 'utf8'));
+eval(fs.readFileSync('public/js/geo.js', 'utf8'));
+eval(fs.readFileSync('public/js/admin.js', 'utf8'));
 
 console.log('📌 1. Pengujian Privilege Escalation & Access Control (js/auth.js)');
 
@@ -116,7 +116,7 @@ console.log('\n📌 3. Pengujian Sanitasi DOM / Stored XSS & Avatar URL');
 
 it('3.1 Validasi Image URL menolak skema berbahaya (javascript:, data:text/html)', () => {
   // Evaluasi regex atau fungsi sanitizeImageUrl di file app.js
-  const appCode = fs.readFileSync('js/app.js', 'utf8');
+  const appCode = fs.readFileSync('public/js/app.js', 'utf8');
   const sanitizeMatch = appCode.match(/function sanitizeImageUrl\(url\)[\s\S]*?\n  \}/);
   assert(sanitizeMatch, 'sanitizeImageUrl harus didefinisikan!');
   eval(sanitizeMatch[0]);
@@ -129,7 +129,7 @@ it('3.1 Validasi Image URL menolak skema berbahaya (javascript:, data:text/html)
 });
 
 it('3.2 escapeHTML mengamankan karakter khusus HTML & entitas string', () => {
-  const appCode = fs.readFileSync('js/app.js', 'utf8');
+  const appCode = fs.readFileSync('public/js/app.js', 'utf8');
   const escapeMatch = appCode.match(/function escapeHTML\(str\)[\s\S]*?\n  \}/);
   assert(escapeMatch, 'escapeHTML harus didefinisikan!');
   eval(escapeMatch[0]);
@@ -143,7 +143,7 @@ it('3.2 escapeHTML mengamankan karakter khusus HTML & entitas string', () => {
 console.log('\n📌 4. Pengujian CSV / Formula Injection (CWE-1236)');
 
 it('4.1 escapeCSVField menetralkan karakter eksekusi formula (=, +, -, @, \\t, \\r)', () => {
-  const adminCode = fs.readFileSync('js/admin.js', 'utf8');
+  const adminCode = fs.readFileSync('public/js/admin.js', 'utf8');
   const csvMatch = adminCode.match(/function escapeCSVField\(val\)[\s\S]*?\n  \}/);
   assert(csvMatch, 'escapeCSVField harus didefinisikan!');
   eval(csvMatch[0]);

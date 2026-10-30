@@ -37,9 +37,9 @@ global.window = {
 };
 
 // Load modular scripts
-const dataCode = fs.readFileSync('js/data.js', 'utf8');
-const geoCode = fs.readFileSync('js/geo.js', 'utf8');
-const supabaseCode = fs.readFileSync('js/supabase-client.js', 'utf8');
+const dataCode = fs.readFileSync('public/js/data.js', 'utf8');
+const geoCode = fs.readFileSync('public/js/geo.js', 'utf8');
+const supabaseCode = fs.readFileSync('public/js/supabase-client.js', 'utf8');
 
 global.ViharaData = eval(dataCode.replace('const ViharaData =', ''));
 global.ViharaGeo = eval(geoCode.replace('const ViharaGeo =', ''));

@@ -43,10 +43,10 @@ global.document = {
 };
 
 // Load Modules
-require('../js/supabase-client.js');
-require('../js/data.js');
-require('../js/auth.js');
-require('../js/qr.js');
+require('../public/js/supabase-client.js');
+require('../public/js/data.js');
+require('../public/js/auth.js');
+require('../public/js/qr.js');
 
 const { ViharaData } = global.window;
 const { ViharaAuth } = global.window;
@@ -253,7 +253,7 @@ async function runTests() {
 
   // Test 8: Verifikasi Proteksi Akses Buku Tamu Wajib QR
   console.log('\n--- 8. Verifikasi Kebijakan Akses: Buku Tamu Wajib Melalui QR ---');
-  const indexHtmlContent = fs.readFileSync('index.html', 'utf8');
+  const indexHtmlContent = fs.readFileSync('public/index.html', 'utf8');
   assert(!indexHtmlContent.includes('Isi Buku Tamu (Pengunjung Luar)'), 'Tombol publik Isi Buku Tamu di halaman login telah dihapus');
   assert(!indexHtmlContent.includes('desktop-nav-guest'), 'Menu navigasi tamu bebas di header telah dihapus');
 
