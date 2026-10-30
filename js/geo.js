@@ -9,20 +9,18 @@
  */
 
 const ViharaGeo = (() => {
-  // Koordinat Resmi Vihara Amurwa Bhumi Cibinong
-  // Alamat: Jl. HR. Lukman No.51, RT.2/RW.4, Cirimekar, Kec. Cibinong, Kabupaten Bogor, Jawa Barat 16917
+  // Koordinat Titik Pusat Geofence (Murni Menggunakan Latitude, Longitude, & Radius)
+  // Titik acuan: Latitude -6.467433, Longitude 106.853755
   const DEFAULT_CONFIG = {
-    name: 'Vihara Amurwa Bhumi Cibinong',
-    address: 'Jl. HR. Lukman No.51, Cirimekar, Cibinong, Bogor',
     latitude: -6.467433,
     longitude: 106.853755,
-    radiusMeters: 25 // Radius maksimal presensi: 25 meter
+    radiusMeters: 25 // Batas toleransi radius presensi: 25 meter
   };
 
   const STORAGE_KEY = 'vihara_geo_config';
   const BYPASS_KEY = 'vihara_dev_location_bypass';
 
-  // 1. Ambil Konfigurasi Titik Lokasi & Radius Vihara Aktif
+  // 1. Ambil Konfigurasi Murni Koordinat (Latitude, Longitude, Radius)
   function getConfig() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -30,8 +28,6 @@ const ViharaGeo = (() => {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed.latitude === 'number' && typeof parsed.longitude === 'number') {
           return {
-            name: parsed.name || DEFAULT_CONFIG.name,
-            address: parsed.address || DEFAULT_CONFIG.address,
             latitude: Number(parsed.latitude),
             longitude: Number(parsed.longitude),
             radiusMeters: Number(parsed.radiusMeters || DEFAULT_CONFIG.radiusMeters)
@@ -44,12 +40,9 @@ const ViharaGeo = (() => {
     return { ...DEFAULT_CONFIG };
   }
 
-  // 2. Simpan Pembaruan Konfigurasi Titik Lokasi & Radius
-  async function saveConfig({ latitude, longitude, radiusMeters, name, address }) {
-    const current = getConfig();
+  // 2. Simpan Pembaruan Koordinat & Radius (Murni Numerik)
+  async function saveConfig({ latitude, longitude, radiusMeters }) {
     const updated = {
-      name: (name || current.name).trim(),
-      address: (address || current.address).trim(),
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       radiusMeters: Math.max(5, parseInt(radiusMeters, 10) || DEFAULT_CONFIG.radiusMeters),
@@ -64,7 +57,7 @@ const ViharaGeo = (() => {
         await ViharaSupabase.updateConfiguration(
           'vihara_geo_config',
           JSON.stringify(updated),
-          'Koordinat Geolocation & Radius Presensi Vihara Amurwa Bhumi'
+          'Koordinat Latitude, Longitude, dan Radius Presensi Vihara'
         );
       } catch (err) {
         console.warn('[ViharaGeo] Gagal sinkronisasi geo config ke Supabase:', err);
@@ -221,3 +214,4 @@ const ViharaGeo = (() => {
     initSync
   };
 })();
+

@@ -546,14 +546,28 @@ function getCurrentPosition() {
 }
 ```
 
+#### D. Klarifikasi Teknis: Murni Berbasis Koordinat Numerik (Tanpa Geocoding Nama)
+* **Apakah sistem mencari berdasarkan nama vihara?** **TIDAK.** Sistem sama sekali tidak melakukan *string matching* nama atau memanggil API geocoding nama tempat.
+* **Bagaimana cara kerjanya?** Sistem murni membandingkan dua pasang angka desimal (*floating point*):
+  1. `(lat1, lon1)`: Titik pengguna dari sensor satelit GPS perangkat (`position.coords.latitude`, `position.coords.longitude`).
+  2. `(lat2, lon2)`: Titik target Vihara dari konfigurasi (`latitude: -6.467433`, `longitude: 106.853755`).
+* Objek konfigurasi di `js/geo.js` telah disederhanakan murni menyimpan:
+  ```javascript
+  const DEFAULT_CONFIG = {
+    latitude: -6.467433,
+    longitude: 106.853755,
+    radiusMeters: 25
+  };
+  ```
+  Sehingga tidak ada ambiguitas atau ketergantungan pada nama jalan maupun nama tempat.
+
 ---
 
 ### 4. 🚀 Alur & Cara Kerja Solusi
-1. **Titik Acuan Resmi:**
-   - Nama: **Vihara Amurwa Bhumi Cibinong**
-   - Alamat: *Jl. HR. Lukman No.51, Cirimekar, Cibinong, Bogor*
-   - Koordinat: **Latitude -6.467433, Longitude 106.853755**
-   - Batas Radius: **25 Meter**
+1. **Titik Acuan Resmi (Murni Koordinat):**
+   - **Latitude**: `-6.467433`
+   - **Longitude**: `106.853755`
+   - **Batas Radius**: **25 Meter**
 2. **Saat Umat Menekan *"Presensi Hadir Sekarang"*:**
    - Tombol berubah menjadi status loading: *"Memeriksa Lokasi GPS..."* (dengan spinner SVG).
    - Memanggil `ViharaGeo.verifyCheckInDistance()`.
