@@ -201,6 +201,15 @@ const ViharaAdmin = (() => {
   }
 
   // Export CSV khusus acara tertentu
+  function escapeCSVField(val) {
+    if (val === null || val === undefined) return '""';
+    let str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = "'" + str;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
   function exportEventToCSV(eventId) {
     const data = getEventDetailsAndAttendees(eventId, '');
     if (!data || !data.event) {
@@ -219,11 +228,11 @@ const ViharaAdmin = (() => {
 
     let csvContent = 'data:text/csv;charset=utf-8,\uFEFF';
     csvContent += `Laporan Daftar Hadir Vihara Amurwa Bhumi Cibinong\n`;
-    csvContent += `Acara: ${event.name}\n`;
-    csvContent += `Penceramah: ${event.speaker} (${event.speakerTitle})\n`;
-    csvContent += `Tanggal: ${event.dateText}\n`;
-    csvContent += `Waktu: ${event.timeSchedule}\n`;
-    csvContent += `Lokasi: ${event.dhammasala}\n\n`;
+    csvContent += `Acara: ${String(event.name || '').replace(/[\r\n]/g, ' ')}\n`;
+    csvContent += `Penceramah: ${String(event.speaker || '').replace(/[\r\n]/g, ' ')} (${String(event.speakerTitle || '').replace(/[\r\n]/g, ' ')})\n`;
+    csvContent += `Tanggal: ${String(event.dateText || '').replace(/[\r\n]/g, ' ')}\n`;
+    csvContent += `Waktu: ${String(event.timeSchedule || '').replace(/[\r\n]/g, ' ')}\n`;
+    csvContent += `Lokasi: ${String(event.dhammasala || '').replace(/[\r\n]/g, ' ')}\n\n`;
 
     csvContent += 'No,Kategori,Nama Lengkap,Nomor Telepon,Jam Masuk,Keterangan\n';
 
@@ -233,11 +242,11 @@ const ViharaAdmin = (() => {
     attendance.forEach(item => {
       const row = [
         count++,
-        '"Umat Tetap"',
-        `"${item.userName.replace(/"/g, '""')}"`,
-        `"${item.userPhone}"`,
-        `"${item.timeStr}"`,
-        `"${item.method === 'manual_admin' ? 'Manual Admin' : 'Mandiri'}"`
+        escapeCSVField('Umat Tetap'),
+        escapeCSVField(item.userName),
+        escapeCSVField(item.userPhone),
+        escapeCSVField(item.timeStr),
+        escapeCSVField(item.method === 'manual_admin' ? 'Manual Admin' : 'Mandiri')
       ];
       csvContent += row.join(',') + '\n';
     });
@@ -246,11 +255,11 @@ const ViharaAdmin = (() => {
     guests.forEach(item => {
       const row = [
         count++,
-        `"Buku Tamu (${item.domicile || '-'})"`,
-        `"${item.name.replace(/"/g, '""')}"`,
-        `"${item.phone}"`,
-        `"${item.timeStr}"`,
-        `"${(item.purpose || 'Kunjungan').replace(/"/g, '""')}"`
+        escapeCSVField(`Buku Tamu (${item.domicile || '-'})`),
+        escapeCSVField(item.name),
+        escapeCSVField(item.phone),
+        escapeCSVField(item.timeStr),
+        escapeCSVField(item.purpose || 'Kunjungan')
       ];
       csvContent += row.join(',') + '\n';
     });

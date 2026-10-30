@@ -341,6 +341,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const initials = getInitials(user.name);
       const cleanPhone = (user.phone || '').replace(/[^0-9]/g, '');
       const waLink = cleanPhone ? `https://wa.me/62${cleanPhone.replace(/^0/, '')}` : '#';
+      const safeAvatar = sanitizeImageUrl(user.avatar);
+      const avatarHtml = safeAvatar
+        ? `<img src="${escapeHTML(safeAvatar)}" alt="${escapeHTML(user.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+        : initials;
 
       // 1. Tampilan Desktop Table Row
       if (tbody) {
@@ -348,8 +352,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.innerHTML = `
           <td>
             <div class="user-cell">
-              <div class="user-avatar-circle ${user.role}">
-                ${user.avatar ? `<img src="${user.avatar}" alt="${escapeHTML(user.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials}
+              <div class="user-avatar-circle ${escapeHTML(user.role || 'umat')}">
+                ${avatarHtml}
               </div>
               <div>
                 <div class="user-name-title">${escapeHTML(user.name)}</div>
@@ -379,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </a>
           </td>
           <td>
-            <span class="role-badge-pill ${user.role}" style="display:inline-flex; align-items:center; gap:5px;">
+            <span class="role-badge-pill ${escapeHTML(user.role || 'umat')}" style="display:inline-flex; align-items:center; gap:5px;">
               ${isAdmin ? `
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -400,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>
             <div class="actions-cell">
               ${isAdmin ? `
-                <button onclick="handleToggleRole('${user.id}', 'umat')" class="btn btn-secondary btn-sm" title="Ubah menjadi Umat biasa" style="display:inline-flex; align-items:center; gap:5px;">
+                <button data-id="${escapeHTML(user.id)}" onclick="handleToggleRole(this.dataset.id, 'umat')" class="btn btn-secondary btn-sm" title="Ubah menjadi Umat biasa" style="display:inline-flex; align-items:center; gap:5px;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
@@ -408,20 +412,20 @@ document.addEventListener('DOMContentLoaded', () => {
                   <span>Jadikan Umat</span>
                 </button>
               ` : `
-                <button onclick="handleToggleRole('${user.id}', 'admin')" class="btn btn-gold btn-sm" title="Promosikan menjadi Pengurus / Admin" style="display:inline-flex; align-items:center; gap:5px;">
+                <button data-id="${escapeHTML(user.id)}" onclick="handleToggleRole(this.dataset.id, 'admin')" class="btn btn-gold btn-sm" title="Promosikan menjadi Pengurus / Admin" style="display:inline-flex; align-items:center; gap:5px;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>
                   </svg>
                   <span>Jadikan Admin</span>
                 </button>
               `}
-              <button onclick="openEditUserModal('${user.id}')" class="btn-action-icon" title="Edit Data Pengguna">
+              <button data-id="${escapeHTML(user.id)}" onclick="openEditUserModal(this.dataset.id)" class="btn-action-icon" title="Edit Data Pengguna">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                 </svg>
               </button>
-              <button onclick="openDeleteUserModal('${user.id}')" class="btn-action-icon danger" title="Hapus Pengguna">
+              <button data-id="${escapeHTML(user.id)}" onclick="openDeleteUserModal(this.dataset.id)" class="btn-action-icon danger" title="Hapus Pengguna">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -440,8 +444,8 @@ document.addEventListener('DOMContentLoaded', () => {
         card.innerHTML = `
           <div class="user-mobile-top">
             <div class="user-cell">
-              <div class="user-avatar-circle ${user.role}">
-                ${user.avatar ? `<img src="${user.avatar}" alt="${escapeHTML(user.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials}
+              <div class="user-avatar-circle ${escapeHTML(user.role || 'umat')}">
+                ${avatarHtml}
               </div>
               <div>
                 <div class="user-name-title">${escapeHTML(user.name)}</div>
@@ -463,14 +467,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
             </div>
-            <span class="role-badge-pill ${user.role}">
+            <span class="role-badge-pill ${escapeHTML(user.role || 'umat')}">
               ${isAdmin ? 'Admin' : 'Umat'}
             </span>
           </div>
 
           <div class="user-mobile-actions">
             ${isAdmin ? `
-              <button onclick="handleToggleRole('${user.id}', 'umat')" class="btn btn-secondary btn-sm" style="flex: 1; display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+              <button data-id="${escapeHTML(user.id)}" onclick="handleToggleRole(this.dataset.id, 'umat')" class="btn btn-secondary btn-sm" style="flex: 1; display:inline-flex; align-items:center; justify-content:center; gap:4px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                   <circle cx="12" cy="7" r="4"/>
@@ -478,21 +482,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>Jadikan Umat</span>
               </button>
             ` : `
-              <button onclick="handleToggleRole('${user.id}', 'admin')" class="btn btn-gold btn-sm" style="flex: 1; display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+              <button data-id="${escapeHTML(user.id)}" onclick="handleToggleRole(this.dataset.id, 'admin')" class="btn btn-gold btn-sm" style="flex: 1; display:inline-flex; align-items:center; justify-content:center; gap:4px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>
                 </svg>
                 <span>Jadikan Admin</span>
               </button>
             `}
-            <button onclick="openEditUserModal('${user.id}')" class="btn btn-secondary btn-sm" title="Edit" style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+            <button data-id="${escapeHTML(user.id)}" onclick="openEditUserModal(this.dataset.id)" class="btn btn-secondary btn-sm" title="Edit" style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
               <span>Edit</span>
             </button>
-            <button onclick="openDeleteUserModal('${user.id}')" class="btn btn-danger btn-sm" title="Hapus" style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
+            <button data-id="${escapeHTML(user.id)}" onclick="openDeleteUserModal(this.dataset.id)" class="btn btn-danger btn-sm" title="Hapus" style="display:inline-flex; align-items:center; justify-content:center; gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -888,7 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     allUsers.forEach((u, i) => {
       const roleStr = u.role === 'admin' ? 'Pengurus / Admin' : 'Umat';
-      csv += `${i + 1},"${u.id}","${u.name}","'${u.phone}","${roleStr}","${u.registeredAt || '-'}"\n`;
+      csv += `${i + 1},${escapeCSVField(u.id)},${escapeCSVField(u.name)},${escapeCSVField(u.phone)},${escapeCSVField(roleStr)},${escapeCSVField(u.registeredAt || '-')}\n`;
     });
 
     const encodedUri = encodeURI(csv);
@@ -947,13 +951,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3200);
   }
 
+  function sanitizeImageUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (/^(https?:\/\/|\/|\.\/|data:image\/)/i.test(trimmed)) {
+      return trimmed;
+    }
+    return null;
+  }
+
+  function escapeCSVField(val) {
+    if (val === null || val === undefined) return '""';
+    let str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = "'" + str;
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
   function getInitials(name) {
     if (!name) return 'VA';
     return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
   }
 
   function escapeHTML(str) {
-    if (!str) return '';
+    if (str === null || str === undefined) return '';
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

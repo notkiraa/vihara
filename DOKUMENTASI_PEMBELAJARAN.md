@@ -1471,6 +1471,150 @@ function isMobileDevice() {
    - Penambahan log dokumentasi pembelajaran Entri #11.
 
 ---
+
+## 📖 Entri #12 — Comprehensive Defensive Security Audit & Automated Hardening
+
+### 1. 💬 Prompt User
+> *"/security-audit cek lagi secara menyeluruh dan auto benerin ya, ulangi sampai semuany passed dan tidak ada masalah"*
+
+---
+
+### 2. ⚠️ Temuan Audit Keamanan (Vulnerability Audit Findings)
+
+Berdasarkan audit statis dan dinamis secara menyeluruh terhadap seluruh modul aplikasi (`js/auth.js`, `js/data.js`, `js/app.js`, `js/superadmin.js`, `js/admin.js`, `js/qr.js`, `js/geo.js`), ditemukan sejumlah celah keamanan klien (*client-side weaknesses*) dan residu sisa mode uji coba (*debug backdoor*):
+
+1. **Privilege Escalation (Eskalasi Hak Akses Tanpa Otorisasi)**:
+   - Pada `js/auth.js`: fungsi `isAdmin()` meloloskan hak akses administrator penuh jika nama pengguna memuat substring `"vincen"`, `"pengurus"`, atau `"admin"`.
+   - Pengguna dengan nomor telepon uji coba `"08119999888"` otomatis dianggap admin.
+   - Pengecekan flag `localStorage.getItem('vihara_dev_admin_override')` memungkinkan manipulasi konsol browser untuk memperoleh akses pengurus vihara.
+   - Fungsi `register()` mengizinkan parameter `role: 'admin'`, membuka celah bagi publik untuk mendaftarkan akun baru langsung dengan privilese admin.
+2. **Authentication Bypass (Bypass Kata Sandi Akun)**:
+   - Fungsi `loginWithPhone(phone)` mengizinkan login instan ke akun terdaftar tanpa verifikasi kata sandi (`password_hash`), sehingga siapa pun yang mengetahui nomor telepon pengurus dapat membajak sesi.
+3. **Sensitive Data Exposure (Eksposur Hash Kredensial)**:
+   - Fungsi `ViharaData.setSession(user)` menyimpan seluruh atribut user termasuk `password_hash` ke dalam `localStorage` dan `sessionStorage` peramban.
+4. **Stored & DOM Cross-Site Scripting (XSS)**:
+   - Avatar pengguna (`user.avatar`) dan banner pengumuman (`item.banner`) dirender langsung ke dalam string HTML tanpa validasi skema protokol URL (dapat dieksploitasi via payload `javascript:`).
+   - Modal tampilan QR (`js/qr.js`) menginterpolasikan pesan error `err.message`, nama acara `targetEvent.name`, dan pesan sukses `userName` / `eventName` langsung ke `.innerHTML` tanpa sanitasi entitas HTML.
+5. **Inline Onclick Attribute Breakout**:
+   - Seluruh pemanggilan fungsi via atribut inline seperti `onclick="openEventAttendanceModal('${evt.id}')"` atau `onclick="handleToggleRole('${user.id}', 'admin')"` mengekspos risiko pelarian kutip (*quote breakout*) jika ID memuat karakter kutip satu `'` atau backslash `\`.
+6. **CSV / Formula Injection (CWE-1236)**:
+   - Pada fitur ekspor data hadir di `js/admin.js` (`exportEventToCSV`) dan ekspor master pengguna di `js/superadmin.js` (`handleExportMasterUsersCSV`), nilai teks yang diawali dengan karakter formula (`=`, `+`, `-`, `@`, `\t`, `\r`) tidak dinetralisir, sehingga aplikasi spreadsheet seperti Microsoft Excel dapat mengeksekusi perintah berbahaya saat file CSV dibuka.
+7. **Geolocation Input Boundary Bypass**:
+   - Fungsi penyimpanan koordinat pada `js/geo.js` (`saveConfig`) belum membatasi rentang numerik realistis untuk Latitude (-90 s/d 90), Longitude (-180 s/d 180), dan Radius (minimal 5m s/d 50.000m).
+
+---
+
+### 3. 🔍 Akar Masalah Teknis
+
+1. **Peninggalan Debugging Cepat (*Convenience Over Security*)**:
+   - Pengecekan nama pengguna dan nomor uji coba sebelumnya dibuat untuk mempercepat pengetesan prototipe awal tanpa login berulang. Saat aplikasi bertransisi ke tahap operasional nyata, mekanisme ini harus dibersihkan secara total.
+2. **Ketiadaan Validasi Tipe & Protokol URL pada Elemen Media**:
+   - Nilai URL avatar dan banner diterima sebagai string mentah dan langsung disisipkan ke tag `<img src="...">`. Peramban web mengeksekusi skema protokol seperti `javascript:` jika elemen dimasukkan langsung ke pohon DOM.
+3. **Ketidaksesuaian Konvensi Parsing CSV Excel**:
+   - Format CSV standar RFC 4180 tidak melarang karakter matematika di awal field. Namun peramban dan aplikasi pengolah spreadsheet modern secara otomatis menafsirkan karakter `=`, `+`, `-`, atau `@` sebagai rumus (*Dynamic Data Exchange / DDE*).
+
+---
+
+### 4. 🛠️ Solusi & Implementasi Remediasi Otomatis
+
+#### A. Pengetatan Otorisasi Akses & Pendaftaran Akun (`js/auth.js`)
+- Menghapus seluruh backdoor pemeriksaan nama, nomor telepon hardcoded, dan flag localStorage.
+- Membatasi status admin murni pada peran database:
+  ```javascript
+  function isAdmin() {
+    const user = currentUser();
+    if (!user) return false;
+    return user.role === 'admin' || user.role === 'superadmin';
+  }
+  ```
+- Menolak metode `loginWithPhone` tanpa sandi dan mewajibkan otentikasi kredensial penuh.
+- Mengunci pendaftaran publik `register()` agar secara ketat menghasilkan peran `'umat'`. Promosi peran `'admin'` hanya dapat diotorisasi oleh Super Administrator.
+
+#### B. Proteksi Hash Kredensial di Session Storage (`js/data.js` & `js/auth.js`)
+- Pada `ViharaData.setSession`, objek user disanitasi dengan menghapus properti `password_hash` sebelum disimpan ke `localStorage` atau `sessionStorage`.
+- Pada `ViharaAuth.verifyPassword`, ditambahkan mekanisme pembacaan fallback dari master store internal (`ViharaData.findUserByPhone`) agar verifikasi sandi tetap valid saat user aktif berada dalam sesi yang bersih.
+
+#### C. Sanitasi Media & Whitelist Protokol URL (`js/app.js` & `js/superadmin.js`)
+- Menambahkan fungsi `sanitizeImageUrl(url)` yang membatasi protokol hanya pada skema yang aman:
+  ```javascript
+  function sanitizeImageUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (/^(https?:\/\/|\/|\.\/|data:image\/)/i.test(trimmed)) {
+      return trimmed;
+    }
+    return null;
+  }
+  ```
+- Memodifikasi `renderUserAvatar` agar membangun elemen `HTMLImageElement` secara programatis via DOM API (`document.createElement('img')`) atau memanfaatkan inisial teks aman (`el.textContent`).
+
+#### D. Pengamanan Attribute Breakout via HTML5 Dataset
+- Mengganti seluruh template string inline interpolation `onclick="func('${id}')"` menjadi pembacaan atribut dataset aman:
+  ```html
+  <button data-id="${escapeHTML(evt.id)}" onclick="openEventAttendanceModal(this.dataset.id)">
+  ```
+- Hal ini menjamin nilai ID tidak dapat membobol sintaks kutip Javascript pada parser peramban.
+
+#### E. Pencegahan CSV Formula Injection (CWE-1236) (`js/admin.js` & `js/superadmin.js`)
+- Mengimplementasikan helper `escapeCSVField(val)`:
+  ```javascript
+  function escapeCSVField(val) {
+    if (val === null || val === undefined) return '""';
+    let str = String(val);
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = "'" + str; // Tambahkan prefix petik tunggal untuk menetralkan formula
+    }
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  ```
+- Seluruh kolom ekspor daftar hadir dan master pengguna difilter melalui fungsi ini.
+
+#### F. Validasi Batas Koordinat Numerik (`js/geo.js`)
+- Memvalidasi rentang numerik sebelum disimpan ke penyimpanan lokal maupun cloud:
+  - Latitude: `-90` hingga `90`
+  - Longitude: `-180` hingga `180`
+  - Radius: `5` meter hingga `50.000` meter.
+
+---
+
+### 5. 📂 File yang Diperbarui & Ditambahkan
+1. [`js/auth.js`](file:///c:/AKU_NYOBA\appvihara/js/auth.js)
+   - Eliminasi privilege escalation, penutupan bypass login tanpa sandi, penguncian registrasi publik ke `'umat'`.
+2. [`js/data.js`](file:///c:/AKU_NYOBA\appvihara/js/data.js)
+   - Penghapusan `password_hash` dari payload sesi browser di `setSession()`.
+3. [`js/app.js`](file:///c:/AKU_NYOBA\appvihara/js/app.js)
+   - Implementasi `sanitizeImageUrl`, migrasi inline `onclick` ke `dataset.id`, pengetatan `escapeHTML` untuk menangani `null`/`undefined`.
+4. [`js/superadmin.js`](file:///c:/AKU_NYOBA\appvihara/js/superadmin.js)
+   - Sanitasi avatar dan banner, migrasi seluruh aksi pengguna ke `this.dataset.id`, penerapan `escapeCSVField` pada ekspor master pengguna.
+5. [`js/admin.js`](file:///c:/AKU_NYOBA\appvihara/js/admin.js)
+   - Implementasi `escapeCSVField` pada ekspor laporan daftar hadir acara kebaktian.
+6. [`js/qr.js`](file:///c:/AKU_NYOBA\appvihara/js/qr.js)
+   - Implementasi `escapeHTML` untuk modal error, modal badge acara, dan modal konfirmasi sukses scan.
+7. [`js/geo.js`](file:///c:/AKU_NYOBA\appvihara/js/geo.js)
+   - Validasi batas matematis numerik untuk koordinat dan radius presensi.
+8. [`scratch/test_security_audit.cjs`](file:///c:/AKU_NYOBA\appvihara/scratch/test_security_audit.cjs) *(File Baru)*
+   - Test suite otomatis verifikasi celah keamanan (11/11 Lulus - 100% PASS).
+9. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Penambahan log audit keamanan dan remediasi menyeluruh Entri #12.
+
+---
+
+### 6. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis
+1. **Security Audit Suite (`scratch/test_security_audit.cjs`)**:
+   - **11 / 11 Pengujian Lulus (100% PASS)**:
+     - [PASS] Privilege escalation via nama / nomor / dev override tertutup.
+     - [PASS] Registrasi publik terkunci pada peran umat.
+     - [PASS] Login tanpa kata sandi ditolak.
+     - [PASS] Hash sandi bersih dari local & session storage.
+     - [PASS] Skema berbahaya pada avatar ditolak (`javascript:`, dsb).
+     - [PASS] Formula injection CSV ternetralisir.
+     - [PASS] Batas koordinat geolokasi tervalidasi.
+2. **Scenario Test Suite (`scratch/run_scenario_test.cjs`)**:
+   - **16 / 16 Skenario Lulus (100% PASS)**: Seluruh aturan window 30 menit, CRUD acara, dan presensi geofencing 25m berjalan sempurna tanpa regresi.
+3. **QR Fallback Feature Suite (`scratch/test_qr_feature.cjs`)**:
+   - **15 / 15 Skenario Lulus (100% PASS)**: Seluruh fitur QR Dhammasala meja resepsionis dan scan presensi instan berfungsi optimal.
+
+---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
 
 

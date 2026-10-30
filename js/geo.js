@@ -44,12 +44,26 @@ const ViharaGeo = (() => {
     return { ...DEFAULT_CONFIG };
   }
 
-  // 2. Simpan Pembaruan Koordinat & Radius (Murni Numerik)
+  // 2. Simpan Pembaruan Koordinat & Radius (Murni Numerik dengan Validasi Batas)
   async function saveConfig({ latitude, longitude, radiusMeters }) {
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
+    const rad = parseInt(radiusMeters, 10);
+
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      throw new Error('Latitude harus berupa angka valid antara -90 dan 90.');
+    }
+    if (isNaN(lon) || lon < -180 || lon > 180) {
+      throw new Error('Longitude harus berupa angka valid antara -180 dan 180.');
+    }
+    if (isNaN(rad) || rad < 5 || rad > 50000) {
+      throw new Error('Radius presensi harus berupa angka valid antara 5 hingga 50.000 meter.');
+    }
+
     const updated = {
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      radiusMeters: Math.max(5, parseInt(radiusMeters, 10) || DEFAULT_CONFIG.radiusMeters),
+      latitude: lat,
+      longitude: lon,
+      radiusMeters: rad,
       updatedAt: new Date().toISOString()
     };
 

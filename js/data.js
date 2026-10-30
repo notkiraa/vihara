@@ -671,12 +671,16 @@ var ViharaData = (() => {
 
   function setSession(user, rememberMe = true) {
     if (user) {
+      // Keamanan: Hapus password_hash dari objek sesi sebelum disimpan ke storage peramban
+      const safeUser = { ...user };
+      delete safeUser.password_hash;
+
       if (rememberMe) {
-        localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(user));
+        localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(safeUser));
         localStorage.setItem(STORAGE_KEYS.REMEMBER_ME, 'true');
         sessionStorage.removeItem(STORAGE_KEYS.SESSION);
       } else {
-        sessionStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(user));
+        sessionStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(safeUser));
         localStorage.removeItem(STORAGE_KEYS.SESSION);
         localStorage.removeItem(STORAGE_KEYS.REMEMBER_ME);
       }

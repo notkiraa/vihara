@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (geoStatusEl) {
         geoStatusEl.innerHTML = `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Terverifikasi di Lokasi (${geoResult.formattedDistance})</span>
+          <span>Terverifikasi di Lokasi (${escapeHTML(geoResult.formattedDistance)})</span>
         `;
         geoStatusEl.style.color = 'var(--success)';
       }
@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="timeline-content">
             <div class="timeline-top-row">
               <div class="timeline-title">${escapeHTML(item.kebaktianName)}</div>
-              <div class="timeline-date">${formattedDate}<br><span style="font-size: 0.7rem; color: var(--ink-50);">${item.timeStr}</span></div>
+              <div class="timeline-date">${escapeHTML(formattedDate)}<br><span style="font-size: 0.7rem; color: var(--ink-50);">${escapeHTML(item.timeStr)}</span></div>
             </div>
             <div class="timeline-sub">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -867,14 +867,14 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <div class="event-card-actions">
-        <button onclick="openEventAttendanceModal('${evt.id}')" class="btn ${evt.isActive ? 'btn-primary' : 'btn-ghost'} btn-event-primary" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+        <button onclick="openEventAttendanceModal(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn ${evt.isActive ? 'btn-primary' : 'btn-ghost'} btn-event-primary" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon-svg">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
           </svg>
           <span>Daftar Hadir & Set Hadir</span>
         </button>
-        <button onclick="handleAdminDeleteEvent('${evt.id}')" class="btn btn-danger-icon" title="Hapus Jadwal Acara" aria-label="Hapus Jadwal Acara">
+        <button onclick="handleAdminDeleteEvent(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn btn-danger-icon" title="Hapus Jadwal Acara" aria-label="Hapus Jadwal Acara">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1012,9 +1012,9 @@ document.addEventListener('DOMContentLoaded', () => {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>Hadir (${umat.checkInTime})</span>
+              <span>Hadir (${escapeHTML(umat.checkInTime)})</span>
             </span>`
-          : `<button onclick="handleAssignUmatInModal('${umat.id}')" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem; font-weight: 700; width: auto;">
+          : `<button onclick="handleAssignUmatInModal(this.dataset.id)" data-id="${escapeHTML(umat.id)}" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem; font-weight: 700; width: auto;">
               Set Hadir
              </button>`;
 
@@ -1023,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="mobile-item-avatar">${getInitials(umat.name)}</div>
             <div style="min-width: 0; flex: 1;">
               <div style="font-weight: 700; font-size: 0.875rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(umat.name)}</div>
-              <div style="font-size: 0.725rem; color: var(--ink-50); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${umat.phone} &bull; ID: ${umat.id}</div>
+              <div style="font-size: 0.725rem; color: var(--ink-50); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(umat.phone)} &bull; ID: ${escapeHTML(umat.id)}</div>
             </div>
           </div>
           <div style="flex-shrink: 0; margin-left: 8px;">${actionBtn}</div>
@@ -1054,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div>
               <div style="font-weight: 700; font-size: 0.9rem; color: var(--ink);">${escapeHTML(guest.name)}</div>
               <div style="font-size: 0.75rem; color: var(--ink-50);">
-                ${guest.phone} &bull; Domisili: <strong>${escapeHTML(guest.domicile || '-')}</strong>
+                ${escapeHTML(guest.phone)} &bull; Domisili: <strong>${escapeHTML(guest.domicile || '-')}</strong>
               </div>
               <div style="font-size: 0.725rem; color: var(--maroon-700); margin-top: 2px;">
                 Keperluan: ${escapeHTML(guest.purpose || 'Puja Bakti')}
@@ -1062,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
           <div style="text-align: right;">
-            <span class="pill-status hadir">Jam Masuk: ${guest.timeStr}</span>
+            <span class="pill-status hadir">Jam Masuk: ${escapeHTML(guest.timeStr)}</span>
           </div>
         `;
         guestListContainer.appendChild(item);
@@ -1739,12 +1739,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  function sanitizeImageUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    // Validasi protokol gambar aman: http, https, data:image/, atau relative path
+    if (/^(https?:\/\/|\/|\.\/|data:image\/)/i.test(trimmed)) {
+      return trimmed;
+    }
+    return null;
+  }
+
   function renderUserAvatar(el, user) {
     if (!el || !user) return;
-    if (user.avatar) {
-      el.innerHTML = `<img src="${user.avatar}" alt="${escapeHTML(user.name)}">`;
+    const safeUrl = sanitizeImageUrl(user.avatar);
+    if (safeUrl) {
+      el.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = safeUrl;
+      img.alt = user.name || 'User Avatar';
+      el.appendChild(img);
     } else {
-      el.innerText = getInitials(user.name);
+      el.textContent = getInitials(user.name);
     }
   }
 
@@ -2154,10 +2169,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<span class="announcement-unread-badge" style="background: rgba(225, 29, 72, 0.92); color: #ffffff; border-color: rgba(255,255,255,0.4);"><span class="announcement-unread-dot" style="background: #ffffff; box-shadow: 0 0 6px #ffffff;"></span>Baru</span>`
         : '';
 
-      if (item.banner && item.banner.trim() !== '') {
+      const safeBanner = sanitizeImageUrl(item.banner);
+      if (safeBanner) {
         bannerHtml = `
           <div class="announcement-banner-wrap">
-            <img src="${item.banner}" alt="${escapeHTML(item.title)}" class="announcement-banner-img" loading="lazy">
+            <img src="${escapeHTML(safeBanner)}" alt="${escapeHTML(item.title)}" class="announcement-banner-img" loading="lazy">
             <div class="announcement-banner-overlay"></div>
             <div class="announcement-banner-badge" style="display: flex; align-items: center; gap: 6px;">
               <span class="announcement-badge ${badgeClass}">${escapeHTML(categoryLabel)}</span>
@@ -2173,7 +2189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<span class="announcement-unread-badge"><span class="announcement-unread-dot"></span>Baru</span>`
         : '';
 
-      if (!item.banner || item.banner.trim() === '') {
+      if (!safeBanner) {
         metaTopHtml = `
           <div class="announcement-card-meta">
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -2206,14 +2222,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isAdmin) {
         if (item.archived) {
           actionButtonsHtml = `
-            <button type="button" class="btn-announcement-restore" onclick="event.stopPropagation(); event.preventDefault(); handleRestoreAnnouncement('${item.id}')" title="Pulihkan pengumuman ini ke beranda publik">
+            <button type="button" class="btn-announcement-restore" data-id="${escapeHTML(item.id)}" onclick="event.stopPropagation(); event.preventDefault(); handleRestoreAnnouncement(this.dataset.id)" title="Pulihkan pengumuman ini ke beranda publik">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"></polyline>
                 <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
               </svg>
               <span>Pulihkan</span>
             </button>
-            <button type="button" class="btn-announcement-delete-perm" onclick="event.stopPropagation(); event.preventDefault(); handlePermanentDeleteAnnouncement('${item.id}')" title="Hapus permanen warta ini">
+            <button type="button" class="btn-announcement-delete-perm" data-id="${escapeHTML(item.id)}" onclick="event.stopPropagation(); event.preventDefault(); handlePermanentDeleteAnnouncement(this.dataset.id)" title="Hapus permanen warta ini">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -2223,7 +2239,7 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
         } else {
           actionButtonsHtml = `
-            <button type="button" class="btn-announcement-delete" onclick="event.stopPropagation(); event.preventDefault(); handleArchiveAnnouncement('${item.id}')" title="Pindahkan ke Arsip Pengurus">
+            <button type="button" class="btn-announcement-delete" data-id="${escapeHTML(item.id)}" onclick="event.stopPropagation(); event.preventDefault(); handleArchiveAnnouncement(this.dataset.id)" title="Pindahkan ke Arsip Pengurus">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="21 8 21 21 3 21 3 8"></polyline>
                 <rect x="1" y="3" width="22" height="5"></rect>
@@ -2242,7 +2258,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <h3 class="announcement-card-title">${escapeHTML(item.title)}</h3>
           <p class="announcement-card-message">${escapeHTML(item.message)}</p>
           <div class="announcement-card-footer">
-            <button type="button" class="btn-announcement-share" onclick="event.stopPropagation(); handleShareAnnouncement('${item.id}')">
+            <button type="button" class="btn-announcement-share" data-id="${escapeHTML(item.id)}" onclick="event.stopPropagation(); handleShareAnnouncement(this.dataset.id)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="18" cy="5" r="3"></circle>
                 <circle cx="6" cy="12" r="3"></circle>
@@ -2663,6 +2679,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function escapeHTML(str) {
+    if (str === null || str === undefined) return '';
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

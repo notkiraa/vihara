@@ -30,12 +30,7 @@ var ViharaAuth = (() => {
   function isAdmin() {
     const user = currentUser();
     if (!user) return false;
-    if (user.role === 'admin') return true;
-    const nameLower = (user.name || '').toLowerCase();
-    if (nameLower.includes('vincen') || nameLower.includes('pengurus') || nameLower.includes('admin')) return true;
-    if (user.phone === '08119999888') return true;
-    if (localStorage.getItem('vihara_dev_admin_override') === 'true') return true;
-    return false;
+    return user.role === 'admin' || user.role === 'superadmin';
   }
 
   function isUmat() {
@@ -65,8 +60,13 @@ var ViharaAuth = (() => {
 
   async function verifyPassword(user, plainPassword) {
     if (!user || !plainPassword) return false;
+    let storedHash = user.password_hash;
+    if (!storedHash && user.phone && typeof ViharaData !== 'undefined' && typeof ViharaData.findUserByPhone === 'function') {
+      const full = ViharaData.findUserByPhone(user.phone);
+      if (full && full.password_hash) storedHash = full.password_hash;
+    }
+    if (!storedHash) storedHash = DEFAULT_PASSWORD_HASH;
     const inputHash = await hashPassword(plainPassword);
-    const storedHash = user.password_hash || DEFAULT_PASSWORD_HASH;
     return inputHash === storedHash;
   }
 
@@ -125,17 +125,10 @@ var ViharaAuth = (() => {
   }
 
   function loginWithPhone(phone, rememberMe = true) {
-    const user = ViharaData.findUserByPhone(phone);
-    if (!user) {
-      return {
-        success: false,
-        message: 'Nomor telepon belum terdaftar. Silakan hubungi pengurus vihara untuk pembuatan akun.'
-      };
-    }
-    ViharaData.setSession(user, rememberMe);
+    console.warn('[ViharaAuth] loginWithPhone tanpa verifikasi sandi ditolak demi keamanan.');
     return {
-      success: true,
-      user: user
+      success: false,
+      message: 'Demi keamanan akun Anda, silakan masuk menggunakan nomor telepon dan kata sandi.'
     };
   }
 
@@ -143,7 +136,7 @@ var ViharaAuth = (() => {
   // [INDEX: JS-AUTH-03] REGISTRASI AKUN BARU (UMAT TETAP & PENGURUS VIHARA)
   // Fungsi: Validasi input nama, nomor HP, email, role, dan penyimpanan user baru.
   // ==========================================================================
-  function register({ name, phone, email, role = 'umat', rememberMe = true }) {
+  function register({ name, phone, email, rememberMe = true }) {
     if (!name || !name.trim()) {
       return { success: false, message: 'Nama lengkap wajib diisi.' };
     }
@@ -164,21 +157,17 @@ var ViharaAuth = (() => {
 
     const existing = ViharaData.findUserByPhone(cleanPhone);
     if (existing) {
-      // Jika sudah ada, langsung login
-      if (!existing.email) {
-        ViharaData.updateUser(existing.id, { email: cleanEmail });
-      }
-      ViharaData.setSession(existing, rememberMe);
+      // Jika sudah ada, jangan bypass password, arahkan ke login
       return {
-        success: true,
-        user: existing,
-        message: 'Nomor sudah terdaftar, Anda otomatis masuk.'
+        success: false,
+        message: 'Nomor telepon ini sudah terdaftar. Silakan masukkan kata sandi akun Anda untuk masuk.'
       };
     }
 
     const cleanName = name.trim();
-    const finalRole = (role === 'admin' || cleanName.toLowerCase().includes('vincen') || cleanName.toLowerCase().includes('pengurus') || cleanName.toLowerCase().includes('admin')) ? 'admin' : role;
-    const newUser = ViharaData.registerUser(cleanName, cleanPhone, finalRole, cleanEmail);
+    // Keamanan: Pendaftaran publik secara default dan ketat selalu bertaraf 'umat'.
+    // Promosi role 'admin' hanya dapat dilakukan oleh Super Administrator via Portal Master Superadmin.
+    const newUser = ViharaData.registerUser(cleanName, cleanPhone, 'umat', cleanEmail);
     ViharaData.setSession(newUser, rememberMe);
     return {
       success: true,

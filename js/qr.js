@@ -29,6 +29,16 @@
   let standeeClockTimer = null;
   let activeScannedTargetEvent = null;
 
+  function escapeHTML(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   function safeOpenModal(id) {
     if (typeof window !== 'undefined' && typeof window.openModal === 'function') {
       window.openModal(id);
@@ -100,7 +110,7 @@
       });
     } catch (err) {
       console.error('Gagal merender QR Code:', err);
-      containerEl.innerHTML = `<p style="color:red; font-size: 0.8rem;">Gagal membuat kode QR: ${err.message}</p>`;
+      containerEl.innerHTML = `<p style="color:red; font-size: 0.8rem;">Gagal membuat kode QR: ${escapeHTML(err.message)}</p>`;
     }
   }
 
@@ -142,7 +152,7 @@
       metaEl.textContent = `${targetEvent.speaker || 'Bhikkhu Sangha'} • ${targetEvent.startTime || '09:00'} - ${targetEvent.endTime || '11:30'} WIB • Dhammasala`;
     }
     if (badgeEl) {
-      badgeEl.innerHTML = `🟢 Aktif • ${targetEvent.name}`;
+      badgeEl.innerHTML = `🟢 Aktif • ${escapeHTML(targetEvent.name)}`;
     }
 
     const payload = generateQrPayload(targetEvent);
@@ -330,10 +340,10 @@
         <div class="card">
           <h1 class="title">VIHARA AMURWA BHUMI CIBINONG</h1>
           <p class="sub">Presensi Mandiri Pintu Dhammasala</p>
-          <div class="badge">🟢 ${targetEvent.name}</div>
+          <div class="badge">🟢 ${escapeHTML(targetEvent.name)}</div>
           <div style="font-size: 14px; margin-bottom: 15px; color: #4b5563;">
-            <strong>Penceramah:</strong> ${targetEvent.speaker || 'Bhikkhu Sangha'}<br>
-            <strong>Waktu:</strong> ${targetEvent.startTime || '09:00'} - ${targetEvent.endTime || '11:30'} WIB
+            <strong>Penceramah:</strong> ${escapeHTML(targetEvent.speaker || 'Bhikkhu Sangha')}<br>
+            <strong>Waktu:</strong> ${escapeHTML(targetEvent.startTime || '09:00')} - ${escapeHTML(targetEvent.endTime || '11:30')} WIB
           </div>
           <div id="print-qr-code"></div>
           <p class="guide">
@@ -445,7 +455,7 @@
       if (statusEl) {
         statusEl.innerHTML = `
           <span style="color: #ef4444; font-weight: 700;">Gagal Mengakses Kamera:</span><br>
-          <span style="font-size: 0.78rem;">${err.message || 'Izin kamera ditolak oleh browser.'}</span>
+          <span style="font-size: 0.78rem;">${escapeHTML(err.message || 'Izin kamera ditolak oleh browser.')}</span>
         `;
       }
       if (typeof showToast === 'function') {
@@ -774,7 +784,7 @@
   function showSuccessCheckInModal(userName, eventName) {
     const msgEl = document.getElementById('modal-qr-success-message');
     if (msgEl) {
-      msgEl.innerHTML = `Namo Buddhaya, <strong>${userName}</strong>. Kehadiran Anda pada <strong>${eventName}</strong> telah berhasil dicatat. Selamat beribadah dengan tenang dan bahagia.`;
+      msgEl.innerHTML = `Namo Buddhaya, <strong>${escapeHTML(userName)}</strong>. Kehadiran Anda pada <strong>${escapeHTML(eventName)}</strong> telah berhasil dicatat. Selamat beribadah dengan tenang dan bahagia.`;
     }
 
     safeOpenModal('modal-qr-success');
