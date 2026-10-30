@@ -15,6 +15,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 7. [Entri #06 — Diagnosis & Penanganan Error Geolocation "User denied Geolocation"](#entri-06--diagnosis--penanganan-error-geolocation-user-denied-geolocation)
 8. [Entri #07 — Penghapusan Mode Uji Coba (Bypass) & Solusi Error Sensor Izin Geolocation](#entri-07--penghapusan-mode-uji-coba-bypass--solusi-error-sensor-izin-geolocation)
 9. [Entri #08 — Solusi "Location Access Allowed" Tetap Error (Siklus Reload Izin Peramban, Fallback GNSS Desktop, & Supabase Config Sync)](#entri-08--solusi-location-access-allowed-tetap-error-siklus-reload-izin-peramban-fallback-gnss-desktop--supabase-config-sync)
+10. [Entri #09 — Sinkronisasi Utuh Data Lokal vs Supabase Cloud & Batasan Waktu Presensi 30 Menit](#entri-09--sinkronisasi-utuh-data-lokal-vs-supabase-cloud--batasan-waktu-presensi-30-menit)
 
 ---
 
@@ -1032,6 +1033,157 @@ async function updateConfiguration(key, value, description = null) {
    - Peningkatan versi skrip modular ke `?v=20.0`.
 5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Dokumentasi pembelajaran Entri #08.
+
+---
+
+## 📖 Entri #09 — Sinkronisasi Utuh Data Lokal vs Supabase Cloud & Batasan Waktu Presensi 30 Menit
+
+### 1. 💬 Prompt User
+> *"fixasi lagi, banyak yang ngadu, status local sama yg ori, seperti buat dan hapus acara, presesensi juga, btw presensi juga maksimal 30 menit sebelum mulai ya jamnya"*
+
+### 2. ⚠️ Gejala / Masalah
+1. **Disinkronisasi Status Lokal vs Cloud (Supabase)**:
+   - Pengurus/Admin mengeluhkan ketidakcocokan antara tampilan data lokal di browser dengan database asli (*yang ori*):
+     * Saat admin membuat acara baru (*buat acara*), terkadang acara hanya muncul di browser pembuat dan hilang setelah muat ulang (*reload*) atau tidak terlihat oleh pengguna lain.
+     * Saat admin menghapus acara (*hapus acara*), acara yang telah dihapus muncul kembali secara mendadak saat halaman dimuat ulang.
+     * Mengubah status jadwal aktif (*set active event*) hanya tersimpan di `localStorage` pembuat dan tidak pernah tersinkron ke kolom `is_active` di tabel `events` Supabase.
+     * Data riwayat presensi (*presensi*) yang dicatat pengguna terkadang tertimpa (*wiped out*) menjadi kosong ketika sinkronisasi cloud mengembalikan data kosong.
+2. **Ketiadaan Validasi Batas Waktu Presensi**:
+   - Umat dapat melakukan presensi mandiri kapan saja bahkan jika acara kebaktian masih beberapa jam lagi atau baru akan diadakan besok hari, menyebabkan rekam jejak waktu kedatangan tidak disiplin dan tidak akurat.
+   - Diperlukan aturan tegas: **Presensi hanya boleh dibuka maksimal 30 menit sebelum acara kebaktian dimulai hingga acara selesai**.
+
+---
+
+### 3. 🔍 Akar Masalah Teknis
+
+#### A. Tabrakan Kunci Primer Akibat Pembuatan ID Berbasis Panjang Array (`Array.length + 1`)
+Pada implementasi awal di `js/data.js`:
+```javascript
+// BUG ID COLLISION:
+const newId = 'EVT_' + String(events.length + 1).padStart(3, '0');
+```
+* Skenario masalah:
+  1. Terdapat 2 acara: `EVT_001` dan `EVT_002` (panjang array = 2).
+  2. Admin menghapus `EVT_001` (panjang array menjadi 1).
+  3. Admin membuat acara baru $\rightarrow$ `events.length + 1 = 2` $\rightarrow$ ID yang dihasilkan adalah `EVT_002`!
+  4. Ketika dikirim ke Supabase, PostgreSQL menolak operasi dengan error:
+     `ERROR: 23505: duplicate key value violates unique constraint "events_pkey" Key (id)=(EVT_002) already exists.`
+  5. Akibatnya, acara baru **gagal tersimpan di cloud** dan hanya ada di `localStorage` lokal pembuat.
+
+#### B. Ketiadaan Pemanggilan Sinkronisasi Supabase pada `setActiveEvent`
+Fungsi `setActiveEvent(eventId)` di `js/data.js` sebelumnya hanya memperbarui nilai `e.isActive` di `localStorage`. Tidak ada pemanggilan API Supabase untuk memperbarui kolom `is_active` di PostgreSQL. Ketika halaman di-refresh, fungsi `syncEvents()` menarik data lama dari cloud dan menimpa kembali status aktif ke kondisi semula.
+
+#### C. Masalah Race Condition & Penimpaan Array Kosong (*Empty Array Overwrite*)
+Ketika tabel `events` atau `attendance` di Supabase kosong atau koneksi jaringan lambat:
+```javascript
+// KODE LAMA BERISIKO:
+if (data && Array.isArray(data)) {
+  localStorage.setItem('vihara_events', JSON.stringify(mapped));
+}
+```
+Jika `data` dari Supabase adalah array kosong `[]`, kode lama langsung menimpa `localStorage` dengan `[]`, melenyapkan seluruh data yang baru saja dibuat oleh pengguna di perangkatnya. Seharusnya, jika database cloud kosong tetapi lokal memiliki data, sistem melakukan *seeding/migrasi otomatis* ke cloud!
+
+#### D. Ketiadaan Evaluasi Jendela Waktu (*Time Window*) pada Presensi
+Sebelumnya, sistem presensi hanya memeriksa apakah acara aktif sudah kedaluwarsa (`isEventExpired`). Selama tanggal acara masih hari ini dan jam selesai belum lewat, umat diizinkan check-in jam berapa pun, meskipun acara baru dimulai 3 jam ke depan.
+
+---
+
+### 4. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Generator ID Monotonik Maksimum (*Monotonic Max ID Generator*)
+Mencegah tabrakan kunci primer dengan memindai angka ID tertinggi yang pernah ada:
+```javascript
+// js/data.js
+function generateNextEventId(events) {
+  let maxNum = 0;
+  (events || []).forEach(e => {
+    const match = String(e && e.id ? e.id : '').match(/EVT_(\d+)/);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (n > maxNum) maxNum = n;
+    }
+  });
+  return 'EVT_' + String(maxNum + 1).padStart(3, '0');
+}
+```
+
+#### B. Perhitungan Jendela Waktu Presensi Relatif (*Relative Time Window Calculation*)
+Mengonversi string waktu `HH:MM` dan tanggal `YYYY-MM-DD` ke objek `Date` untuk evaluasi rentang waktu:
+```javascript
+// js/data.js
+function getEventCheckInWindow(event) {
+  const now = new Date();
+  const [startH, startM] = (event.startTime || '09:00').split(':').map(Number);
+  const [endH, endM] = (event.endTime || '11:00').split(':').map(Number);
+
+  // Waktu mulai acara
+  const eventStart = new Date(`${event.date}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
+  // Jendela buka: T minus 30 menit (30 * 60 * 1000 milidetik)
+  const checkInOpen = new Date(eventStart.getTime() - 30 * 60 * 1000);
+  // Waktu selesai
+  const eventEnd = new Date(`${event.date}T${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`);
+
+  if (now < checkInOpen) {
+    return {
+      isOpen: false,
+      reason: 'too_early',
+      openTimeStr: `${String(checkInOpen.getHours()).padStart(2, '0')}:${String(checkInOpen.getMinutes()).padStart(2, '0')} WIB`,
+      message: `Presensi kebaktian belum dibuka. Presensi dibuka maksimal 30 menit sebelum acara dimulai.`
+    };
+  }
+  ...
+}
+```
+
+#### C. Operasi Idempoten Supabase (`upsert` & Multi-Row Update)
+Menjamin sinkronisasi status aktif jadwal kebaktian di PostgreSQL Supabase:
+```javascript
+// js/supabase-client.js
+async function setActiveEvent(eventId) {
+  // 1. Matikan seluruh event lain
+  await sb.from('events').update({ is_active: false }).neq('id', 'NONE');
+  // 2. Nyalakan event target
+  await sb.from('events').update({ is_active: true }).eq('id', String(eventId));
+}
+```
+
+---
+
+### 5. 🛠️ Alur & Cara Kerja Solusi
+
+1. **Jendela Waktu Presensi 30 Menit**:
+   - Sebelum sensor GPS dipanggil, sistem memanggil `ViharaData.getEventCheckInWindow(activeEvent)`.
+   - Jika waktu sekarang lebih awal dari `(Waktu Mulai - 30 Menit)`, presensi langsung ditolak dengan toast ramah yang memberitahukan jam berapa presensi akan dibuka.
+   - Pada kartu beranda Umat, tombol presensi menampilkan label informatif: *"Presensi Dibuka Pukul 08:30 WIB"*.
+2. **Sinkronisasi Sempurna Buat Acara**:
+   - Menggunakan ID baru yang terjamin unik (`EVT_00X` berdasarkan angka terbesar).
+   - Mengirimkan operasi `.upsert([payload], { onConflict: 'id' })` ke Supabase.
+   - Jika acara baru berstatus aktif, acara lain di Supabase otomatis dinonaktifkan secara serentak.
+3. **Pemberantasan Acara Hantu (*Ghost Events*) pada Hapus Acara**:
+   - ID acara yang dihapus didaftarkan ke `window.ViharaDeletedEventIds` untuk mencegah *race-condition*.
+   - Supabase menghapus data presensi terkait lalu menghapus baris acara dari PostgreSQL.
+4. **Pembersihan Log Presensi Total**:
+   - Fungsi `ViharaSupabase.clearAllAttendance()` dan `clearAllGuests()` kini aktif menghapus data riwayat dari PostgreSQL Supabase saat admin melakukan *purge logs*.
+
+---
+
+### 6. 📂 File yang Diperbarui
+1. [`js/data.js`](file:///c:/AKU_NYOBA\appvihara/js/data.js)
+   - Implementasi `getEventCheckInWindow(event)` untuk penegakan batas waktu 30 menit.
+   - Implementasi generator ID monotonik `generateNextEventId` dan `generateNextAttendanceId`.
+   - Integrasi sinkronisasi Supabase pada `setActiveEvent`, `createEvent`, `deleteEvent`, `clearAttendanceLogs`, dan `clearGuestLogs`.
+2. [`js/supabase-client.js`](file:///c:/AKU_NYOBA\appvihara/js/supabase-client.js)
+   - Penambahan fungsi `setActiveEvent(eventId)` untuk multi-row update status aktif acara.
+   - Peningkatan `syncEvents()` dan `syncAttendance()` dengan proteksi *race-condition* dan *auto-seeding*.
+   - Penambahan fungsi `clearAllAttendance()` dan `clearAllGuests()`.
+   - Ekspor fungsi baru pada modul `ViharaSupabase`.
+3. [`js/app.js`](file:///c:/AKU_NYOBA\appvihara/js/app.js)
+   - Pengecekan `getEventCheckInWindow` pada awal fungsi `handleUmatCheckIn`.
+   - Pembaruan tampilan status hero card dan tombol presensi jika belum masuk jendela waktu buka.
+4. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html), [`superadmin.html`](file:///c:/AKU_NYOBA\appvihara/superadmin.html), [`superadmin/index.html`](file:///c:/AKU_NYOBA\appvihara/superadmin/index.html)
+   - Peningkatan versi skrip modular ke `?v=21.0`.
+5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Penambahan dokumentasi pembelajaran Entri #09.
 
 ---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*

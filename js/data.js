@@ -198,8 +198,86 @@ const ViharaData = (() => {
     return getActiveEvent();
   }
 
+  // Evaluasi jendela waktu presensi: dibuka maksimal 30 menit sebelum mulai hingga acara berakhir
+  function getEventCheckInWindow(event) {
+    if (!event || !event.date) {
+      return { isOpen: false, reason: 'no_event', message: 'Tidak ada jadwal kebaktian yang sedang dibuka.' };
+    }
+
+    const now = new Date();
+    const [startH, startM] = (event.startTime || '09:00').split(':').map(Number);
+    const [endH, endM] = (event.endTime || '11:00').split(':').map(Number);
+
+    // Waktu mulai acara
+    const eventStart = new Date(`${event.date}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
+    // Waktu presensi dibuka: 30 menit sebelum acara mulai
+    const checkInOpen = new Date(eventStart.getTime() - 30 * 60 * 1000);
+    // Waktu acara selesai
+    const eventEnd = new Date(`${event.date}T${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`);
+
+    const openTimeStr = `${String(checkInOpen.getHours()).padStart(2, '0')}:${String(checkInOpen.getMinutes()).padStart(2, '0')}`;
+    const startTimeStr = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;
+
+    if (now < checkInOpen) {
+      const diffMs = checkInOpen - now;
+      const diffMins = Math.ceil(diffMs / 60000);
+      return {
+        isOpen: false,
+        reason: 'too_early',
+        openTime: checkInOpen,
+        openTimeStr: `${openTimeStr} WIB`,
+        startTimeStr: `${startTimeStr} WIB`,
+        minutesRemaining: diffMins,
+        message: `Presensi kebaktian belum dibuka. Presensi dibuka maksimal 30 menit sebelum acara (mulai pukul ${openTimeStr} WIB).`
+      };
+    }
+
+    if (now > eventEnd) {
+      return {
+        isOpen: false,
+        reason: 'expired',
+        message: 'Jadwal kebaktian ini telah selesai.'
+      };
+    }
+
+    return {
+      isOpen: true,
+      reason: 'open',
+      openTimeStr: `${openTimeStr} WIB`,
+      startTimeStr: `${startTimeStr} WIB`,
+      message: 'Presensi sedang dibuka.'
+    };
+  }
+
+  // Generator ID Acara Monotonik (Mencegah Tabrakan ID Kunci Primer)
+  function generateNextEventId(events) {
+    let maxNum = 0;
+    (events || []).forEach(e => {
+      const match = String(e && e.id ? e.id : '').match(/EVT_(\d+)/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    return 'EVT_' + String(maxNum + 1).padStart(3, '0');
+  }
+
+  // Generator ID Presensi Monotonik (Mencegah Tabrakan ID Kunci Primer)
+  function generateNextAttendanceId(list) {
+    let maxNum = 0;
+    (list || []).forEach(a => {
+      const match = String(a && a.id ? a.id : '').match(/ATT_(\d+)/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    });
+    return 'ATT_' + String(maxNum + 1).padStart(3, '0');
+  }
+
   function setActiveEvent(eventId) {
     const events = getEvents();
+    let target = null;
     events.forEach(e => {
       if (e.id === eventId) {
         e.isActive = true;
@@ -209,17 +287,24 @@ const ViharaData = (() => {
           e.date = getTodayKey();
           e.dateText = formatDateIndonesia(getTodayKey());
         }
+        target = e;
       } else {
         e.isActive = false;
       }
     });
     localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
-    return getActiveEvent();
+
+    // Sinkronkan status aktif acara ke database Supabase
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.setActiveEvent === 'function') {
+      ViharaSupabase.setActiveEvent(eventId);
+    }
+
+    return target || getActiveEvent();
   }
 
   function createEvent({ name, date, startTime, endTime, speaker, speakerTitle, dhammasala }) {
     const events = getEvents();
-    const newId = 'EVT_' + String(events.length + 1).padStart(3, '0');
+    const newId = generateNextEventId(events);
 
     // Nonaktifkan acara lain
     events.forEach(e => { e.isActive = false; });
@@ -247,6 +332,8 @@ const ViharaData = (() => {
 
     events.unshift(newEvent);
     localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+
+    // Sinkronkan pembuatan acara ke Supabase
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.insertEvent === 'function') {
       ViharaSupabase.insertEvent(newEvent);
     }
@@ -254,6 +341,11 @@ const ViharaData = (() => {
   }
 
   function deleteEvent(eventId) {
+    if (typeof window !== 'undefined') {
+      window.ViharaDeletedEventIds = window.ViharaDeletedEventIds || new Set();
+      window.ViharaDeletedEventIds.add(String(eventId));
+    }
+
     let events = getEvents();
     events = events.filter(e => e.id !== eventId);
     // Jika tidak ada acara aktif, jangan paksa acara kedaluwarsa jadi aktif
@@ -263,6 +355,8 @@ const ViharaData = (() => {
       if (firstValid) firstValid.isActive = true;
     }
     localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+
+    // Hapus acara di Supabase secara permanen
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.deleteEvent === 'function') {
       ViharaSupabase.deleteEvent(eventId);
     }
@@ -408,11 +502,17 @@ const ViharaData = (() => {
 
   function clearAttendanceLogs() {
     localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify([]));
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.clearAllAttendance === 'function') {
+      ViharaSupabase.clearAllAttendance();
+    }
     return true;
   }
 
   function clearGuestLogs() {
     localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify([]));
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.clearAllGuests === 'function') {
+      ViharaSupabase.clearAllGuests();
+    }
     return true;
   }
 
@@ -483,7 +583,7 @@ const ViharaData = (() => {
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
 
     const record = {
-      id: 'ATT_' + String(list.length + 1).padStart(3, '0'),
+      id: generateNextAttendanceId(list),
       userId: userId,
       userName: userName,
       userPhone: userPhone,
@@ -594,6 +694,7 @@ const ViharaData = (() => {
     formatDateDisplay: formatDateIndonesia,
     getEvents,
     getActiveEvent,
+    getEventCheckInWindow,
     isEventExpired,
     checkAndArchiveExpiredEvents,
     findEventForCurrentTime,

@@ -336,7 +336,30 @@ const ViharaSupabase = (() => {
 
       if (error) throw error;
       if (data && Array.isArray(data)) {
-        const mapped = data.map(e => ({
+        // Cegah race-condition: Jangan pulihkan event yang sedang dalam proses penghapusan lokal
+        let cleaned = data;
+        if (typeof window !== 'undefined' && window.ViharaDeletedEventIds && window.ViharaDeletedEventIds.size > 0) {
+          cleaned = cleaned.filter(e => !window.ViharaDeletedEventIds.has(String(e.id)));
+        }
+
+        // Jika Supabase masih kosong tetapi localStorage memiliki acara, lakukan seeding ke Supabase
+        if (cleaned.length === 0) {
+          try {
+            const localStored = localStorage.getItem('vihara_events');
+            if (localStored) {
+              const parsed = JSON.parse(localStored);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                console.info('[Supabase] Seeding acara lokal ke database cloud...');
+                for (const evt of parsed) {
+                  await insertEvent(evt);
+                }
+                return parsed;
+              }
+            }
+          } catch (_) {}
+        }
+
+        const mapped = cleaned.map(e => ({
           id: e.id,
           name: e.name,
           date: e.date,
@@ -347,9 +370,10 @@ const ViharaSupabase = (() => {
           speaker: e.speaker,
           speakerTitle: e.speaker_title,
           dhammasala: e.dhammasala,
-          isActive: e.is_active,
+          isActive: Boolean(e.is_active),
           createdAt: e.created_at
         }));
+
         localStorage.setItem('vihara_events', JSON.stringify(mapped));
         return mapped;
       }
@@ -367,7 +391,7 @@ const ViharaSupabase = (() => {
     return `${h}:${m}:00`;
   }
 
-  // 2. Tambah Acara ke Supabase
+  // 2. Tambah / Simpan Acara ke Supabase (Idempoten via Upsert)
   async function insertEvent(evt) {
     const sb = getClient();
     if (!sb) return null;
@@ -381,6 +405,12 @@ const ViharaSupabase = (() => {
         safeSpeakerTitle = 'Romo / Pandita';
       }
 
+      // Pastikan created_by valid ke ADM_001 jika user belum ada di profiles Supabase
+      let creatorId = 'ADM_001';
+      if (curUser && curUser.id) {
+        creatorId = curUser.id;
+      }
+
       const payload = {
         id: evt.id,
         name: evt.name,
@@ -390,16 +420,41 @@ const ViharaSupabase = (() => {
         speaker: evt.speaker,
         speaker_title: safeSpeakerTitle,
         dhammasala: evt.dhammasala || 'Dhammasala Utama',
-        is_active: evt.isActive,
-        created_by: curUser ? curUser.id : 'ADM_001'
+        is_active: Boolean(evt.isActive),
+        created_by: creatorId
       };
-      const { data, error } = await sb.from('events').insert([payload]).select().single();
+
+      // Jika acara ini aktif, nonaktifkan acara lain di Supabase
+      if (evt.isActive) {
+        try {
+          await sb.from('events').update({ is_active: false }).neq('id', String(evt.id));
+        } catch (_) {}
+      }
+
+      const { data, error } = await sb.from('events').upsert([payload], { onConflict: 'id' }).select().single();
       if (error) throw error;
       return data;
     } catch (err) {
-      console.error('[Supabase] Gagal insert event:', err.message);
+      console.error('[Supabase] Gagal insert/upsert event:', err.message);
     }
     return null;
+  }
+
+  // 2b. Set Jadwal Aktif di Supabase
+  async function setActiveEvent(eventId) {
+    const sb = getClient();
+    if (!sb) return false;
+    try {
+      // Nonaktifkan semua acara lain
+      await sb.from('events').update({ is_active: false }).neq('id', 'NONE');
+      // Aktifkan acara yang dipilih
+      const { error } = await sb.from('events').update({ is_active: true }).eq('id', String(eventId));
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.warn('[Supabase] Gagal update active event di remote db:', err.message);
+      return false;
+    }
   }
 
   // 3. Sinkronisasi Warta Pengumuman
@@ -541,6 +596,38 @@ const ViharaSupabase = (() => {
         return null;
       }
 
+      // Pastikan event target terdaftar di Supabase sebelum mencatat presensi (mencegah foreign key violation)
+      const { data: eventExists } = await sb
+        .from('events')
+        .select('id')
+        .eq('id', resolvedEventId)
+        .limit(1);
+
+      if (!eventExists || eventExists.length === 0) {
+        if (typeof ViharaData !== 'undefined') {
+          const localEvt = ViharaData.getEvents().find(e => String(e.id) === resolvedEventId);
+          if (localEvt) {
+            await insertEvent(localEvt);
+          }
+        }
+      }
+
+      // Pastikan profile user terdaftar di Supabase
+      const { data: profileExists } = await sb
+        .from('profiles')
+        .select('id')
+        .eq('id', resolvedUserId)
+        .limit(1);
+
+      if (!profileExists || profileExists.length === 0) {
+        if (typeof ViharaData !== 'undefined') {
+          const localUser = ViharaData.getUsers().find(u => String(u.id) === resolvedUserId || u.phone === resolvedUserId);
+          if (localUser) {
+            await insertProfile(localUser);
+          }
+        }
+      }
+
       const payload = {
         event_id: resolvedEventId,
         user_id: resolvedUserId,
@@ -579,11 +666,21 @@ const ViharaSupabase = (() => {
     return null;
   }
 
-  // 7. Hapus Acara di Supabase
+  // 7. Hapus Acara di Supabase & Bersihkan Data Terkait
   async function deleteEvent(eventId) {
     const sb = getClient();
     if (!sb) return null;
     try {
+      if (typeof window !== 'undefined') {
+        window.ViharaDeletedEventIds = window.ViharaDeletedEventIds || new Set();
+        window.ViharaDeletedEventIds.add(String(eventId));
+      }
+
+      // Hapus presensi terkait acara terlebih dahulu untuk menjamin konsistensi
+      try {
+        await sb.from('attendance').delete().eq('event_id', String(eventId));
+      } catch (_) {}
+
       const { data, error } = await sb.from('events').delete().eq('id', String(eventId));
       if (error) throw error;
       return data;
@@ -627,6 +724,23 @@ const ViharaSupabase = (() => {
 
       if (error) throw error;
       if (data && Array.isArray(data)) {
+        // Jika Supabase kosong namun storage lokal memiliki data presensi, lakukan migrasi seeding ke remote db
+        if (data.length === 0) {
+          try {
+            const localAtt = localStorage.getItem('vihara_attendance');
+            if (localAtt) {
+              const parsed = JSON.parse(localAtt);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                console.info('[Supabase] Seeding data presensi lokal ke cloud...');
+                for (const a of parsed) {
+                  await insertAttendance(a.eventId, a.userId, a.method === 'mandiri' ? 'self_checkin' : 'manual_admin');
+                }
+                return parsed;
+              }
+            }
+          } catch (_) {}
+        }
+
         const mapped = data.map(a => {
           const evt = a.events || {};
           const prof = a.profiles || {};
@@ -655,6 +769,20 @@ const ViharaSupabase = (() => {
       console.warn('[Supabase] Gagal sinkronisasi attendance:', err.message);
     }
     return null;
+  }
+
+  // 9b. Bersihkan Seluruh Riwayat Presensi di Supabase
+  async function clearAllAttendance() {
+    const sb = getClient();
+    if (!sb) return false;
+    try {
+      const { error } = await sb.from('attendance').delete().neq('id', 'NONE');
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.warn('[Supabase] Gagal membersihkan riwayat presensi di remote db:', err.message);
+      return false;
+    }
   }
 
   // 10. Sinkronisasi Buku Tamu Digital dari Supabase
@@ -705,6 +833,20 @@ const ViharaSupabase = (() => {
       console.warn('[Supabase] Gagal sinkronisasi guests:', err.message);
     }
     return null;
+  }
+
+  // 10b. Bersihkan Seluruh Data Buku Tamu di Supabase
+  async function clearAllGuests() {
+    const sb = getClient();
+    if (!sb) return false;
+    try {
+      const { error } = await sb.from('guests').delete().neq('id', 'NONE');
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.warn('[Supabase] Gagal membersihkan buku tamu di remote db:', err.message);
+      return false;
+    }
   }
 
   // ==========================================================================
@@ -814,6 +956,7 @@ const ViharaSupabase = (() => {
     deleteProfile,
     syncEvents,
     insertEvent,
+    setActiveEvent,
     deleteEvent,
     syncAnnouncements,
     insertAnnouncement,
@@ -822,8 +965,10 @@ const ViharaSupabase = (() => {
     deleteAnnouncement,
     syncAttendance,
     insertAttendance,
+    clearAllAttendance,
     syncGuests,
     insertGuest,
+    clearAllGuests,
     getConfiguration,
     updateConfiguration
   };

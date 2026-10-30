@@ -314,11 +314,36 @@ document.addEventListener('DOMContentLoaded', () => {
           checkinBtn.className = 'btn btn-ghost btn-lg btn-block disabled';
         }
       } else {
-        if (titleHero) titleHero.innerText = 'Belum Absen';
-        if (checkinBtn) {
-          checkinBtn.disabled = false;
-          checkinBtn.innerHTML = `<span>Presensi Hadir Sekarang (${escapeHTML(activeEvent.name)})</span>`;
-          checkinBtn.className = 'btn btn-primary btn-lg btn-block';
+        const checkWindow = typeof ViharaData.getEventCheckInWindow === 'function'
+          ? ViharaData.getEventCheckInWindow(activeEvent)
+          : { isOpen: true };
+
+        if (!checkWindow.isOpen && checkWindow.reason === 'too_early') {
+          if (titleHero) titleHero.innerText = 'Presensi Belum Dibuka';
+          if (checkinBtn) {
+            checkinBtn.disabled = false;
+            checkinBtn.innerHTML = `
+              <span style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>Presensi Dibuka Pukul ${checkWindow.openTimeStr}</span>
+              </span>
+            `;
+            checkinBtn.className = 'btn btn-secondary btn-lg btn-block';
+          }
+        } else if (!checkWindow.isOpen && checkWindow.reason === 'expired') {
+          if (titleHero) titleHero.innerText = 'Acara Selesai';
+          if (checkinBtn) {
+            checkinBtn.disabled = true;
+            checkinBtn.innerHTML = `<span>Jadwal Kebaktian Selesai</span>`;
+            checkinBtn.className = 'btn btn-ghost btn-lg btn-block disabled';
+          }
+        } else {
+          if (titleHero) titleHero.innerText = 'Belum Absen';
+          if (checkinBtn) {
+            checkinBtn.disabled = false;
+            checkinBtn.innerHTML = `<span>Presensi Hadir Sekarang (${escapeHTML(activeEvent.name)})</span>`;
+            checkinBtn.className = 'btn btn-primary btn-lg btn-block';
+          }
         }
       }
     }
@@ -419,6 +444,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ViharaData.isUserCheckedInActiveEvent(user.id)) {
       showToast('Anda sudah tercatat hadir pada acara kebaktian ini.', 'info');
       return;
+    }
+
+    // Validasi jendela waktu presensi: maksimal 30 menit sebelum acara dimulai
+    if (typeof ViharaData.getEventCheckInWindow === 'function') {
+      const windowStatus = ViharaData.getEventCheckInWindow(activeEvent);
+      if (!windowStatus.isOpen) {
+        showToast(windowStatus.message, 'warning');
+        return;
+      }
     }
 
     const checkinBtn = document.getElementById('btn-umat-checkin');
