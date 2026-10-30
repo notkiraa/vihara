@@ -2933,18 +2933,15 @@ document.addEventListener('DOMContentLoaded', () => {
     preloader.classList.remove('loaded');
   };
 
-  window.hideDhammaLoading = function() {
-    hideDhammaPreloader();
-  };
+  window.hideDhammaPreloader = hideDhammaPreloader;
 
-  // Tutup preloader secara anggun begitu aplikasi dan aset selesai di-render
-  if (document.readyState === 'complete') {
-    setTimeout(hideDhammaPreloader, 400);
-  } else {
+  // Tutup preloader secara anggun begitu inisialisasi aplikasi selesai
+  setTimeout(hideDhammaPreloader, 250);
+  if (document.readyState !== 'complete') {
     window.addEventListener('load', () => {
-      setTimeout(hideDhammaPreloader, 400);
+      setTimeout(hideDhammaPreloader, 150);
     });
   }
-  // Safety timeout jika jaringan lambat
-  setTimeout(hideDhammaPreloader, 3200);
+  // Safety timeout jika jaringan lambat di ponsel (maksimal 1 detik)
+  setTimeout(hideDhammaPreloader, 1000);
 });

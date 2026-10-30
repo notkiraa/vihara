@@ -96,6 +96,40 @@
     </div>
   </div>
 
+  <script>
+    // Early global helpers untuk modal & preloader dismissal agar aman dari race conditions di ponsel
+    window.hideDhammaLoading = function() {
+      var p = document.getElementById('dhamma-preloader');
+      if (p && !p.classList.contains('loaded')) {
+        p.classList.add('loaded');
+        setTimeout(function() { p.style.display = 'none'; }, 400);
+      }
+    };
+    window.openModal = window.openModal || function(id) {
+      var m = document.getElementById(id);
+      if (m) {
+        m.classList.remove('closing');
+        m.classList.add('show');
+      }
+    };
+    window.closeModal = window.closeModal || function(id) {
+      var m = document.getElementById(id);
+      if (m) {
+        m.classList.add('closing');
+        setTimeout(function() {
+          m.classList.remove('show');
+          m.classList.remove('closing');
+        }, 220);
+      }
+    };
+    // Safety fallback: Dismiss preloader otomatis maksimal 1.8 detik jika jaringan seluler lambat
+    setTimeout(function() {
+      if (typeof window.hideDhammaLoading === 'function') {
+        window.hideDhammaLoading();
+      }
+    }, 1800);
+  </script>
+
   <!-- ==========================================================================
      [INDEX: HTML-02] CANVAS ANIMASI LATAR BELAKANG (INTERACTIVE PARTICLES & GLOW)
      Fungsi: Merender kanvas partikel debu dupa emas & parallax Roda Dhamma 60 FPS.

@@ -308,6 +308,81 @@ async function runTests() {
   ViharaQR.handleScannedData(permanentQr);
   assert(errorMessage.includes('Tidak ada jadwal kebaktian yang sedang aktif'), 'Sistem menampilkan notifikasi ramah saat tidak ada acara aktif');
 
+  // Test 10: Verifikasi Perbaikan Mobile & QR Scanner
+  console.log('\n--- 10. Verifikasi Perbaikan Mobile & QR Scanner ---');
+
+  // 10.1 Domain Fallback pada Localhost ke Production Vercel
+  global.window.location.origin = 'http://localhost:5500';
+  const localQr = ViharaQR.generateQrPayload();
+  assert(localQr.startsWith('https://appvihara.vercel.app'), 'Origin localhost otomatis fallback ke https://appvihara.vercel.app', localQr);
+
+  // 10.2 Domain Custom/Produksi Tetap Dipertahankan
+  global.window.location.origin = 'https://vihara.or.id';
+  const customQr = ViharaQR.generateQrPayload();
+  assert(customQr.startsWith('https://vihara.or.id'), 'Origin produksi/custom domain tetap dipertahankan');
+  global.window.location.origin = 'http://localhost:5500'; // Kembalikan ke default mock
+
+  // 10.3 ViharaData.addUser Polimorfik (Objek & Argumen Posisi)
+  assert(typeof ViharaData.addUser === 'function', 'ViharaData.addUser terdaftar sebagai fungsi publik di ViharaData');
+  const userObj = ViharaData.addUser({ name: 'Suryadi Wijaya', phone: '081299990001', role: 'umat' });
+  assert(userObj && userObj.name === 'Suryadi Wijaya' && userObj.phone === '081299990001', 'addUser berhasil dengan argumen objek { name, phone, role }');
+
+  const userPos = ViharaData.addUser('Maya Sasmita', '081299990002', 'umat');
+  assert(userPos && userPos.name === 'Maya Sasmita' && userPos.phone === '081299990002', 'addUser berhasil dengan argumen posisi (name, phone, role)');
+
+  // 10.4 Fallback Event Matching saat Waktu Aktif Tidak Pas tapi Tersedia Acara Terdaftar
+  const testFallbackEvent = {
+    id: 'EVT_FALLBACK_TEST',
+    name: 'Kebaktian Fallback Malam',
+    speaker: 'Bhikkhu Gunasiri',
+    date: todayKey,
+    startTime: `${pad(now.getHours())}:00`,
+    endTime: `${pad((now.getHours() + 2) % 24)}:00`,
+    archived: false
+  };
+  localStorage.setItem('vihara_events', JSON.stringify([testFallbackEvent]));
+  ViharaData.setSession({ id: 'USR_002', name: 'Vin Cen', phone: '0895355301519', role: 'admin' });
+  errorMessage = '';
+  ViharaQR.handleScannedData(permanentQr);
+  const checkedInFallback = ViharaData.isUserCheckedInEvent('USR_002', 'EVT_FALLBACK_TEST');
+  assert(checkedInFallback === true, 'handleScannedData berhasil fallback ke acara terbaru yang tersedia');
+
+  // 10.5 Verifikasi CSS Responsiveness Modal (.modal-box max-height 85vh & overflow-y)
+  const styleCssContent = fs.readFileSync('public/css/style.css', 'utf8');
+  assert(styleCssContent.includes('max-height: 85vh'), 'style.css memuat max-height: 85vh untuk mencegah modal terpotong di ponsel');
+  assert(styleCssContent.includes('overflow-y: auto'), 'style.css memuat overflow-y: auto untuk scrolling modal form kilat');
+
+  // 10.6 Verifikasi Preloader Dismissal pada initUrlScanHandler
+  let preloaderHidden = false;
+  global.window.hideDhammaLoading = () => { preloaderHidden = true; };
+  global.window.location.search = '?qr_dhammasala=1';
+  global.window.location.href = 'https://appvihara.vercel.app/index.html?qr_dhammasala=1';
+  global.window.history = { replaceState: () => {} };
+  await ViharaQR.initUrlScanHandler();
+  assert(preloaderHidden === true, 'initUrlScanHandler langsung memanggil penutupan preloader saat mendeteksi parameter QR');
+
+  // 10.7 Verifikasi Fallback Private IP LAN (192.168.x.x & 10.x.x.x) ke Production Vercel
+  global.window.location.origin = 'http://192.168.1.100:5500';
+  const lanQr = ViharaQR.generateQrPayload();
+  assert(lanQr.startsWith('https://appvihara.vercel.app'), 'Origin LAN 192.168.x.x otomatis fallback ke https://appvihara.vercel.app');
+
+  global.window.location.origin = 'http://10.0.0.15:3000';
+  const lan10Qr = ViharaQR.generateQrPayload();
+  assert(lan10Qr.startsWith('https://appvihara.vercel.app'), 'Origin LAN 10.x.x.x otomatis fallback ke https://appvihara.vercel.app');
+  global.window.location.origin = 'http://localhost:5500'; // Kembalikan ke default mock
+
+  // 10.8 Verifikasi Deteksi Tablet iPad (Macintosh UA dengan Touch)
+  const prevNav = global.window.navigator;
+  global.window.navigator = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', maxTouchPoints: 5 };
+  global.navigator = global.window.navigator;
+  assert(ViharaQR.isMobileDevice() === true, 'isMobileDevice mendeteksi iPadOS sebagai perangkat sentuh mobile');
+  global.window.navigator = prevNav;
+  global.navigator = prevNav;
+
+  // 10.9 Verifikasi Inline Safety Fallback Script di index.html
+  const freshIndexHtml = fs.readFileSync('public/index.html', 'utf8');
+  assert(freshIndexHtml.includes('window.hideDhammaLoading'), 'index.html memuat inline safety preloader & modal helpers');
+
   console.log('\n======================================================');
   console.log(`🎉 HASIL PENGUJIAN: ${passedTests} / ${totalTests} SKENARIO BERHASIL! (100% PASS)`);
   console.log('======================================================\n');

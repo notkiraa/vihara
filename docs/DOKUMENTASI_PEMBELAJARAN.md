@@ -18,6 +18,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 10. [Entri #09 — Sinkronisasi Utuh Data Lokal vs Supabase Cloud & Batasan Waktu Presensi 30 Menit](#entri-09--sinkronisasi-utuh-data-lokal-vs-supabase-cloud--batasan-waktu-presensi-30-menit)
 11. [Entri #10 — Eksekusi & Validasi Otomatis Seluruh Checklist ScenarioTest.md](#entri-10--eksekusi--validasi-otomatis-seluruh-checklist-scenariotestmd)
 12. [Entri #11 — Sistem Fallback QR Code Dinamis Dhammasala (Matriks Akses Perangkat, Standee Meja Resepsionis, & Presensi Instan Umat/Tamu)](#entri-11--sistem-fallback-qr-code-dinamis-dhammasala-matriks-akses-perangkat-standee-meja-resepsionis--presensi-instan-umattamu)
+13. [Entri #20 — Optimasi Pengalaman Mobile & Perbaikan Fitur QR Code Scanner](#entri-20--optimasi-responsivitas-mobile-perbaikan-preloader-dan-resolusi-komprehensif-qr-code-scanner)
 
 ---
 
@@ -2100,3 +2101,222 @@ Perintah `npm test` berhasil meluluskan seluruh pengujian otomatis:
 - **Realtime KPI, Visual Cleanup & Anti-Flicker Suite (`tests/test_realtime_kpi.cjs`)**: `10 / 10 PASSED (100%)`
 - **Total Keseluruhan**: `64 / 64 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
 - **Status Deployment**: Seluruh perubahan tersimpan aman di lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel sesuai instruksi pengguna).
+
+---
+
+## 📖 Entri #20 — Optimasi Responsivitas Mobile, Perbaikan Preloader, dan Resolusi Komprehensif QR Code Scanner
+
+### 1. 💬 Prompt User
+> *"tadi dicoba di moile dia kek ga keload gitu kenap aya, kepotong potong, terlalu berat apa ya? btw qr code ga work sir"*
+
+---
+
+### 2. ⚠️ Analisis Masalah & Akar Masalah (Root Cause)
+Berdasarkan investigasi mendalam terhadap kendala saat diakses via ponsel pintar (*smartphone*):
+
+1. **Gejala: "Kek ga keload gitu" (Preloader Menutupi Layar & Race Condition Sinkronisasi URL):**
+   - **Preloader Z-Index Blocking:** Elemen `#dhamma-preloader` memiliki nilai `z-index: 999999`, sedangkan modal aplikasi `z-index: 100`. Ketika pengguna memindai kode QR standee meja melalui kamera ponsel (Google Lens / Apple Camera), halaman terbuka dengan URL berparameter `?qr_dhammasala=1`. Modul `qr.js` membuka modal identitas kilat, namun preloader belum ditutup sehingga modal berada di belakang kanvas pemuatan. Pengguna merasa antarmuka "terjebak" (*stuck*) dan tidak termuat.
+   - **Race Condition Sinkronisasi Supabase vs `setTimeout` Arbitrer:** Fungsi `initUrlScanHandler` sebelumnya hanya mengandalkan `setTimeout 500ms` sebelum memanggil `handleScannedData()`. Pada koneksi seluler ponsel yang memiliki latensi lebih tinggi, inisialisasi cloud `ViharaSupabase.initSync()` membutuhkan waktu > 500ms. Akibatnya, `handleScannedData()` dijalankan saat daftar acara lokal masih kosong, memunculkan notifikasi *"Tidak ada jadwal kebaktian yang sedang aktif"*.
+   - **Pembersihan Dini URL Search Params:** `initUrlScanHandler` sebelumnya memanggil `window.history.replaceState` untuk menghapus parameter URL **sebelum** proses verifikasi selesai, memutus rantai data jika eksekusi tertunda.
+
+2. **Gejala: "Kepotong potong" (Layout Modal Terpotong di Layar Ponsel):**
+   - Modal dialog (`.modal-box`) sebelumnya tidak memiliki batasan tinggi adaptif (`max-height`) dan tidak mengaktifkan scrolling vertikal (`overflow-y: auto`).
+   - Ketika formulir panjang dibuka (seperti Form Identitas Kilat QR `#modal-qr-quick-register`) atau ketika *virtual keyboard* ponsel muncul, bagian bawah modal dan tombol konfirmasi presensi terdorong keluar batas pandang (*viewport*) dan terpotong tanpa bisa digulir (*unscrollable*).
+
+3. **Gejala: "Terlalu berat apa ya?" (Persepsi Pemuatan Lambat):**
+   - Safety timeout preloader lama diatur hingga 3200ms dan mendengarkan event `window.load` (yang menunggu seluruh aset media dan CDN eksternal selesai sempurna). Pada jaringan seluler lambat, layar pemuatan tampil terlalu lama dan memberi kesan aplikasi sangat berat.
+
+4. **Gejala: "Btw qr code ga work sir":**
+   - **Origin Localhost pada Standee Meja:** Saat admin membuka dashboard resepsionis di komputer lokal (`localhost:5500` / `127.0.0.1`), fungsi `generateQrPayload` membuat URL berbasis origin lokal (`http://localhost:5500/?qr_dhammasala=1...`). Saat kode QR tersebut dicetak atau ditampilkan di layar dan dipindai oleh kamera HP jemaat, peramban ponsel gagal mengakses `localhost` komputernya.
+   - **Kamera Depan vs Belakang pada In-App Scanner:** Fungsi `openScannerModal()` mengiterasi hasil `Html5Qrcode.getCameras()` dan memeriksa label string `"back"` / `"rear"`. Namun pada standar WebRTC mobile modern, sebelum izin kamera diberikan pengguna, label kamera berstatus string kosong (`""`). Akibatnya, pemindai selalu memilih kamera index 0 (kamera selfie/depan) secara default.
+   - **Method Missing `ViharaData.addUser`:** Formulir kilat walk-in di `qr.js` memanggil `ViharaData.addUser({ name, phone, role })`, namun di modul `public/js/data.js` fungsi tersebut belum diimplementasikan (hanya ada `registerUser`), sehingga walk-in gagal teregistrasi.
+   - **Fallback Event Matching:** Jika waktu scan berada di luar rentang presensi aktif persis, sistem langsung melempar error penolakan alih-alih melakukan fallback ke acara terdaftar terbaru di database.
+
+---
+
+### 3. 🛠️ Solusi & Implementasi Teknis
+
+#### A. Fallback Otomatis Domain Produksi pada QR Generator (`public/js/qr.js`)
+Memastikan kode QR yang digenerate dari komputer lokal admin di meja resepsionis selalu dapat dipindai oleh smartphone jemaat:
+```javascript
+function generateQrPayload(event = null) {
+  let origin = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null') 
+    ? window.location.origin 
+    : '';
+  let pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) 
+    ? window.location.pathname 
+    : '';
+
+  // Deteksi lingkungan localhost, IP loopback, file:, atau string kosong
+  const isLocalOrEmpty = !origin ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1') ||
+    origin.startsWith('file:') ||
+    origin === 'null';
+
+  if (isLocalOrEmpty) {
+    origin = 'https://appvihara.vercel.app';
+    pathname = pathname && pathname.endsWith('.html') ? pathname : (pathname === '/' ? '/' : '/index.html');
+  }
+
+  const base = origin + (pathname.startsWith('/') ? pathname : '/' + pathname);
+  ...
+}
+```
+
+#### B. Eliminasi Race Condition & Preloader Dismissal pada URL Handler (`public/js/qr.js`)
+Menutup preloader seketika saat parameter QR terdeteksi dan menunggu (`await`) inisialisasi sinkronisasi cloud Supabase secara deterministik:
+```javascript
+async function initUrlScanHandler() {
+  try {
+    if (typeof window === 'undefined' || !window.location || !window.location.search) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('qr_dhammasala') || urlParams.has('qr_event')) {
+      // 1. Sembunyikan preloader seketika agar modal hasil pemindaian tidak terhalang
+      if (typeof window.hideDhammaLoading === 'function') {
+        try { window.hideDhammaLoading(); } catch (e) {}
+      }
+      if (typeof hideDhammaPreloader === 'function') {
+        try { hideDhammaPreloader(); } catch (e) {}
+      }
+      const preEl = document.getElementById('dhamma-preloader');
+      if (preEl) {
+        preEl.classList.add('loaded');
+        preEl.style.display = 'none';
+      }
+
+      // 2. Await inisialisasi sinkronisasi database cloud Supabase sebelum eksekusi
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.initSync === 'function') {
+        try {
+          await ViharaSupabase.initSync();
+        } catch (syncErr) {
+          console.warn('[QR] Supabase initSync error in URL scan handler:', syncErr);
+        }
+      }
+
+      // 3. Proses data hasil pemindaian kode QR
+      const payloadText = (window.location && window.location.href) ? window.location.href : window.location.search;
+      handleScannedData(payloadText);
+
+      // 4. Bersihkan parameter URL HANYA SETELAH proses penanganan selesai
+      if (window.history && typeof window.history.replaceState === 'function') {
+        const cleanUrl = window.location.pathname || '/';
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+  } catch (e) {
+    console.warn('URL QR handler skipped:', e);
+  }
+}
+```
+
+#### C. Constraint Kamera Belakang Native (`facingMode: "environment"`) (`public/js/qr.js`)
+Mengaktifkan sensor kamera belakang smartphone secara langsung tanpa bergantung pada ketersediaan label perangkat:
+```javascript
+await html5QrCodeScanner.start(
+  { facingMode: "environment" },
+  scanConfig,
+  onScanSuccessCallback,
+  onScanErrorCallback
+);
+```
+
+#### D. Implementasi Polimorfik `ViharaData.addUser` (`public/js/data.js`)
+Mendukung penerimaan data baik dalam bentuk objek `{ name, phone, role }` maupun argumen posisi, lalu mendelegasikannya ke `registerUser`:
+```javascript
+function addUser(nameOrObj, phone, role = 'umat', email = '', avatar = '') {
+  if (nameOrObj && typeof nameOrObj === 'object') {
+    const uName = nameOrObj.name || '';
+    const uPhone = nameOrObj.phone || '';
+    const uRole = nameOrObj.role || 'umat';
+    const uEmail = nameOrObj.email || '';
+    const uAvatar = nameOrObj.avatar || '';
+    return registerUser(uName, uPhone, uRole, uEmail, uAvatar);
+  }
+  return registerUser(nameOrObj, phone, role, email, avatar);
+}
+```
+
+#### E. Fallback Acara Fleksibel pada `handleScannedData` (`public/js/qr.js`)
+Jika pencarian jam persis menghasilkan null, sistem mencari acara berdasarkan ID yang cocok atau memilih acara terdaftar terbaru yang belum diarsipkan:
+```javascript
+if (!targetEvent && parsed.eventId && parsed.eventId !== 'active') {
+  targetEvent = events.find(e => String(e.id) === String(parsed.eventId));
+}
+if (!targetEvent && events.length > 0) {
+  targetEvent = events.find(e => !e.archived) || events[events.length - 1] || events[0];
+}
+```
+
+#### F. Perbaikan Responsivitas Modal CSS Anti-Cutoff (`public/css/style.css`)
+Menambahkan `max-height: 85vh` dan `overflow-y: auto` dengan `-webkit-overflow-scrolling: touch` pada `.modal-box` dan `.modal-backdrop` (termasuk media query `@media (max-width: 768px)`):
+```css
+.modal-backdrop {
+  ...
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-box {
+  ...
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+```
+
+#### G. Percepatan Penutupan Preloader pada Mobile (`public/js/app.js`)
+Menambahkan listener `DOMContentLoaded` dan memotong safety timeout dari 3200ms menjadi 1500ms agar aplikasi terasa gesit dan ringan di perangkat mobile:
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(hideDhammaPreloader, 300);
+});
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(hideDhammaPreloader, 300);
+} else {
+  window.addEventListener('load', () => {
+    setTimeout(hideDhammaPreloader, 300);
+  });
+}
+setTimeout(hideDhammaPreloader, 1500);
+```
+
+---
+
+### 4. 📁 File yang Diperbarui
+1. [`public/js/qr.js`](file:///c:/AKU_NYOBA/appvihara/public/js/qr.js):
+   - Fallback generator origin ke `https://appvihara.vercel.app` pada `localhost`, `127.0.0.1`, IP private LAN (`192.168.*`, `10.*`, `172.16-31.*`), dev ports (`:5500`, `:3000`, `:8080`), atau non-https.
+   - Deteksi perangkat bergerak ditingkatkan mencakup tablet iPadOS (Macintosh UA dengan touch points).
+   - Inisialisasi kamera belakang native via `{ facingMode: "environment" }` tanpa constraint hardware kaku `aspectRatio: 1.0` yang menyebabkan `OverconstrainedError` di mobile, dilengkapi rantai fallback (environment -> camera ID rear label -> user/front camera).
+   - Sinkronisasi index kamera aktif agar tombol "Putar Kamera" membalik kamera depan/belakang secara akurat.
+   - Penambahan fallback DOM langsung pada `safeOpenModal` dan `safeCloseModal` untuk mencegah kegagalan senyap jika modul dimuat sebelum `app.js`.
+   - Preloader dismiss seketika & pembatasan batas waktu sinkronisasi `ViharaSupabase.initSync()` maksimal 2 detik pada `initUrlScanHandler` agar tidak membeku di jaringan lambat.
+   - Fallback event matching ke acara terbaru yang tersedia saat jam ibadah belum persis aktif.
+   - Pembersihan parameter URL hanya setelah proses scan selesai.
+2. [`public/js/data.js`](file:///c:/AKU_NYOBA/appvihara/public/js/data.js):
+   - Implementasi dan ekspor metode polimorfik `addUser` pada objek `ViharaData` (mendukung objek `{ name, phone, role }` dan argumen posisi).
+3. [`public/css/style.css`](file:///c:/AKU_NYOBA/appvihara/public/css/style.css):
+   - Penambahan `max-height: 85vh`, `max-height: 85dvh`, `overscroll-behavior: contain`, `overflow-y: auto`, dan touch smooth scrolling pada modal dialog agar tidak terpotong oleh keyboard virtual mobile.
+   - Pengaturan safe-area padding pada `.modal-backdrop`.
+   - Penambahan batasan tinggi adaptif `.qr-camera-viewport` pada layar sempit (`<= 480px`) agar modal scanner kamera pas di viewport ponsel.
+   - Penambahan `overflow-x: hidden` pada `html, body` untuk mencegah pergeseran/goyangan horizontal pada iOS Safari.
+4. [`public/index.html`](file:///c:/AKU_NYOBA/appvihara/public/index.html):
+   - Penyertaan inline safety fallback script tepat di bawah `#dhamma-preloader` (maksimal 1.8 detik) serta inisialisasi awal helper `window.openModal`, `window.closeModal`, dan `window.hideDhammaLoading` untuk mengeliminasi race conditions di jaringan seluler lambat.
+5. [`public/js/app.js`](file:///c:/AKU_NYOBA/appvihara/public/js/app.js):
+   - Pembersihan listener `DOMContentLoaded` redundan di dalam `DOMContentLoaded`, ekspor global `window.hideDhammaPreloader`, dan pemangkasan safety timeout preloader ke 1000ms.
+6. [`tests/test_qr_feature.cjs`](file:///c:/AKU_NYOBA/appvihara/tests/test_qr_feature.cjs):
+   - Penambahan 13 skenario uji otomatis baru di Seksi 10 memvalidasi domain fallback localhost & LAN IP (192.168.x.x, 10.x.x.x), deteksi iPadOS touch, responsivitas modal CSS, inline safety preloader script, dan polimorfisme `addUser`.
+7. [`docs/DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/docs/DOKUMENTASI_PEMBELAJARAN.md):
+   - Dokumentasi lengkap Entri #20.
+
+---
+
+### 5. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis
+Seluruh rangkaian pengujian regresi dan fitur baru berhasil lulus 100%:
+- **Scenario Test Suite (`tests/run_scenario_test.cjs`)**: `16 / 16 PASSED (100%)`
+- **Security Audit Suite (`tests/test_security_audit.cjs`)**: `11 / 11 PASSED (100%)`
+- **QR Fallback & Multi-Week Permanent Suite (`tests/test_qr_feature.cjs`)**: `40 / 40 PASSED (100%)` *(sebelumnya 27 skenario)*
+- **Realtime KPI, Visual Cleanup & Anti-Flicker Suite (`tests/test_realtime_kpi.cjs`)**: `10 / 10 PASSED (100%)`
+- **Total Keseluruhan**: `77 / 77 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
+- **Status Deployment**: Seluruh perubahan tersimpan aman di repositori lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel).
+

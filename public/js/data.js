@@ -434,6 +434,23 @@ var ViharaData = (() => {
     return newUser;
   }
 
+  /**
+   * Menambahkan pengguna baru secara polimorfik:
+   * Menerima objek { name, phone, role, email, avatar } atau argumen posisi
+   * (name, phone, role, email, avatar), mendelegasikan secara bersih ke registerUser.
+   */
+  function addUser(nameOrObj, phone, role = 'umat', email = '', avatar = '') {
+    if (nameOrObj && typeof nameOrObj === 'object') {
+      const uName = nameOrObj.name || '';
+      const uPhone = nameOrObj.phone || '';
+      const uRole = nameOrObj.role || 'umat';
+      const uEmail = nameOrObj.email || '';
+      const uAvatar = nameOrObj.avatar || '';
+      return registerUser(uName, uPhone, uRole, uEmail, uAvatar);
+    }
+    return registerUser(nameOrObj, phone, role, email, avatar);
+  }
+
   function updateUserRole(userId, newRole) {
     const users = getUsers();
     const user = users.find(u => u.id === userId);
@@ -709,6 +726,7 @@ var ViharaData = (() => {
     getUsers,
     findUserByPhone,
     registerUser,
+    addUser,
     updateUserRole,
     updateUser,
     deleteUser,

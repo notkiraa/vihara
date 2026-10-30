@@ -44,6 +44,12 @@
       window.openModal(id);
     } else if (typeof openModal === 'function') {
       openModal(id);
+    } else if (typeof document !== 'undefined') {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('closing');
+        el.classList.add('show');
+      }
     }
   }
 
@@ -52,6 +58,15 @@
       window.closeModal(id);
     } else if (typeof closeModal === 'function') {
       closeModal(id);
+    } else if (typeof document !== 'undefined') {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('closing');
+        setTimeout(() => {
+          el.classList.remove('show');
+          el.classList.remove('closing');
+        }, 220);
+      }
     }
   }
 
@@ -62,10 +77,11 @@
     const nav = (typeof window !== 'undefined' && window.navigator) ? window.navigator : (typeof navigator !== 'undefined' ? navigator : {});
     const ua = (nav.userAgent || nav.vendor || (typeof window !== 'undefined' ? window.opera : '') || '').toLowerCase();
     const isMobileUA = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua);
+    const isIPadOS = (nav.maxTouchPoints > 1 && /macintosh/i.test(ua));
     const winWidth = typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 1024;
     const isSmallScreen = winWidth <= 860;
     const hasTouch = (typeof window !== 'undefined' && 'ontouchstart' in window) || (nav.maxTouchPoints > 0);
-    return isMobileUA || (isSmallScreen && hasTouch);
+    return isMobileUA || isIPadOS || (isSmallScreen && hasTouch);
   }
 
   /**
@@ -82,9 +98,32 @@
    * maupun minggu-minggu berikutnya secara otomatis berdasarkan jadwal yang sedang aktif.
    */
   function generateQrPayload(event = null) {
-    const origin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : '';
-    const pathname = window.location.pathname || '';
-    const base = origin + pathname;
+    let origin = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null') 
+      ? window.location.origin 
+      : '';
+    let pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) 
+      ? window.location.pathname 
+      : '';
+
+    // Deteksi jika berjalan di localhost, 127.0.0.1, private LAN IP, dev ports, file:, atau empty/null
+    const isLocalOrDev = !origin ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.includes('192.168.') ||
+      origin.includes('10.') ||
+      /^https?:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./.test(origin) ||
+      origin.includes('.local') ||
+      origin.startsWith('file:') ||
+      origin === 'null' ||
+      /:\d{4,5}$/.test(origin) ||
+      (origin.startsWith('http://') && !origin.includes('appvihara'));
+
+    if (isLocalOrDev) {
+      origin = 'https://appvihara.vercel.app';
+      pathname = pathname && pathname.endsWith('.html') ? pathname : (pathname === '/' ? '/' : '/index.html');
+    }
+
+    const base = origin + (pathname.startsWith('/') ? pathname : '/' + pathname);
 
     if (event && event.id && event.id !== 'active' && event.forceSpecific) {
       const cleanEventId = String(event.id);
@@ -421,46 +460,87 @@
       }
 
       html5QrCodeScanner = new Html5Qrcode('qr-scanner-viewport');
-      availableCameras = await Html5Qrcode.getCameras();
-
-      if (!availableCameras || availableCameras.length === 0) {
-        throw new Error('Tidak ditemukan sensor kamera pada perangkat ini.');
-      }
-
-      // Pilih kamera belakang (environment) secara default
-      let targetCamera = availableCameras[0].id;
-      for (let i = 0; i < availableCameras.length; i++) {
-        const label = (availableCameras[i].label || '').toLowerCase();
-        if (label.includes('back') || label.includes('belakang') || label.includes('rear') || label.includes('environment')) {
-          targetCamera = availableCameras[i].id;
-          currentCameraIndex = i;
-          break;
-        }
-      }
-
       isScanningActive = true;
       if (statusEl) statusEl.textContent = 'Posisikan kode QR di meja resepsionis ke dalam bingkai kamera.';
 
-      await html5QrCodeScanner.start(
-        targetCamera,
-        {
-          fps: 10,
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const edgeSize = Math.floor(minEdge * 0.72);
-            return { width: edgeSize, height: edgeSize };
-          },
-          aspectRatio: 1.0
-        },
-        onScanSuccessCallback,
-        onScanErrorCallback
-      );
+      const scanConfig = {
+        fps: 10,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const edgeSize = Math.floor(minEdge * 0.72);
+          return { width: edgeSize, height: edgeSize };
+        }
+      };
 
-      // Tampilkan tombol putar kamera jika ada lebih dari 1 kamera
-      const flipBtn = document.getElementById('btn-qr-switch-camera');
-      if (flipBtn) {
-        flipBtn.style.display = availableCameras.length > 1 ? 'inline-flex' : 'none';
+      try {
+        // Utamakan membuka kamera belakang secara native via constraint hardware facingMode: "environment"
+        await html5QrCodeScanner.start(
+          { facingMode: "environment" },
+          scanConfig,
+          onScanSuccessCallback,
+          onScanErrorCallback
+        );
+      } catch (envErr) {
+        console.warn('Gagal membuka kamera dengan facingMode: environment, mencoba fallback getCameras():', envErr);
+        // Fallback 1: Jika browser membutuhkan cameraId eksplisit
+        let started = false;
+        try {
+          availableCameras = await Html5Qrcode.getCameras();
+          if (availableCameras && availableCameras.length > 0) {
+            let targetCamera = availableCameras[0].id;
+            for (let i = 0; i < availableCameras.length; i++) {
+              const label = (availableCameras[i].label || '').toLowerCase();
+              if (label.includes('back') || label.includes('belakang') || label.includes('rear') || label.includes('environment')) {
+                targetCamera = availableCameras[i].id;
+                currentCameraIndex = i;
+                break;
+              }
+            }
+
+            await html5QrCodeScanner.start(
+              targetCamera,
+              scanConfig,
+              onScanSuccessCallback,
+              onScanErrorCallback
+            );
+            started = true;
+          }
+        } catch (camErr) {
+          console.warn('Fallback getCameras() gagal:', camErr);
+        }
+
+        // Fallback 2: Jika masih belum terbuka, coba kamera depan / user stream default
+        if (!started) {
+          try {
+            await html5QrCodeScanner.start(
+              { facingMode: "user" },
+              scanConfig,
+              onScanSuccessCallback,
+              onScanErrorCallback
+            );
+          } catch (userErr) {
+            throw new Error('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan di peramban.');
+          }
+        }
       }
+
+      // Ambil daftar kamera setelah izin aktif untuk mengontrol tombol pembalik kamera
+      try {
+        availableCameras = await Html5Qrcode.getCameras();
+        if (availableCameras && availableCameras.length > 1) {
+          for (let i = 0; i < availableCameras.length; i++) {
+            const label = (availableCameras[i].label || '').toLowerCase();
+            if (label.includes('back') || label.includes('belakang') || label.includes('rear') || label.includes('environment')) {
+              currentCameraIndex = i;
+              break;
+            }
+          }
+        }
+        const flipBtn = document.getElementById('btn-qr-switch-camera');
+        if (flipBtn) {
+          flipBtn.style.display = (availableCameras && availableCameras.length > 1) ? 'inline-flex' : 'none';
+        }
+      } catch (camListErr) {}
 
     } catch (err) {
       console.error('Kamera gagal diinisialisasi:', err);
@@ -495,8 +575,19 @@
    * Beralih antara kamera depan & belakang
    */
   async function switchCamera() {
-    if (!html5QrCodeScanner || availableCameras.length <= 1) return;
+    if (!html5QrCodeScanner) return;
     try {
+      if (!availableCameras || availableCameras.length <= 1) {
+        try {
+          availableCameras = await Html5Qrcode.getCameras();
+        } catch (e) {}
+      }
+      if (!availableCameras || availableCameras.length <= 1) {
+        if (typeof showToast === 'function') {
+          showToast('Hanya 1 sensor kamera terdeteksi pada perangkat ini.', 'info');
+        }
+        return;
+      }
       await html5QrCodeScanner.stop();
       currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
       const nextCameraId = availableCameras[currentCameraIndex].id;
@@ -509,8 +600,7 @@
             const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
             const edgeSize = Math.floor(minEdge * 0.72);
             return { width: edgeSize, height: edgeSize };
-          },
-          aspectRatio: 1.0
+          }
         },
         onScanSuccessCallback,
         onScanErrorCallback
@@ -643,6 +733,16 @@
         }
       }
 
+      // Fallback: Cek jika parsed.eventId cocok dengan ID acara yang ada
+      if (!targetEvent && parsed.eventId && parsed.eventId !== 'active') {
+        targetEvent = events.find(e => String(e.id) === String(parsed.eventId));
+      }
+
+      // Fallback: Jika masih null dan terdapat acara di database, gunakan acara terbaru yang tersedia
+      if (!targetEvent && events.length > 0) {
+        targetEvent = events.find(e => !e.archived) || events[events.length - 1] || events[0];
+      }
+
       if (!targetEvent) {
         showScanErrorModal('Tidak ada jadwal kebaktian yang sedang aktif saat ini. Harap hubungi pengurus di meja resepsionis.');
         return;
@@ -650,6 +750,10 @@
     } else {
       // Mode Acara Spesifik Berdasarkan ID Acara
       targetEvent = events.find(e => String(e.id) === String(parsed.eventId));
+
+      if (!targetEvent && events.length > 0) {
+        targetEvent = events.find(e => !e.archived) || events[events.length - 1] || events[0];
+      }
 
       if (!targetEvent) {
         showScanErrorModal('Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.');
@@ -954,22 +1058,56 @@
    * Penanganan Otomatis URL Parameter saat Halaman Dimuat
    * (Jika umat memindai kode QR standee langsung menggunakan Google Lens / iPhone Camera)
    */
-  function initUrlScanHandler() {
+  async function initUrlScanHandler() {
     try {
+      if (typeof window === 'undefined' || !window.location || !window.location.search) return;
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('qr_dhammasala') || urlParams.has('qr_event')) {
-        const isDhammasala = urlParams.has('qr_dhammasala') || urlParams.get('qr_event') === 'active';
-        const eventId = isDhammasala ? 'active' : urlParams.get('qr_event');
-        const date = urlParams.get('date');
+        // 1. Sembunyikan preloader seketika agar modal hasil pemindaian tidak terhalang di belakang canvas preloader
+        if (typeof window.hideDhammaLoading === 'function') {
+          try { window.hideDhammaLoading(); } catch (e) {}
+        }
+        if (typeof hideDhammaPreloader === 'function') {
+          try { hideDhammaPreloader(); } catch (e) {}
+        }
+        if (typeof document !== 'undefined') {
+          const preEl = document.getElementById('dhamma-preloader');
+          if (preEl) {
+            preEl.classList.add('loaded');
+            preEl.style.display = 'none';
+          }
+        }
 
-        // Bersihkan parameter URL tanpa reload halaman agar bersih
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
+        // 2. Await inisialisasi sinkronisasi database cloud Supabase sebelum eksekusi (dengan batas waktu 2 detik agar tidak freeze di jaringan lambat)
+        if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.initSync === 'function') {
+          try {
+            await Promise.race([
+              ViharaSupabase.initSync(),
+              new Promise(resolve => setTimeout(resolve, 2000))
+            ]);
+          } catch (syncErr) {
+            console.warn('[QR] Supabase initSync error in URL scan handler:', syncErr);
+          }
+        }
 
-        // Beri jeda kecil agar data & sesi lokal siap
-        setTimeout(() => {
-          handleScannedData(JSON.stringify({ eventId, isDhammasala, date }));
-        }, 500);
+        // Pastikan inisialisasi penyimpanan lokal siap
+        if (typeof ViharaData !== 'undefined' && typeof ViharaData.init === 'function') {
+          try { ViharaData.init(); } catch (e) {}
+        }
+
+        // 3. Proses data hasil pemindaian kode QR
+        const payloadText = (window.location && window.location.href) ? window.location.href : window.location.search;
+        handleScannedData(payloadText);
+
+        // 4. Bersihkan parameter URL HANYA SETELAH proses penanganan selesai (jangan hapus sebelum diproses)
+        try {
+          if (window.history && typeof window.history.replaceState === 'function') {
+            const cleanUrl = window.location.pathname || '/';
+            window.history.replaceState({}, document.title, cleanUrl);
+          }
+        } catch (histErr) {
+          console.warn('[QR] History replaceState failed:', histErr);
+        }
       }
     } catch (e) {
       console.warn('URL QR handler skipped:', e);

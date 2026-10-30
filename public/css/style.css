@@ -122,6 +122,7 @@ html, body {
   color: var(--ink);
   background: #fcf8f9;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 input, button, select, textarea {
@@ -2579,6 +2580,8 @@ body.user-logged-out #view-guest.active {
   opacity: 0;
   pointer-events: none;
   transition: opacity .24s var(--ease);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-backdrop.show {
@@ -2600,6 +2603,11 @@ body.user-logged-out #view-guest.active {
   box-shadow: 0 20px 48px -10px rgba(74, 18, 26, 0.32);
   border: 1.5px solid var(--pal-peach);
   margin: auto;
+  max-height: 85vh;
+  max-height: 85dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .modal-backdrop.show .modal-box {
@@ -2781,23 +2789,34 @@ body.user-logged-out #view-guest.active {
 
 @media (max-width: 768px) {
   .modal-backdrop {
-    padding: 16px;
+    padding: env(safe-area-inset-top, 16px) 16px calc(env(safe-area-inset-bottom, 16px) + 16px) 16px;
     align-items: center;
     justify-content: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .modal-box {
     width: 100%;
     max-width: 380px;
     margin: auto;
     border-radius: var(--r-xl);
+    max-height: 85vh;
+    max-height: 85dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .modal-box-large {
     width: 100%;
     max-width: 440px;
     height: auto;
     max-height: 88vh;
+    max-height: 88dvh;
     border-radius: var(--r-xl);
     margin: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .modal-header-event {
     border-radius: calc(var(--r-xl) - 2px) calc(var(--r-xl) - 2px) 0 0;
@@ -4150,13 +4169,21 @@ body.user-logged-out #view-guest.active {
 .qr-camera-viewport {
   width: 100%;
   max-width: 340px;
-  height: 300px;
+  height: 280px;
+  max-height: 44vh;
   margin: 0 auto;
   border-radius: 16px;
   overflow: hidden;
   background: #000000;
   position: relative;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 480px) {
+  .qr-camera-viewport {
+    height: 240px;
+    max-height: 36vh;
+  }
 }
 
 .qr-camera-viewport video {
