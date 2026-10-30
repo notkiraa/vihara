@@ -1997,3 +1997,37 @@ Eksekusi melalui perintah terpadu `npm test`:
 - **Realtime KPI & Visual Cleanup Suite (`tests/test_realtime_kpi.cjs`)**: `7 / 7 PASSED (100%)`
 - **Total Keseluruhan**: `61 / 61 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
 - **Status Deployment**: Seluruh perubahan tetap berada di lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel sesuai instruksi).
+
+
+---
+
+## 📖 Entri #18 — Penghapusan Tombol Kembali Kecil pada Header Modal QR
+
+### 1. 💬 Prompt User
+> ```html
+> <button type="button" onclick="closeModal('modal-qr-display')" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 4px;" title="Kembali">
+>   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+>     <polyline points="15 18 9 12 15 6"></polyline>
+>   </svg>
+>   <span>Kembali</span>
+> </button>
+> ini apus juga dong
+> ```
+
+---
+
+### 2. ⚠️ Gejala / Masalah
+Pada header `#modal-qr-display`, keberadaan tombol kecil "Kembali" di samping judul *"QR Presensi Dhammasala"* membuat header terlalu padat dan redundan dengan tombol silang bulat (`&times;`) di kanan atas serta tombol besar lebar penuh *"← Kembali"* di bagian bawah modal.
+
+---
+
+### 3. 🛠️ Solusi & Implementasi Teknis
+- Menghapus elemen tombol kecil kembali tersebut dari header `#modal-qr-display` di [`public/index.html`](file:///c:/AKU_NYOBA/appvihara/public/index.html).
+- Header modal kini tampil bersih dan proporsional (judul di kiri dan tombol tutup bulat di kanan), dengan tombol aksi kembali utama tetap tersedia di bagian bawah modal, penutupan klik backdrop, dan tombol ESC.
+- Memperbarui pengujian otomatis di [`tests/test_realtime_kpi.cjs`](file:///c:/AKU_NYOBA/appvihara/tests/test_realtime_kpi.cjs) untuk memastikan elemen ini tidak muncul kembali.
+
+---
+
+### 4. 🧪 Hasil Verifikasi
+- **Eksekusi Pengujian (`npm test`)**: `62 / 62 Skenario LULUS (100% PASS)`
+- **Status Deployment**: Disimpan murni di repositori lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel).
