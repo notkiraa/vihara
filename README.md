@@ -67,3 +67,4 @@ npm run test:security    # Uji audit keamanan & proteksi privilege
 npm run test:qr          # Uji logika fallback QR Dhammasala & buku tamu
 npm run scan:xss         # Pemindaian potensi kerentanan DOM XSS
 ```
+
