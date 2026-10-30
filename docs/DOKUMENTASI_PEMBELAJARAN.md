@@ -1805,7 +1805,71 @@ Eksekusi melalui perintah terpadu `npm test`:
 - **Total Keseluruhan**: `48 / 48 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
 
 ---
+
+## 📝 ENTRI #15: PENGHAPUSAN SECTION CARD QR ADMIN REDUNDAN & IMPLEMENTASI KODE QR TETAP/PERMANEN MEJA DHAMMASALA (UNIVERSAL MULTI-WEEK)
+
+### 1. 📌 Konteks & Kebutuhan Pengguna
+- **Kebutuhan Pengguna**:
+  1. *Penghapusan Card Redundan*: Menghapus card "QR Presensi Dhammasala (Display Meja Resepsionis)" di panel Buat Acara/Admin karena tombol QR sudah tersedia rapi di navbar (desktop & mobile).
+  2. *Kode QR Tetap & Permanen*: Menyediakan satu kode QR yang tidak perlu diganti-ganti setiap minggu. Pengurus vihara cukup mencetak kode QR 1x di meja resepsionis/standee pintu Dhammasala, dan umat dapat memindai kode yang sama untuk kebaktian hari ini, minggu depan, maupun minggu-minggu berikutnya secara otomatis.
+
+---
+
+### 2. 🔍 Analisis Masalah & Keterbatasan Sebelumnya
+1. **Redundansi Tampilan**:
+   Tombol pemicu modal QR sudah ada di desktop header (`#desktop-nav-qr-btn`) dan mobile top bar (`#mobile-top-qr-btn`), sehingga card raksasa di dasbor admin memakan ruang halaman tanpa fungsi tambahan.
+2. **Keterikatan Payload QR Lama**:
+   Sebelumnya, payload QR menyematkan `?qr_event=EVT_XXX&date=YYYY-MM-DD`. Akibatnya, setiap kali acara kebaktian berganti minggu depannya, QR tersebut kedaluwarsa dan pengurus harus mencetak ulang lembar QR baru. Hal ini sangat tidak efisien untuk standee akrilik fisik di meja resepsionis.
+
+---
+
+### 3. 💡 Solusi Teknis & Arsitektur Kode QR Universal
+1. **Penghapusan Elemen UI Redundan**:
+   Menghapus elemen `.qr-admin-section-card` dari `public/index.html` sehingga tampilan panel admin lebih bersih dan fokus pada manajemen jadwal.
+2. **Format Payload QR Universal Meja Dhammasala**:
+   Memodifikasi `generateQrPayload()` di `public/js/qr.js` agar menghasilkan URL permanen:
+   ```text
+   https://appvihara.vercel.app/?qr_dhammasala=1&qr_event=active&vihara=VAB_CIBINONG
+   ```
+3. **Resolusi Acara Dinamis Otomatis (`handleScannedData`)**:
+   Saat kode QR dipindai oleh umat atau kamera eksternal (Google Lens / iPhone Camera):
+   - Sistem mendeteksi parameter `qr_dhammasala=1` atau `qr_event=active`.
+   - Sistem secara cerdas mencari acara aktif saat itu melalui:
+     `const targetEvent = ViharaData.findEventForCurrentTime() || ViharaData.getActiveEvent();`
+   - **Minggu Ini**: Terhubung otomatis ke kebaktian minggu ini.
+   - **Minggu Depan**: Terhubung otomatis ke kebaktian minggu depan dengan KODE QR YANG PERSIS SAMA.
+   - **Di Luar Jadwal**: Sistem ramah menampilkan pesan *"Tidak ada jadwal kebaktian yang sedang aktif saat ini. Harap hubungi pengurus di meja resepsionis."*
+   - Tetap memvalidasi aturan waktu presensi dibuka maksimal 30 menit sebelum acara dimulai.
+4. **Kompatibilitas Mundur (Backward Compatibility)**:
+   Sistem tetap mendukung format spesifik lama jika ada yang memindai QR lama yang memuat ID acara tertentu (`EVT_XXX`).
+
+---
+
+### 4. 📂 File yang Diperbarui
+1. [`public/index.html`](file:///c:/AKU_NYOBA/appvihara/public/index.html)
+   - Penghapusan card redundan `.qr-admin-section-card` dari panel admin.
+2. [`public/js/qr.js`](file:///c:/AKU_NYOBA/appvihara/public/js/qr.js)
+   - Implementasi payload QR permanen universal (`generateQrPayload`).
+   - Penambahan detektor universal Dhammasala (`parseQrPayload`).
+   - Penyesuaian resolusi jadwal aktif saat ini dan multi-minggu (`handleScannedData`).
+   - Penanganan pembacaan URL scanner bawaan (`initUrlScanHandler`).
+3. [`tests/test_qr_feature.cjs`](file:///c:/AKU_NYOBA/appvihara/tests/test_qr_feature.cjs)
+   - Penambahan skenario uji 9: Validasi format QR permanen, simulasi presensi minggu ini, simulasi presensi minggu depan dengan QR yang sama, dan penanganan saat tidak ada jadwal aktif.
+4. [`docs/DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/docs/DOKUMENTASI_PEMBELAJARAN.md)
+   - Dokumentasi lengkap Entri #15.
+
+---
+
+### 5. 🧪 Hasil Verifikasi Seluruh Test Suite Otomatis
+Eksekusi melalui perintah terpadu `npm test`:
+- **Scenario Test Suite (`tests/run_scenario_test.cjs`)**: `16 / 16 PASSED (100%)`
+- **Security Audit Suite (`tests/test_security_audit.cjs`)**: `11 / 11 PASSED (100%)`
+- **QR Fallback & Multi-Week Permanent Suite (`tests/test_qr_feature.cjs`)**: `26 / 26 PASSED (100%)`
+- **Total Keseluruhan**: `53 / 53 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
+
+---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
+
 
 
 

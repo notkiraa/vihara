@@ -73,14 +73,27 @@
    * Format: URL lengkap dengan parameter qr_event & date agar kompatibel dengan
    * scanner in-app maupun aplikasi kamera bawaan HP (Google Lens / iPhone Camera).
    */
-  function generateQrPayload(event) {
-    if (!event) return '';
+  /**
+   * Menghasilkan teks / payload QR Code unik untuk meja Dhammasala.
+   * Mode Tetap & Universal (Default):
+   * Satu kode QR fisik meja resepsionis (?qr_dhammasala=1&qr_event=active) yang
+   * bersifat permanen sehingga pengurus cukup mencetak 1x di meja resepsionis/pintu
+   * Dhammasala, dan umat dapat memindainya untuk kebaktian hari ini, minggu depan,
+   * maupun minggu-minggu berikutnya secara otomatis berdasarkan jadwal yang sedang aktif.
+   */
+  function generateQrPayload(event = null) {
     const origin = window.location.origin && window.location.origin !== 'null' ? window.location.origin : '';
     const pathname = window.location.pathname || '';
     const base = origin + pathname;
-    const cleanEventId = String(event.id);
-    const cleanDate = String(event.date);
-    return `${base}?qr_event=${encodeURIComponent(cleanEventId)}&date=${encodeURIComponent(cleanDate)}&vihara=VAB_CIBINONG`;
+
+    if (event && event.id && event.id !== 'active' && event.forceSpecific) {
+      const cleanEventId = String(event.id);
+      const cleanDate = String(event.date || '');
+      return `${base}?qr_event=${encodeURIComponent(cleanEventId)}&date=${encodeURIComponent(cleanDate)}&vihara=VAB_CIBINONG`;
+    }
+
+    const eventIdParam = (event && event.id && event.id !== 'active') ? String(event.id) : 'active';
+    return `${base}?qr_dhammasala=1&qr_event=${encodeURIComponent(eventIdParam)}&vihara=VAB_CIBINONG`;
   }
 
   /**
@@ -152,7 +165,7 @@
       metaEl.textContent = `${targetEvent.speaker || 'Bhikkhu Sangha'} • ${targetEvent.startTime || '09:00'} - ${targetEvent.endTime || '11:30'} WIB • Dhammasala`;
     }
     if (badgeEl) {
-      badgeEl.innerHTML = `🟢 Aktif • ${escapeHTML(targetEvent.name)}`;
+      badgeEl.innerHTML = `🟢 Terhubung Otomatis • ${escapeHTML(targetEvent.name)}`;
     }
 
     const payload = generateQrPayload(targetEvent);
@@ -540,35 +553,64 @@
     if (!text) return null;
     let eventId = null;
     let date = null;
+    let isDhammasala = false;
 
-    // Skenario 1: Format URL (?qr_event=EVT_XXX&date=YYYY-MM-DD)
+    // Skenario 1: Format URL (?qr_dhammasala=1 atau ?qr_event=...)
     try {
       const url = new URL(text, window.location.href);
+      if (url.searchParams.has('qr_dhammasala') || url.searchParams.get('qr_event') === 'active') {
+        const evParam = url.searchParams.get('qr_event');
+        return {
+          eventId: (evParam && evParam !== 'active') ? evParam : 'active',
+          isDhammasala: true,
+          date: url.searchParams.get('date')
+        };
+      }
       if (url.searchParams.has('qr_event')) {
         eventId = url.searchParams.get('qr_event');
         date = url.searchParams.get('date');
-        return { eventId, date };
+        return {
+          eventId,
+          date,
+          isDhammasala: eventId === 'active'
+        };
       }
     } catch (e) {}
 
     // Skenario 2: Format JSON
     try {
       const parsed = JSON.parse(text);
-      if (parsed.eventId || parsed.id) {
+      if (parsed.isDhammasala || parsed.eventId === 'active' || parsed.id === 'active') {
         return {
-          eventId: parsed.eventId || parsed.id,
+          eventId: (parsed.eventId && parsed.eventId !== 'active') ? parsed.eventId : 'active',
+          isDhammasala: true,
           date: parsed.date || null
+        };
+      }
+      if (parsed.eventId || parsed.id) {
+        const id = parsed.eventId || parsed.id;
+        return {
+          eventId: id,
+          date: parsed.date || null,
+          isDhammasala: id === 'active'
         };
       }
     } catch (e) {}
 
-    // Skenario 3: Format Titik Dua (VAB:EVT_XXX:YYYY-MM-DD)
+    // Skenario 3: Format String Singkat Dhammasala
+    if (text === 'VAB:DHAMMASALA' || text === 'VAB_CIBINONG_DHAMMASALA') {
+      return { eventId: 'active', isDhammasala: true };
+    }
+
+    // Skenario 4: Format Titik Dua (VAB:EVT_XXX:YYYY-MM-DD)
     if (text.startsWith('VAB:')) {
       const parts = text.split(':');
       if (parts.length >= 2) {
+        const id = parts[1];
         return {
-          eventId: parts[1],
-          date: parts[2] || null
+          eventId: id,
+          date: parts[2] || null,
+          isDhammasala: id === 'active' || id === 'DHAMMASALA'
         };
       }
     }
@@ -587,12 +629,32 @@
       return;
     }
 
+    let targetEvent = null;
     const events = typeof ViharaData !== 'undefined' ? ViharaData.getEvents() : [];
-    const targetEvent = events.find(e => String(e.id) === String(parsed.eventId));
 
-    if (!targetEvent) {
-      showScanErrorModal('Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.');
-      return;
+    // Jika mode QR Tetap Dhammasala (Universal untuk kebaktian aktif saat ini & minggu berikutnya)
+    if (parsed.isDhammasala || parsed.eventId === 'active') {
+      if (typeof ViharaData !== 'undefined') {
+        if (typeof ViharaData.findEventForCurrentTime === 'function') {
+          targetEvent = ViharaData.findEventForCurrentTime();
+        }
+        if (!targetEvent && typeof ViharaData.getActiveEvent === 'function') {
+          targetEvent = ViharaData.getActiveEvent();
+        }
+      }
+
+      if (!targetEvent) {
+        showScanErrorModal('Tidak ada jadwal kebaktian yang sedang aktif saat ini. Harap hubungi pengurus di meja resepsionis.');
+        return;
+      }
+    } else {
+      // Mode Acara Spesifik Berdasarkan ID Acara
+      targetEvent = events.find(e => String(e.id) === String(parsed.eventId));
+
+      if (!targetEvent) {
+        showScanErrorModal('Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.');
+        return;
+      }
     }
 
     // Validasi Jendela Waktu Presensi (Maksimal 30 Menit Sebelum Mulai)
@@ -895,8 +957,9 @@
   function initUrlScanHandler() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.has('qr_event')) {
-        const eventId = urlParams.get('qr_event');
+      if (urlParams.has('qr_dhammasala') || urlParams.has('qr_event')) {
+        const isDhammasala = urlParams.has('qr_dhammasala') || urlParams.get('qr_event') === 'active';
+        const eventId = isDhammasala ? 'active' : urlParams.get('qr_event');
         const date = urlParams.get('date');
 
         // Bersihkan parameter URL tanpa reload halaman agar bersih
@@ -905,7 +968,7 @@
 
         // Beri jeda kecil agar data & sesi lokal siap
         setTimeout(() => {
-          handleScannedData(JSON.stringify({ eventId, date }));
+          handleScannedData(JSON.stringify({ eventId, isDhammasala, date }));
         }, 500);
       }
     } catch (e) {

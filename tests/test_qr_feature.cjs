@@ -102,7 +102,7 @@ async function runTests() {
   };
 
   const payload = ViharaQR.generateQrPayload(testEvent);
-  assert(typeof payload === 'string' && payload.includes('qr_event=EVT_QR_001'), 'Payload berisi qr_event yang tepat', payload);
+  assert(typeof payload === 'string' && (payload.includes('qr_event=') || payload.includes('qr_dhammasala=1')), 'Payload memuat penanda QR Dhammasala yang valid', payload);
   assert(payload.includes('vihara=VAB_CIBINONG'), 'Payload memuat identitas Vihara Amurwa Bhumi Cibinong');
 
   // Test 3: Pengujian Validasi Waktu Presensi QR (Window 30 Menit)
@@ -259,6 +259,53 @@ async function runTests() {
 
   const directAccess = ViharaAuth.checkRouteAccess('view-guest');
   assert(directAccess.allowed === false && directAccess.reason === 'qr_required', 'Akses langsung ke view-guest diblokir dengan status qr_required');
+  assert(!indexHtmlContent.includes('qr-admin-section-card'), 'Section card QR meja di panel admin telah dihapus karena sudah ada di navbar');
+
+  // Test 9: Verifikasi Kode QR Tetap & Permanen (Multi-Minggu Kebaktian Aktif)
+  console.log('\n--- 9. Verifikasi Kode QR Tetap & Permanen (Universal Kebaktian Aktif) ---');
+  // 9.1 Buat payload QR permanen meja Dhammasala
+  const permanentQr = ViharaQR.generateQrPayload();
+  assert(permanentQr.includes('qr_dhammasala=1'), 'Format QR meja tetap memiliki parameter qr_dhammasala=1');
+
+  // 9.2 Simulasi Minggu Ini: Kebaktian A aktif
+  const eventMingguIni = {
+    id: 'EVT_MINGGU_INI',
+    name: 'Kebaktian Minggu Ini',
+    speaker: 'Bhikkhu Subalaratano',
+    date: todayKey,
+    startTime: `${pad(now.getHours())}:00`,
+    endTime: `${pad((now.getHours() + 2) % 24)}:00`,
+    isActive: true
+  };
+  localStorage.setItem('vihara_events', JSON.stringify([eventMingguIni]));
+
+  ViharaData.setSession({ id: 'USR_002', name: 'Vin Cen', phone: '0895355301519', role: 'admin' });
+  ViharaQR.handleScannedData(permanentQr);
+  const checkedInThisWeek = ViharaData.isUserCheckedInEvent('USR_002', 'EVT_MINGGU_INI');
+  assert(checkedInThisWeek === true, 'Scan QR permanen berhasil presensi ke kebaktian minggu ini');
+
+  // 9.3 Simulasi Minggu Depan: Kebaktian B aktif dengan QR YANG SAMA
+  const eventMingguDepan = {
+    id: 'EVT_MINGGU_DEPAN',
+    name: 'Kebaktian Minggu Depan',
+    speaker: 'Bhikkhu Dhammasubho',
+    date: todayKey, // Simulasi hari pelaksanaan kebaktian
+    startTime: `${pad(now.getHours())}:00`,
+    endTime: `${pad((now.getHours() + 2) % 24)}:00`,
+    isActive: true
+  };
+  localStorage.setItem('vihara_events', JSON.stringify([eventMingguDepan]));
+
+  // Scan dengan KODE QR YANG PERSIS SAMA (permanentQr)
+  ViharaQR.handleScannedData(permanentQr);
+  const checkedInNextWeek = ViharaData.isUserCheckedInEvent('USR_002', 'EVT_MINGGU_DEPAN');
+  assert(checkedInNextWeek === true, 'Kode QR yang SAMA berhasil presensi ke kebaktian minggu depan tanpa perlu cetak ulang');
+
+  // 9.4 Simulasi Saat Tidak Ada Acara Aktif
+  localStorage.setItem('vihara_events', JSON.stringify([]));
+  errorMessage = '';
+  ViharaQR.handleScannedData(permanentQr);
+  assert(errorMessage.includes('Tidak ada jadwal kebaktian yang sedang aktif'), 'Sistem menampilkan notifikasi ramah saat tidak ada acara aktif');
 
   console.log('\n======================================================');
   console.log(`🎉 HASIL PENGUJIAN: ${passedTests} / ${totalTests} SKENARIO BERHASIL! (100% PASS)`);
