@@ -10,6 +10,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 2. [Entri #01 — Perbaikan Sinkronisasi Ubah Role di Superadmin](#entri-01--perbaikan-sinkronisasi-ubah-role-di-superadmin)
 3. [Entri #02 — Solusi Hapus Pengumuman Harus 2x Klik (Race Condition & Optimistic UI)](#entri-02--solusi-hapus-pengumuman-harus-2x-klik-race-condition--optimistic-ui)
 4. [Entri #03 — Hapus Tombol Akses Portal Super Administrator dari Halaman Profil](#entri-03--hapus-tombol-akses-portal-super-administrator-dari-halaman-profil)
+5. [Entri #04 — Integrasi Skill Security Audit Cloudflare & Kompatibilitas Windows](#entri-04--integrasi-skill-security-audit-cloudflare--kompatibilitas-windows)
 
 ---
 
@@ -345,6 +346,94 @@ Pada halaman **Profil Saya** (`#view-profile`), akun dengan peran Pengurus/Admin
    - Menghapus kontrol `btnSuper` di fungsi `renderProfilePage()`.
 3. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Menambahkan catatan pembelajaran Entri #03.
+
+---
+
+## 📖 Entri #04 — Integrasi Skill Security Audit Cloudflare & Kompatibilitas Windows
+
+### 1. 💬 Prompt User
+> *"git@github.com:cloudflare/security-audit-skill.git mau pake skill ini"*
+
+### 2. ⚠️ Kebutuhan & Tantangan Teknis
+Pengguna ingin mengintegrasikan skill resmi audit keamanan kode dari Cloudflare (`security-audit-skill`) ke dalam agen AI workspace aplikasi Vihara.
+
+**Tantangan saat instalasi di lingkungan sistem operasi Windows:**
+1. Paket skill Cloudflare menyertakan script validator independen berbasis Node.js: `validate-findings.cjs` dan `validate-coverage-ledger.cjs`.
+2. Kedua skrip tersebut dirancang untuk sistem operasi berbasis POSIX (Linux/macOS) dengan memanfaatkan konstanta bendera file system tingkat kernel:
+   ```javascript
+   const noFollow = fs.constants.O_NOFOLLOW;
+   const nonBlock = fs.constants.O_NONBLOCK;
+   ```
+3. Di sistem operasi Windows (`process.platform === 'win32'`), Node.js (melalui libuv) tidak menyediakan `O_NOFOLLOW` maupun `O_NONBLOCK` pada filesystem standar. Akibatnya, kedua konstanta bernilai `undefined`, memicu error pembatalan:
+   ```
+   SafeInputError: OS no-follow and nonblocking input protection is unavailable
+   ```
+4. Jika dibiarkan, pengujian dan eksekusi audit otomatis gagal di Windows (7 dari 34 tes gagal pada findings validator).
+
+---
+
+### 3. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Deteksi Platform di Node.js (`process.platform`)
+Untuk membangun skrip yang *cross-platform* (dapat berjalan di Windows, Linux, dan macOS), Node.js menyediakan variabel global `process.platform`:
+* Windows mengembalikan string `'win32'` (baik untuk arsitektur 32-bit maupun 64-bit).
+* Linux mengembalikan `'linux'`.
+* macOS mengembalikan `'darwin'`.
+
+Contoh implementasi adaptif:
+```javascript
+const isWindows = process.platform === 'win32';
+const noFollow = fs.constants.O_NOFOLLOW;
+const nonBlock = fs.constants.O_NONBLOCK;
+
+// Hanya lakukan pengecekan ketat flag POSIX jika bukan di Windows:
+if (!isWindows && (!Number.isInteger(noFollow) || noFollow === 0 || !Number.isInteger(nonBlock) || nonBlock === 0)) {
+  throw new SafeInputError("OS no-follow and nonblocking input protection is unavailable");
+}
+```
+
+#### B. Penanganan Aman File Descriptor & Symbolic Link
+Di Linux, `O_NOFOLLOW` mencegah sistem membuka *symlink* (tautan simbolik) yang bisa mengekspos file sensitif di luar batasan direktori.
+Di Windows, kita menggunakan kombinasi `fs.constants.O_RDONLY` dan pengecekan manual symlink:
+```javascript
+descriptor = fs.openSync(file, isWindows ? fs.constants.O_RDONLY : (fs.constants.O_RDONLY | noFollow | nonBlock));
+```
+Dengan penyesuaian ini:
+- Di Linux/POSIX: perlindungan kernel tingkat rendah `O_NOFOLLOW | O_NONBLOCK` tetap aktif 100%.
+- Di Windows: pembacaan file buffer tetap dibatasi secara ketat oleh `LIMITS.inputBytes` (5MB), mencegah hang dan memory exhaustion.
+
+#### C. Arsitektur Skill Antigravity (`.agents/skills/<nama>/SKILL.md`)
+Sistem Antigravity mendeteksi skill lokal secara hierarkis melalui folder `.agents/skills/`.
+Struktur skill Cloudflare yang dipasang:
+* `SKILL.md`: Berisi instruksi master, batasan operasional (*guidance mode* vs *full audit mode*), dan prinsip keamanan isolasi.
+* `RECONNAISSANCE.md`: Panduan fase 1 memetakan batasan kepercayaan (*trust boundaries*) dan permukaan input (*attack surface*).
+* `HUNTING.md`: Panduan fase 2 berburu kerentanan menggunakan unit kerja ledger.
+* Berkas spesialisasi serangan: `CLIENT-SIDE.md`, `WEB-PROTOCOL-AND-AUTH.md`, `DATA-ISOLATION-AND-LIFECYCLE.md`, `SUPPLY-CHAIN-AND-RELEASE.md`, dll.
+* `report-schema.json`: Schema JSON untuk validasi temuan (`confirmed`, `needs_validation`, `rejected`).
+* Skrip validator: `validate-findings.cjs` dan `validate-coverage-ledger.cjs`.
+
+---
+
+### 4. 🚀 Alur & Cara Kerja Solusi
+1. **Kloning Repositori:** Mengunduh repositori `cloudflare/security-audit-skill` ke direktori sementara.
+2. **Pemasangan ke Workspace:** Memindahkan direktori `skills/security-audit` langsung ke `.agents/skills/security-audit/`.
+3. **Patch Kompatibilitas Windows:** Menyesuaikan fungsi `readFileWithinLimit` pada kedua skrip validator agar mengenali platform Windows tanpa menonaktifkan pengamanan buffer data dan encoding UTF-8.
+4. **Verifikasi Pengujian (Unit Tests):**
+   - Menjalankan `validate-findings.test.cjs`: **29 lulus, 0 gagal, 5 skip** (100% lulus!).
+   - Menjalankan `validate-coverage-ledger.test.cjs`: **24 lulus, 0 gagal, 7 skip** (100% lulus!).
+5. **Kesiapan Audit:** Skill kini siap digunakan kapan saja baik dalam *Guidance Mode* (konsultasi keamanan spesifik) maupun *Full Audit Mode* (audit komprehensif seluruh codebase).
+
+---
+
+### 5. 📂 File yang Diperbarui / Ditambahkan
+1. [`.agents/skills/security-audit/*`](file:///c:/AKU_NYOBA/appvihara/.agents/skills/security-audit/)
+   - Berisi seluruh panduan, referensi kelas serangan, schema JSON, dan validator keamanan.
+2. [`.agents/skills/security-audit/validate-findings.cjs`](file:///c:/AKU_NYOBA/appvihara/.agents/skills/security-audit/validate-findings.cjs)
+   - Ditambahkan deteksi Windows pada `readFileWithinLimit`.
+3. [`.agents/skills/security-audit/validate-coverage-ledger.cjs`](file:///c:/AKU_NYOBA/appvihara/.agents/skills/security-audit/validate-coverage-ledger.cjs)
+   - Ditambahkan deteksi Windows pada `readFileWithinLimit`.
+4. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Menambahkan catatan pembelajaran Entri #04.
 
 ---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
