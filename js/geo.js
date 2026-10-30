@@ -135,14 +135,15 @@ const ViharaGeo = (() => {
         },
         error => {
           let errorMessage = 'Gagal mendeteksi lokasi GPS.';
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'Izin lokasi (GPS) ditolak oleh browser. Harap izinkan akses lokasi pada browser Anda agar dapat melakukan presensi.';
+          const code = Number(error && error.code);
+          switch (code) {
+            case 1: // PERMISSION_DENIED
+              errorMessage = 'Izin lokasi (GPS) ditolak atau diblokir oleh browser. Harap izinkan akses lokasi pada browser Anda.';
               break;
-            case error.POSITION_UNAVAILABLE:
+            case 2: // POSITION_UNAVAILABLE
               errorMessage = 'Informasi lokasi GPS tidak tersedia pada perangkat Anda. Pastikan GPS/Location aktif.';
               break;
-            case error.TIMEOUT:
+            case 3: // TIMEOUT
               errorMessage = 'Waktu deteksi GPS habis. Pastikan Anda berada di area terbuka dengan sinyal GPS baik lalu coba lagi.';
               break;
             default:
@@ -150,7 +151,7 @@ const ViharaGeo = (() => {
               break;
           }
           const err = new Error(errorMessage);
-          err.code = error.code;
+          err.code = code;
           reject(err);
         },
         options
@@ -163,6 +164,19 @@ const ViharaGeo = (() => {
     const config = getConfig();
     const bypass = isDevBypass();
 
+    // Jika mode pengujian bypass aktif, lewati pembacaan sensor GPS agar developer dapat menguji dari mana saja
+    if (bypass) {
+      return {
+        isWithinRadius: true,
+        isBypass: true,
+        distance: 0,
+        formattedDistance: '0 meter (Mode Bypass Developer)',
+        maxRadius: config.radiusMeters,
+        userCoords: { latitude: config.latitude, longitude: config.longitude, accuracy: 5 },
+        targetCoords: config
+      };
+    }
+
     const userCoords = await getCurrentPosition();
     const distance = calculateDistance(
       userCoords.latitude,
@@ -174,8 +188,8 @@ const ViharaGeo = (() => {
     const isWithinRadius = distance <= config.radiusMeters;
 
     return {
-      isWithinRadius: isWithinRadius || bypass,
-      isBypass: bypass,
+      isWithinRadius: isWithinRadius,
+      isBypass: false,
       distance: distance,
       formattedDistance: formatDistance(distance),
       maxRadius: config.radiusMeters,

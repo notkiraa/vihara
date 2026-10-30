@@ -493,12 +493,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.warn('[Geolocation Check-in] Gagal:', err);
-      showToast(err.message || 'Kendala mendeteksi lokasi GPS.', 'warning');
+      const isDenied = err.code === 1 || String(err.message || '').toLowerCase().includes('denied');
+      if (isDenied) {
+        openModal('modal-location-permission-denied');
+      } else {
+        showToast(err.message || 'Kendala mendeteksi lokasi GPS.', 'warning');
+      }
     } finally {
       if (checkinBtn) {
         checkinBtn.disabled = false;
         checkinBtn.innerHTML = originalBtnHtml;
       }
+    }
+  };
+
+  // Helper pengembang: aktifkan bypass dev dan lanjutkan presensi
+  window.enableDevLocationBypassAndCheckin = function() {
+    if (typeof ViharaGeo !== 'undefined') {
+      ViharaGeo.setDevBypass(true);
+      closeModal('modal-location-permission-denied');
+      showToast('Mode Pengujian Pengembang Aktif: Pengecekan radius GPS dilewati.', 'info');
+      handleUmatCheckIn();
     }
   };
 

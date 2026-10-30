@@ -12,6 +12,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 4. [Entri #03 — Hapus Tombol Akses Portal Super Administrator dari Halaman Profil](#entri-03--hapus-tombol-akses-portal-super-administrator-dari-halaman-profil)
 5. [Entri #04 — Integrasi Skill Security Audit Cloudflare & Kompatibilitas Windows](#entri-04--integrasi-skill-security-audit-cloudflare--kompatibilitas-windows)
 6. [Entri #05 — Pembatasan Presensi Mandiri Berbasis Geolocation & Geofencing 25 Meter](#entri-05--pembatasan-presensi-mandiri-berbasis-geolocation--geofencing-25-meter)
+7. [Entri #06 — Diagnosis & Penanganan Error Geolocation "User denied Geolocation"](#entri-06--diagnosis--penanganan-error-geolocation-user-denied-geolocation)
 
 ---
 
@@ -597,6 +598,128 @@ function getCurrentPosition() {
    - Penambahan tombol toolbar dan modal `#modal-geo-config` untuk kalibrasi lokasi dan radius Vihara.
 6. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Dokumentasi pembelajaran Entri #05.
+
+---
+
+## 📖 Entri #06 — Diagnosis & Penanganan Error Geolocation "User denied Geolocation"
+
+### 1. 💬 Prompt User
+> *"ini kenapa ya"*
+> *(Disertai lampiran screenshot toast error berwarna merah: "Terjadi kendala lokasi (User denied Geolocation).")*
+
+### 2. ⚠️ Gejala / Masalah
+Saat pengguna menekan tombol *"Presensi Hadir Sekarang"*, muncul pesan toast merah:
+`"Terjadi kendala lokasi (User denied Geolocation)."`
+dan proses presensi mandiri gagal/berhenti.
+
+---
+
+### 3. 🔍 Akar Masalah Teknis
+
+#### A. Izin Lokasi Perangkat / Situs Diblokir di Browser
+Pesan `User denied Geolocation` adalah pesan kesalahan resmi dari spesifikasi W3C Web Geolocation API ketika browser tidak diizinkan mengakses koordinat GPS perangkat.
+Penyebab umum:
+1. Pengguna secara tidak sengaja mengklik tombol **"Blokir" / "Don't allow"** saat browser pertama kali memunculkan dialog pop-up konfirmasi izin lokasi (*"wants to know your location"*).
+2. Setelan privasi browser (misal di Google Chrome, Brave, atau Safari) secara default memblokir permintaan lokasi untuk domain/situs tersebut.
+3. Fitur *Location Services* di sistem operasi perangkat (Windows / Android / iOS) dalam keadaan mati.
+
+#### B. Kesalahan Pencocokan Kode Error di JavaScript
+Pada implementasi awal `js/geo.js`:
+```javascript
+// KODE LAMA BERMASALAH:
+switch (error.code) {
+  case error.PERMISSION_DENIED: // BUG: error.PERMISSION_DENIED bernilai undefined!
+    errorMessage = 'Izin lokasi (GPS) ditolak oleh browser...';
+    break;
+  ...
+  default:
+    errorMessage = `Terjadi kendala lokasi (${error.message || 'Error GPS'}).`;
+    break;
+}
+```
+**Mengapa ini menjadi bug?**
+- Objek `error` yang dikembalikan adalah instance dari `GeolocationPositionError`.
+- Konstanta `PERMISSION_DENIED` adalah konstanta statis pada interface `GeolocationPositionError.PERMISSION_DENIED` (bernilai numerik `1`), bukan properti pada instance objek `error`.
+- Karena `error.PERMISSION_DENIED` bernilai `undefined`, perbandingan `1 === undefined` menghasilkan `false`.
+- Akibatnya, eksekusi selalu jatuh ke blok `default:`, dan menampilkan pesan bahasa Inggris mentah `error.message` (`"User denied Geolocation"`).
+
+#### C. Urutan Pengecekan Mode Bypass Pengembang
+Pada fungsi `verifyCheckInDistance()`:
+- Sistem memanggil `await getCurrentPosition()` terlebih dahulu sebelum mengevaluasi mode bypass.
+- Jika developer sedang menguji sistem di komputer meja (PC desktop) tanpa modul GPS atau lokasi sedang diblokir, sistem melempar error dan developer tidak dapat menguji aplikasi.
+
+---
+
+### 4. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Penggunaan Nilai Integer Numerik W3C Geolocation Error
+Gunakan angka integer pasti (`1`, `2`, `3`) untuk mencocokkan error code W3C secara handal:
+```javascript
+const code = Number(error && error.code);
+switch (code) {
+  case 1: // PERMISSION_DENIED (W3C standard integer 1)
+    errorMessage = 'Izin lokasi (GPS) ditolak atau diblokir oleh browser...';
+    break;
+  case 2: // POSITION_UNAVAILABLE (W3C standard integer 2)
+    errorMessage = 'Informasi lokasi GPS tidak tersedia pada perangkat Anda...';
+    break;
+  case 3: // TIMEOUT (W3C standard integer 3)
+    errorMessage = 'Waktu deteksi GPS habis...';
+    break;
+  default:
+    errorMessage = `Terjadi kendala lokasi (${error.message || 'Error GPS'}).`;
+    break;
+}
+```
+
+#### B. Short-Circuit Evaluation untuk Developer Mode
+Evaluasi status bypass di awal sebelum meminta akses perangkat keras GPS:
+```javascript
+async function verifyCheckInDistance() {
+  const config = getConfig();
+  const bypass = isDevBypass();
+
+  // Evaluasi bypass terlebih dahulu:
+  if (bypass) {
+    return {
+      isWithinRadius: true,
+      isBypass: true,
+      distance: 0,
+      formattedDistance: '0 meter (Mode Bypass Developer)',
+      maxRadius: config.radiusMeters,
+      userCoords: { latitude: config.latitude, longitude: config.longitude, accuracy: 5 },
+      targetCoords: config
+    };
+  }
+
+  // Hanya panggil GPS fisik jika bukan mode bypass:
+  const userCoords = await getCurrentPosition();
+  ...
+}
+```
+
+#### C. Modal Edukasi Pengguna (`#modal-location-permission-denied`)
+Jika pengguna menolak izin lokasi, jangan hanya tampilkan toast singkat yang membingungkan. Tampilkan modal panduan visual langkah demi langkah:
+1. Klik ikon **Gembok 🔒** di bilah alamat (*address bar*) browser.
+2. Ubah setelan **Lokasi / Location** menjadi **Izinkan (Allow)**.
+3. Tombol sekali klik *"Uji Coba: Aktifkan Mode Bypass Pengembang"* untuk kemudahan developer.
+
+---
+
+### 5. 📂 File yang Diperbarui
+1. [`js/geo.js`](file:///c:/AKU_NYOBA\appvihara/js/geo.js)
+   - Perbaikan switch case dengan konstanta integer numerik `1`, `2`, `3`.
+   - Pemeriksaan awal `if (bypass)` sebelum sensor GPS dipanggil.
+2. [`js/app.js`](file:///c:/AKU_NYOBA\appvihara/js/app.js)
+   - Penangkapan error `isDenied` untuk membuka modal panduan visual `#modal-location-permission-denied`.
+   - Penambahan helper `enableDevLocationBypassAndCheckin()`.
+3. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html)
+   - Penambahan template modal `#modal-location-permission-denied`.
+   - Pembaruan versi skrip ke `?v=18.0`.
+4. [`superadmin/index.html`](file:///c:/AKU_NYOBA\appvihara/superadmin/index.html) & [`superadmin.html`](file:///c:/AKU_NYOBA\appvihara/superadmin.html)
+   - Pembaruan versi skrip ke `?v=18.0`.
+5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Penambahan catatan pembelajaran Entri #06.
 
 ---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*

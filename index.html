@@ -1487,6 +1487,50 @@
   </div>
 
   <!-- ==========================================================================
+       [INDEX: HTML-13C] MODAL POPUP: IZIN LOKASI DITOLAK / DIBLOKIR BROWSER
+       Fungsi: Panduan visual jika browser memblokir izin akses GPS saat presensi.
+       ID Terkait: #modal-location-permission-denied
+       ========================================================================== -->
+  <div id="modal-location-permission-denied" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #fde68a;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: #92400e; margin-bottom: 6px;">
+        Izin Lokasi (GPS) Ditolak
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--ink-70); margin-bottom: 1.25rem; line-height: 1.5;">
+        Browser mendeteksi bahwa izin akses lokasi untuk situs ini sedang <strong>diblokir</strong> atau <strong>ditolak</strong> (<em>User denied Geolocation</em>).
+      </p>
+
+      <div style="background: #fffbeb; padding: 14px; border-radius: var(--r-md); text-align: left; font-size: 0.825rem; margin-bottom: 1.25rem; border: 1px solid #fef3c7; line-height: 1.6;">
+        <div style="font-weight: 700; color: #92400e; margin-bottom: 6px;">Cara Mengaktifkan Kembali:</div>
+        <ol style="margin-left: 1.25rem; color: var(--ink-80); margin-bottom: 0;">
+          <li>Klik ikon <strong>Gembok 🔒</strong> atau <strong>Setelan Situs ⚙️</strong> di sebelah kiri bilah URL browser.</li>
+          <li>Cari menu <strong>Lokasi / Location</strong>, lalu ubah dari <em>Blokir</em> ke <strong>Izinkan (Allow)</strong>.</li>
+          <li>Muat ulang (Refresh) halaman web dan coba presensi kembali.</li>
+        </ol>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button onclick="location.reload()" class="btn btn-primary btn-block">
+          Muat Ulang Halaman
+        </button>
+        <button onclick="enableDevLocationBypassAndCheckin()" class="btn btn-secondary btn-block" style="border-color: rgba(217, 119, 6, 0.4); color: #b45309; font-size: 0.8rem;">
+          ⚙️ Uji Coba: Aktifkan Mode Bypass Pengembang
+        </button>
+        <button onclick="closeModal('modal-location-permission-denied')" class="btn btn-ghost btn-block">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        [INDEX: HTML-14] MODAL POPUP: KONFIRMASI BUKU TAMU BERHASIL (PENGUNJUNG)
        Fungsi: Pesan selamat datang & konfirmasi saat pengunjung selesai mengisi buku tamu.
        ID Terkait: #modal-guest-success, #modal-guest-name, #modal-guest-event
@@ -1672,14 +1716,14 @@
 
   <!-- Supabase JS SDK & Integrasi Client Database -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=17.0"></script>
+  <script src="js/supabase-client.js?v=18.0"></script>
 
   <!-- Canvas Animasi & Scripts Modular dengan Cache-Busting -->
-  <script src="js/animated-bg.js?v=17.0"></script>
-  <script src="js/geo.js?v=17.0"></script>
-  <script src="js/data.js?v=17.0"></script>
-  <script src="js/auth.js?v=17.0"></script>
-  <script src="js/admin.js?v=17.0"></script>
-  <script src="js/app.js?v=17.0"></script>
+  <script src="js/animated-bg.js?v=18.0"></script>
+  <script src="js/geo.js?v=18.0"></script>
+  <script src="js/data.js?v=18.0"></script>
+  <script src="js/auth.js?v=18.0"></script>
+  <script src="js/admin.js?v=18.0"></script>
+  <script src="js/app.js?v=18.0"></script>
 </body>
 </html>
