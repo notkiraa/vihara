@@ -421,18 +421,39 @@ Struktur skill Cloudflare yang dipasang:
 4. **Verifikasi Pengujian (Unit Tests):**
    - Menjalankan `validate-findings.test.cjs`: **29 lulus, 0 gagal, 5 skip** (100% lulus!).
    - Menjalankan `validate-coverage-ledger.test.cjs`: **24 lulus, 0 gagal, 7 skip** (100% lulus!).
-5. **Kesiapan Audit:** Skill kini siap digunakan kapan saja baik dalam *Guidance Mode* (konsultasi keamanan spesifik) maupun *Full Audit Mode* (audit komprehensif seluruh codebase).
+5. **Eksekusi Full Security Audit (6 Fase):**
+   - **Fase 1 (Reconnaissance):** Menghasilkan pemetaan permukaan dan batasan kepercayaan di `architecture.md` serta ledger awal di `coverage-ledger.json`.
+   - **Fase 2 (Hunting Waves):** Mengaudit modul autentikasi, API Supabase, RLS SQL, dan sanitasi DOM.
+   - **Fase 3 & 5 (Candidate Validation & Verification):** Memvalidasi kandidat temuan secara independen terhadap kode sumber target.
+   - **Fase 4 (Structured Output):** Menulis data terstruktur `findings.json` yang divalidasi 100% oleh skrip validator schema.
+   - **Fase 6 (Target-Neutral Reporting):** Menghasilkan laporan formal `REPORT.md`, `FINDINGS-DETAIL.md`, dan `NEEDS-VALIDATION.md` pada direktori output terisolasi (`~/security-audit-skill/appvihara/run-1/`).
 
 ---
 
-### 5. 📂 File yang Diperbarui / Ditambahkan
+### 5. 🔍 Ringkasan Temuan Audit Keamanan (*Confirmed Findings*)
+
+| Tingkat Keparahan | Kode Fingerprint | Judul Kerentanan & Akar Masalah |
+| :--- | :--- | :--- |
+| **CRITICAL** | `cfg:superadmin-pin:plaintext-public-read-write` | **Bocoran PIN Master Superadmin & Modifikasi Publik:** Kunci PIN disimpan dalam teks polos (*plaintext*) di tabel `configurations` dengan policy RLS `SELECT` & `ALL` terbuka untuk `public`. Siapa pun dengan `anonKey` dapat membaca dan mengubah PIN. |
+| **CRITICAL** | `profiles:rls:public-read-write-and-hash-exposure` | **Paparan Hash Kata Sandi & PII Seluruh Umat:** Tabel `profiles` mengizinkan `SELECT` dan `UPDATE` ke `public`. Query `syncProfiles()` mengambil seluruh hash kata sandi SHA-256 dan nomor telepon, serta memungkinkan pengguna anonim mengubah peran mereka menjadi `admin`. |
+| **HIGH** | `auth:client-side-rbac:localstorage-and-name-override` | **Bypass Hak Akses Admin di Sisi Klien:** Fungsi `isAdmin()` di `js/auth.js` memberikan hak akses admin jika `localStorage` memiliki `vihara_dev_admin_override = 'true'` atau jika nama pengguna mengandung kata `"admin"`. |
+| **HIGH** | `sql:rls-function:is-admin-null-bypass` | **Bypass Fungsi Otorisasi SQL `public.is_admin()`:** Kueri memeriksa `WHERE (auth_user_id = auth.uid() OR auth.uid() IS NULL)`. Untuk panggilan anonim tanpa JWT, `auth.uid()` bernilai `NULL`, sehingga kondisi `NULL IS NULL` selalu bernilai `TRUE`. |
+
+---
+
+### 6. 📂 File yang Diperbarui / Ditambahkan
 1. [`.agents/skills/security-audit/*`](file:///c:/AKU_NYOBA/appvihara/.agents/skills/security-audit/)
    - Berisi seluruh panduan, referensi kelas serangan, schema JSON, dan validator keamanan.
 2. [`.agents/skills/security-audit/validate-findings.cjs`](file:///c:/AKU_NYOBA/appvihara/.agents/skills/security-audit/validate-findings.cjs)
    - Ditambahkan deteksi Windows pada `readFileWithinLimit`.
 3. [`.agents/skills/security-audit/validate-coverage-ledger.cjs`](file:///c:/AKU_NYOBA/appvihara/.agents/skills/security-audit/validate-coverage-ledger.cjs)
    - Ditambahkan deteksi Windows pada `readFileWithinLimit`.
-4. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+4. Berkas Laporan Audit Terisolasi di Direktori Aman:
+   - `REPORT.md`: Laporan eksekutif lengkap dan ringkasan postur keamanan.
+   - `FINDINGS-DETAIL.md`: Panduan teknis mendalam dan langkah reproduksi untuk setiap temuan.
+   - `NEEDS-VALIDATION.md`: Catatan pelacakan lead (0 lead tertunda).
+   - `coverage-ledger.json` & `findings.json`: Ledger cakupan dan data temuan tervalidasi skema.
+5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Menambahkan catatan pembelajaran Entri #04.
 
 ---
