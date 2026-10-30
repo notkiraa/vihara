@@ -14,6 +14,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 6. [Entri #05 — Pembatasan Presensi Mandiri Berbasis Geolocation & Geofencing 25 Meter](#entri-05--pembatasan-presensi-mandiri-berbasis-geolocation--geofencing-25-meter)
 7. [Entri #06 — Diagnosis & Penanganan Error Geolocation "User denied Geolocation"](#entri-06--diagnosis--penanganan-error-geolocation-user-denied-geolocation)
 8. [Entri #07 — Penghapusan Mode Uji Coba (Bypass) & Solusi Error Sensor Izin Geolocation](#entri-07--penghapusan-mode-uji-coba-bypass--solusi-error-sensor-izin-geolocation)
+9. [Entri #08 — Solusi "Location Access Allowed" Tetap Error (Siklus Reload Izin Peramban, Fallback GNSS Desktop, & Supabase Config Sync)](#entri-08--solusi-location-access-allowed-tetap-error-siklus-reload-izin-peramban-fallback-gnss-desktop--supabase-config-sync)
 
 ---
 
@@ -884,6 +885,153 @@ if (lng < -180 || lng > 180) {
    - Peningkatan versi skrip modular ke `?v=19.0`.
 6. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Dokumentasi pembelajaran Entri #07.
+
+---
+
+## 📖 Entri #08 — Solusi "Location Access Allowed" Tetap Error (Siklus Reload Izin Peramban, Fallback GNSS Desktop, & Supabase Config Sync)
+
+### 1. 💬 Prompt User
+> *"ini uda allowed masi gabisa"*
+> *(Disertai lampiran screenshot jendela pop-up perizinan Microsoft Edge: "Location access allowed. This site can access your location. [Done] [Manage]")*
+
+### 2. ⚠️ Gejala / Masalah
+1. Pengguna membuka setelan izin peramban (Microsoft Edge) dan melihat status sudah berupa *"Location access allowed"*.
+2. Namun ketika tombol *"Gunakan Lokasi Saya"* di Superadmin atau *"Presensi Hadir Sekarang"* di dashboard umat ditekan, aplikasi masih tetap memunculkan modal error *"Izin Lokasi (GPS) Ditolak"* atau koordinat lokasi tidak terbaca.
+
+---
+
+### 3. 🔍 Akar Masalah Teknis
+
+#### A. Siklus Propagasi Perizinan Peramban (*Permission State Propagation Lifecycle*)
+Pada peramban berbasis Chromium (Google Chrome, Microsoft Edge, Brave, Opera):
+* Mengubah radio button perizinan menjadi *"Continue allowing this site to access your location"* di dalam pop-up hanyalah **tahap draft setelan**.
+* Perubahan hak akses lokasi **TIDAK serta-merta diinjeksikan ke dalam konteks JavaScript dokumen yang sedang berjalan (*live active document context*)**.
+* Konteks JavaScript peramban mengunci (*freeze*) token perizinan saat halaman dimuat.
+* Selama tombol **Done** belum ditekan dan halaman web belum dimuat ulang (*Reload / F5*), pemanggilan `navigator.geolocation.getCurrentPosition()` di dalam tab tersebut tetap mengembalikan respon blokir perizinan lama (`PERMISSION_DENIED`).
+
+#### B. Kegagalan Driver GNSS pada `enableHighAccuracy: true` di Komputer Desktop / Laptop
+Pada implementasi sebelumnya di `js/geo.js`:
+```javascript
+// KODE LAMA DENGAN BUG EARLY ABORT:
+try {
+  return await _queryBrowserPosition(highAccuracyOpts); // enableHighAccuracy: true
+} catch (firstErr) {
+  const code = Number(firstErr && firstErr.code);
+  if (code === 1) {
+    // BUG FATAL: Langsung melempar exception tanpa mencoba tahap 2!
+    throw new Error('Izin lokasi ditolak...');
+  }
+  ...
+}
+```
+**Mengapa ini menyebabkan kegagalan palsu (*false error*)?**
+* Sebagian besar laptop dan komputer meja Windows tidak memiliki modul perangkat keras satelit GPS / GNSS (*Global Navigation Satellite System*).
+* Ketika JavaScript meminta `enableHighAccuracy: true`, Windows Location Platform mencoba menghubungi driver satelit GPS.
+* Karena perangkat fisik tidak ada, sistem operasi Windows mengembalikan status *Access Denied* pada subsistem GNSS, yang diterjemahkan oleh Chromium menjadi `error.code = 1` (*PERMISSION_DENIED*).
+* Akibat pengecekan `if (code === 1) throw ...`, program langsung menyerah dan melempar error izin ditolak, padahal jika dicoba dengan `enableHighAccuracy: false`, Windows dapat memberikan koordinat akurat melalui **triangulasi Wi-Fi / IP ISP** dalam hitungan 0.2 detik!
+
+#### C. Kegagalan Penyimpanan Cloud Supabase (*NOT NULL constraint on configurations.id*)
+Pada file `js/supabase-client.js`:
+* Fungsi `updateConfiguration` sebelumnya memanggil `.from('configurations').upsert(payload, { onConflict: 'key' })` tanpa menyertakan kolom `id`.
+* Skema tabel `configurations` di PostgreSQL Supabase mewajibkan kolom `id` tidak boleh bernilai null (`id TEXT PRIMARY KEY NOT NULL`).
+* Akibatnya, saat Superadmin menyimpan koordinat baru vihara, Supabase melempar error:
+  `null value in column "id" of relation "configurations" violates not-null constraint`.
+* Koordinat target di cloud tidak pernah terupdate. Lalu saat halaman utama dibuka, fungsi `initSync()` mengambil kembali koordinat default lama yang berjarak belasan kilometer dari lokasi riil pengguna, sehingga presensi ditolak dengan pesan *"Di Luar Area Vihara"*.
+
+---
+
+### 4. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Penanganan Fallback Penuh Tanpa Early-Abort
+Jangan menghentikan pencarian lokasi jika tahap akurasi tinggi gagal dengan kode 1 di komputer desktop:
+
+```javascript
+// js/geo.js
+try {
+  // Tahap 1: Coba GPS Satelit Akurasi Tinggi
+  return await _queryBrowserPosition(highAccuracyOpts);
+} catch (firstErr) {
+  console.info('[ViharaGeo] Tahap 1 GPS satelit belum tersedia, mencoba Tahap 2 jaringan Wi-Fi...');
+
+  // Tahap 2: Selalu coba fallback jaringan Wi-Fi (enableHighAccuracy: false)
+  // Sangat andal untuk PC/Laptop indoor
+  const fallbackOpts = {
+    enableHighAccuracy: false,
+    timeout: 10000,
+    maximumAge: 60000,
+    ...customOptions
+  };
+
+  try {
+    return await _queryBrowserPosition(fallbackOpts);
+  } catch (secondErr) {
+    // Hanya lempar error jika KEDUA tahap benar-benar gagal
+    const finalCode = Number(secondErr && secondErr.code);
+    ...
+  }
+}
+```
+
+#### B. Pola Query-Then-Update/Insert untuk PostgreSQL dengan Custom Primary Key
+Menggantikan metode `.upsert()` yang rentan bentrok kunci primer dengan pola bertahap yang aman:
+
+```javascript
+// js/supabase-client.js
+async function updateConfiguration(key, value, description = null) {
+  const cleanKey = String(key).trim();
+  const payload = {
+    key: cleanKey,
+    value: String(value).trim(),
+    updated_at: new Date().toISOString()
+  };
+  if (description) payload.description = description;
+
+  // 1. Periksa keberadaan baris berdasarkan kolom 'key'
+  const { data: existing } = await sb
+    .from('configurations')
+    .select('id')
+    .eq('key', cleanKey)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    // 2a. Update baris yang ada (tidak melanggar primary key)
+    await sb.from('configurations').update(payload).eq('key', cleanKey);
+  } else {
+    // 2b. Buat ID unik eksplisit dan insert baris baru
+    payload.id = 'CFG_' + Date.now();
+    await sb.from('configurations').insert(payload);
+  }
+}
+```
+
+---
+
+### 5. 🛠️ Alur & Cara Kerja Solusi
+
+1. **Edukasi & Siklus Pengguna**:
+   - Pengguna mengklik tombol **Done** pada pop-up Microsoft Edge.
+   - Pengguna menekan tombol **Muat Ulang Halaman (F5)** agar token perizinan aktif di dalam memori peramban.
+2. **Eksekusi Deteksi Lokasi**:
+   - Jika pengguna di laptop/PC kantor, sistem mencoba GPS satelit $\rightarrow$ jika driver tidak merespon, sistem otomatis beralih ke triangulasi Wi-Fi tanpa menampilkan pesan error palsu.
+   - Posisi koordinat terbaca dengan sukses dan diisikan ke form atau diverifikasi dengan radius vihara.
+3. **Persistensi Supabase**:
+   - Koordinat yang disimpan Superadmin kini tersimpan utuh di Supabase PostgreSQL berkat perbaikan `updateConfiguration`.
+
+---
+
+### 6. 📂 File yang Diperbarui
+1. [`js/geo.js`](file:///c:/AKU_NYOBA\appvihara/js/geo.js)
+   - Menghapus *early-abort* kode 1 pada Tahap 1 akurasi tinggi.
+   - Memastikan Tahap 2 (Wi-Fi network fallback) selalu dijalankan sebelum melempar error.
+2. [`js/supabase-client.js`](file:///c:/AKU_NYOBA\appvihara/js/supabase-client.js)
+   - Memperbaiki `updateConfiguration` dengan pola *check-and-update/insert* agar tidak melanggar batasan `id NOT NULL` pada tabel `configurations`.
+3. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html)
+   - Memperjelas panduan di modal agar pengguna menekan tombol **Done** dan melakukan **Muat Ulang Halaman**.
+   - Peningkatan versi skrip modular ke `?v=20.0`.
+4. [`superadmin/index.html`](file:///c:/AKU_NYOBA\appvihara/superadmin/index.html) & [`superadmin.html`](file:///c:/AKU_NYOBA\appvihara/superadmin.html)
+   - Peningkatan versi skrip modular ke `?v=20.0`.
+5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Dokumentasi pembelajaran Entri #08.
 
 ---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*

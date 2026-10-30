@@ -738,8 +738,9 @@ const ViharaSupabase = (() => {
     const sb = getClient();
     if (!sb) return false;
     try {
+      const cleanKey = String(key).trim();
       const payload = {
-        key: String(key).trim(),
+        key: cleanKey,
         value: String(value).trim(),
         updated_at: new Date().toISOString()
       };
@@ -747,11 +748,29 @@ const ViharaSupabase = (() => {
         payload.description = description;
       }
 
-      const { error } = await sb
+      // Cek apakah key konfigurasi sudah ada di tabel configurations
+      const { data: existing, error: findErr } = await sb
         .from('configurations')
-        .upsert(payload, { onConflict: 'key' });
+        .select('id')
+        .eq('key', cleanKey)
+        .limit(1);
 
-      if (error) throw error;
+      if (existing && existing.length > 0) {
+        // Update baris konfigurasi yang sudah ada
+        const { error: updErr } = await sb
+          .from('configurations')
+          .update(payload)
+          .eq('key', cleanKey);
+        if (updErr) throw updErr;
+      } else {
+        // Buat ID baru dan insert row baru
+        payload.id = 'CFG_' + Date.now();
+        const { error: insErr } = await sb
+          .from('configurations')
+          .insert(payload);
+        if (insErr) throw insErr;
+      }
+
       return true;
     } catch (err) {
       console.error(`[Supabase] Gagal menyimpan konfigurasi "${key}":`, err.message);

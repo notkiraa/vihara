@@ -138,21 +138,14 @@ const ViharaGeo = (() => {
       return await _queryBrowserPosition(highAccuracyOpts);
     } catch (firstErr) {
       const code = Number(firstErr && firstErr.code);
+      console.info(`[ViharaGeo] Tahap 1 (Akurasi Tinggi) belum berhasil (Kode: ${code}). Mencoba Tahap 2 (Fallback Jaringan / Wi-Fi)...`);
 
-      // JIKA IZIN DITOLAK (Code 1 = PERMISSION_DENIED):
-      // Jangan retry, karena browser secara mutlak memblokir akses lokasi.
-      if (code === 1) {
-        const permErr = new Error('Izin lokasi (GPS) ditolak atau diblokir oleh browser. Harap aktifkan izin lokasi di setelan browser Anda.');
-        permErr.code = 1;
-        throw permErr;
-      }
-
-      // Jika error karena TIMEOUT (3) atau POSITION_UNAVAILABLE (2), coba Tahap 2 (Fallback Jaringan / Wi-Fi)
-      console.info('[ViharaGeo] GPS satelit belum terkunci, mencoba fallback jaringan Wi-Fi/Seluler...');
+      // Tahap 2: Coba fallback jaringan Wi-Fi / IP (enableHighAccuracy: false).
+      // Pada PC desktop / laptop tanpa modul GNSS fisik, tahap ini yang berhasil mengembalikan koordinat.
       const fallbackOpts = {
         enableHighAccuracy: false,
         timeout: 10000,
-        maximumAge: 30000,
+        maximumAge: 60000,
         ...customOptions
       };
 
@@ -164,13 +157,13 @@ const ViharaGeo = (() => {
 
         switch (finalCode) {
           case 1:
-            errorMessage = 'Izin lokasi (GPS) ditolak atau diblokir oleh browser. Harap izinkan akses lokasi pada browser Anda.';
+            errorMessage = 'Izin lokasi (GPS) belum aktif atau perlu dimuat ulang. Jika baru saja mengubah setelan menjadi "Allowed", klik "Done" pada jendela popup browser lalu muat ulang (refresh) halaman.';
             break;
           case 2:
-            errorMessage = 'Informasi lokasi tidak tersedia pada perangkat Anda. Pastikan fitur Lokasi / GPS perangkat dalam status aktif.';
+            errorMessage = 'Informasi lokasi tidak tersedia pada perangkat Anda. Pastikan fitur Lokasi di setelan Windows/perangkat dalam status aktif.';
             break;
           case 3:
-            errorMessage = 'Waktu pencarian sinyal lokasi habis (Timeout). Pastikan koneksi internet stabil atau berada di area dengan sinyal baik.';
+            errorMessage = 'Waktu pencarian sinyal lokasi habis (Timeout). Pastikan koneksi internet stabil lalu coba lagi.';
             break;
           default:
             errorMessage = `Kendala lokasi: ${secondErr.message || 'Error GPS'}.`;
