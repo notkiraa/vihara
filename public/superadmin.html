@@ -11,7 +11,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Stylesheet Khusus Super Admin dengan Cache-Busting -->
-  <link rel="stylesheet" href="css/superadmin.css?v=8.0">
+  <base href="/">
+  <!-- Stylesheet Khusus Super Admin dengan Cache-Busting -->
+  <link rel="stylesheet" href="/css/superadmin.css?v=8.0">
 </head>
 <body>
 
@@ -49,7 +51,7 @@
 
       <!-- Aksi Kanan: Buka Aplikasi & Logout -->
       <div class="super-actions-capsule">
-        <a href="index.html" class="btn-link-site" title="Buka Aplikasi Presensi Utama">
+        <a href="/" class="btn-link-site" title="Buka Aplikasi Presensi Utama">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
             <polyline points="15 3 21 3 21 9"/>
@@ -652,11 +654,11 @@
 
   <!-- Supabase JS SDK & Integrasi Client Database -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=21.0"></script>
+  <script src="/js/supabase-client.js?v=21.0"></script>
 
   <!-- Scripts Modular -->
-  <script src="js/geo.js?v=21.0"></script>
-  <script src="js/data.js?v=21.0"></script>
-  <script src="js/superadmin.js?v=21.0"></script>
+  <script src="/js/geo.js?v=21.0"></script>
+  <script src="/js/data.js?v=21.0"></script>
+  <script src="/js/superadmin.js?v=21.0"></script>
 </body>
 </html>
