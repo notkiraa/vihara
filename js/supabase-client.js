@@ -575,6 +575,58 @@ const ViharaSupabase = (() => {
     return null;
   }
 
+  // ==========================================================================
+  // 6. KONFIGURASI SISTEM (MASTER PIN SUPER ADMIN, DB SETTINGS, DLL.)
+  // ==========================================================================
+
+  // 6a. Ambil nilai konfigurasi berdasarkan key dari tabel configurations di Supabase
+  async function getConfiguration(key) {
+    const sb = getClient();
+    if (!sb) return null;
+    try {
+      const { data, error } = await sb
+        .from('configurations')
+        .select('value')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (error) {
+        console.warn(`[Supabase] Gagal membaca konfigurasi "${key}":`, error.message);
+        return null;
+      }
+      return data ? data.value : null;
+    } catch (err) {
+      console.warn(`[Supabase] Exception saat membaca konfigurasi "${key}":`, err.message);
+      return null;
+    }
+  }
+
+  // 6b. Simpan / Perbarui nilai konfigurasi ke tabel configurations di Supabase
+  async function updateConfiguration(key, value, description = null) {
+    const sb = getClient();
+    if (!sb) return false;
+    try {
+      const payload = {
+        key: String(key).trim(),
+        value: String(value).trim(),
+        updated_at: new Date().toISOString()
+      };
+      if (description) {
+        payload.description = description;
+      }
+
+      const { error } = await sb
+        .from('configurations')
+        .upsert(payload, { onConflict: 'key' });
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error(`[Supabase] Gagal menyimpan konfigurasi "${key}":`, err.message);
+      return false;
+    }
+  }
+
   // Inisialisasi awal saat aplikasi dibuka (Menyinkronkan SELURUH 5 Entitas Database)
   async function initSync() {
     if (!isConfigured()) {
@@ -618,7 +670,9 @@ const ViharaSupabase = (() => {
     syncAttendance,
     insertAttendance,
     syncGuests,
-    insertGuest
+    insertGuest,
+    getConfiguration,
+    updateConfiguration
   };
 })();
 

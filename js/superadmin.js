@@ -5,7 +5,7 @@
  * DAFTAR INDEKS & GLOSARIUM SEKSI CEPAT (QUICK LOOKUP GLOSSARY):
  * Gunakan pencarian ID tag [INDEX: JS-SUPER-XX] untuk langsung menuju baris kode terkait.
  * ----------------------------------------------------------------------------
- * [INDEX: JS-SUPER-01] Autentikasi Super Admin & Verifikasi Kunci PIN Rahasia (9999)
+ * [INDEX: JS-SUPER-01] Autentikasi Super Admin & Verifikasi Kunci PIN Rahasia Database
  * [INDEX: JS-SUPER-02] Dashboard & Agregasi Metrik Statistik Keseluruhan Vihara
  * [INDEX: JS-SUPER-03] Tabel Master Pengguna, Pencarian Real-Time & Filter Role
  * [INDEX: JS-SUPER-04] Tambah Pengguna Baru & Edit Profil Umat (Nama, Telepon, Email)
@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const SUPERADMIN_SECRET_PIN = '9999';
   const SUPERADMIN_SESSION_KEY = 'vihara_superadmin_auth_v5';
 
   let currentFilterRole = 'all'; // 'all' | 'umat' | 'admin'
@@ -45,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const gatePinInput = document.getElementById('super-gate-pin');
 
   // ==========================================================================
-  // [INDEX: JS-SUPER-01] AUTENTIKASI SUPER ADMIN & VERIFIKASI KUNCI PIN RAHASIA (9999)
-  // Fungsi: Pengecekan status login, submit PIN 9999, dan logout sesi superadmin.
+  // [INDEX: JS-SUPER-01] AUTENTIKASI SUPER ADMIN & VERIFIKASI KUNCI PIN DATABASE
+  // Fungsi: Pengecekan status login, submit PIN dinamis dari Supabase, dan logout.
   // ==========================================================================
   function isSuperAdminAuth() {
     return sessionStorage.getItem(SUPERADMIN_SESSION_KEY) === 'true';
@@ -64,16 +63,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  window.handleSuperAdminLogin = function(e) {
+  window.handleSuperAdminLogin = async function(e) {
     if (e) e.preventDefault();
     const pin = (gatePinInput ? gatePinInput.value : '').trim();
 
-    if (pin === SUPERADMIN_SECRET_PIN) {
-      sessionStorage.setItem(SUPERADMIN_SESSION_KEY, 'true');
-      showToast('Akses Super Administrator berhasil diverifikasi.', 'success');
-      checkAuthState();
-    } else {
-      showToast('Kunci Rahasia / PIN Super Admin salah! Coba: 9999', 'error');
+    if (!pin) {
+      showToast('Harap masukkan PIN Master Super Admin!', 'warning');
+      return;
+    }
+
+    const loginBtn = document.getElementById('btn-super-login');
+    const originalBtnHtml = loginBtn ? loginBtn.innerHTML : '';
+    if (loginBtn) {
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.8s linear infinite;">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10"></path>
+        </svg>
+        <span>Memverifikasi Database...</span>
+      `;
+    }
+
+    try {
+      let isVerified = false;
+      let dbPin = null;
+
+      // Ambil PIN Master secara aman langsung dari tabel configurations di Supabase
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.getConfiguration === 'function') {
+        dbPin = await ViharaSupabase.getConfiguration('superadmin_pin');
+      }
+
+      if (dbPin !== null && dbPin !== undefined) {
+        isVerified = (pin === String(dbPin).trim());
+      } else {
+        // Jika tabel belum di-create di Supabase atau offline
+        showToast('Gagal memverifikasi: Tabel "configurations" belum dibuat di Supabase atau jaringan offline.', 'error');
+        return;
+      }
+
+      if (isVerified) {
+        sessionStorage.setItem(SUPERADMIN_SESSION_KEY, 'true');
+        showToast('Akses Super Administrator berhasil diverifikasi.', 'success');
+        checkAuthState();
+      } else {
+        showToast('Kunci Rahasia / PIN Super Admin salah atau tidak sesuai!', 'error');
+        if (gatePinInput) {
+          gatePinInput.focus();
+          gatePinInput.select();
+        }
+      }
+    } catch (err) {
+      console.error('Error verifikasi superadmin PIN:', err);
+      showToast('Terjadi kesalahan saat verifikasi database.', 'error');
+    } finally {
+      if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = originalBtnHtml;
+      }
     }
   };
 
@@ -81,6 +128,66 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.removeItem(SUPERADMIN_SESSION_KEY);
     showToast('Sesi Super Admin telah diakhiri.', 'warning');
     checkAuthState();
+  };
+
+  // ==========================================================================
+  // MANAJEMEN PIN MASTER SUPER ADMIN (SIMPAN KE SUPABASE CONFIGURATIONS)
+  // ==========================================================================
+  window.openChangePinModal = function() {
+    const newPinInput = document.getElementById('modal-new-pin');
+    const confirmPinInput = document.getElementById('modal-confirm-pin');
+    if (newPinInput) newPinInput.value = '';
+    if (confirmPinInput) confirmPinInput.value = '';
+    openModal('modal-change-pin');
+    if (newPinInput) setTimeout(() => newPinInput.focus(), 150);
+  };
+
+  window.handleChangeMasterPinSubmit = async function(e) {
+    if (e) e.preventDefault();
+    const newPin = (document.getElementById('modal-new-pin') ? document.getElementById('modal-new-pin').value : '').trim();
+    const confirmPin = (document.getElementById('modal-confirm-pin') ? document.getElementById('modal-confirm-pin').value : '').trim();
+
+    if (!newPin || newPin.length < 4) {
+      showToast('PIN Master baru harus minimal 4 karakter!', 'warning');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      showToast('Konfirmasi PIN tidak cocok dengan PIN baru!', 'error');
+      return;
+    }
+
+    const saveBtn = document.getElementById('btn-save-new-pin');
+    const originalText = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Menyimpan ke Supabase...';
+    }
+
+    try {
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateConfiguration === 'function') {
+        const success = await ViharaSupabase.updateConfiguration(
+          'superadmin_pin',
+          newPin,
+          'PIN Rahasia Master untuk Akses Vault Super Administrator'
+        );
+        if (success) {
+          showToast('PIN Master Super Admin berhasil diperbarui di Supabase!', 'success');
+          closeModal('modal-change-pin');
+        } else {
+          showToast('Gagal memperbarui PIN di Supabase. Periksa schema atau koneksi.', 'error');
+        }
+      } else {
+        showToast('Koneksi Supabase belum siap.', 'error');
+      }
+    } catch (err) {
+      console.error('Error saat simpan PIN master:', err);
+      showToast('Terjadi kesalahan saat memperbarui PIN ke Supabase.', 'error');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+      }
+    }
   };
 
   // ==========================================================================

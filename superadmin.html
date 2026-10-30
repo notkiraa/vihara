@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Stylesheet Khusus Super Admin dengan Cache-Busting -->
-  <link rel="stylesheet" href="css/superadmin.css?v=7.1">
+  <link rel="stylesheet" href="css/superadmin.css?v=8.0">
 </head>
 <body>
 
@@ -78,7 +78,7 @@
 
       <!-- ==========================================================================
            [INDEX: SUPER-HTML-02] GATE AUTENTIKASI PIN MASTER RAHASIA (VAULT SCREEN)
-           Fungsi: Gerbang keamanan PIN 9999 sebelum membuka kontrol database vihara.
+           Fungsi: Gerbang keamanan autentikasi PIN Super Administrator sebelum membuka kontrol database vihara.
            ========================================================================== -->
       <section id="super-gate-section" style="display: block;">
         <div class="super-gate-card">
@@ -102,20 +102,10 @@
                   Lihat / Tutup PIN
                 </button>
               </div>
-              <input type="password" id="super-gate-pin" class="form-input" placeholder="Masukkan PIN Master (Default: 9999)" required autocomplete="current-password" autofocus>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                <span style="font-size: 0.75rem; color: var(--color-text-subtle);">Gunakan PIN master bawaan:</span>
-                <span class="quick-pin-pill" onclick="fillMasterPin('9999')" title="Klik untuk mengisi otomatis" style="display: inline-flex; align-items: center; gap: 5px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                  </svg>
-                  <span>Isi PIN 9999</span>
-                </span>
-              </div>
+              <input type="password" id="super-gate-pin" class="form-input" placeholder="Masukkan Kunci Rahasia / PIN Master" required autocomplete="current-password" autofocus>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <button type="submit" id="btn-super-login" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 0.95rem; margin-top: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
@@ -221,6 +211,13 @@
               </p>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button onclick="openChangePinModal()" class="btn btn-secondary" style="border-color: rgba(254, 240, 138, 0.4); color: #fef08a; display: inline-flex; align-items: center; gap: 7px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                </svg>
+                <span>Ubah PIN Master</span>
+              </button>
               <button onclick="openCreateUserModal()" class="btn btn-primary">
                 + Tambah Pengguna Baru
               </button>
@@ -479,18 +476,54 @@
     </div>
   </div>
 
+  <!-- ========================================================================
+       MODAL 4: UBAH PIN MASTER SUPER ADMINISTRATOR (DATABASE SUPABASE)
+       ======================================================================== -->
+  <div id="modal-change-pin" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #fde047;">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+          </svg>
+          <span>Ubah Kunci Master (PIN Vault)</span>
+        </h3>
+        <button onclick="closeModal('modal-change-pin')" class="btn-close-modal" title="Tutup">&times;</button>
+      </div>
+
+      <form onsubmit="handleChangeMasterPinSubmit(event)">
+        <p style="font-size: 0.825rem; color: var(--color-text-muted); margin-bottom: 1.25rem; line-height: 1.45;">
+          PIN Master baru akan langsung tersimpan di tabel konfigurasi Supabase (PostgreSQL) dan berlaku untuk seluruh akses Super Administrator berikutnya.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-new-pin">PIN Master Baru *</label>
+          <input type="password" id="modal-new-pin" class="form-input" placeholder="Masukkan minimal 4 karakter PIN baru" minlength="4" required autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-confirm-pin">Konfirmasi PIN Master Baru *</label>
+          <input type="password" id="modal-confirm-pin" class="form-input" placeholder="Ketik ulang PIN baru" minlength="4" required autocomplete="new-password">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="button" onclick="closeModal('modal-change-pin')" class="btn btn-secondary">
+            Batal
+          </button>
+          <button type="submit" id="btn-save-new-pin" class="btn btn-primary">
+            Simpan ke Database
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div id="toast-container"></div>
 
-  <!-- Helper Scripts Superadmin (PIN toggle & Auto Fill) -->
+  <!-- Helper Scripts Superadmin (PIN toggle) -->
   <script>
-    function fillMasterPin(val) {
-      var inp = document.getElementById('super-gate-pin');
-      if (inp) {
-        inp.value = val;
-        inp.focus();
-      }
-    }
     function togglePinVisibility() {
       var inp = document.getElementById('super-gate-pin');
       if (inp) {
@@ -501,10 +534,10 @@
 
   <!-- Supabase JS SDK & Integrasi Client Database -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/supabase-client.js?v=11.0"></script>
+  <script src="js/supabase-client.js?v=12.0"></script>
 
   <!-- Scripts Modular -->
-  <script src="js/data.js?v=11.0"></script>
-  <script src="js/superadmin.js?v=11.0"></script>
+  <script src="js/data.js?v=12.0"></script>
+  <script src="js/superadmin.js?v=12.0"></script>
 </body>
 </html>

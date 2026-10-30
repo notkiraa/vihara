@@ -2,7 +2,7 @@
 -- SKEMA DATABASE RESMI: VIHARA AMURWA BHUMI CIBINONG (PREFIXED FORMATTED IDs)
 -- Platform: Supabase (PostgreSQL 15+)
 -- Deskripsi: Sistem Presensi Umat, Buku Tamu Digital, & Warta Pengumuman
--- Versi: 10.0 (Prefixed IDs: USR_001, ADM_001, EVT_001, ANN_001, ATT_001, GST_001)
+-- Versi: 11.0 (Prefixed IDs: USR_001, ADM_001, EVT_001, ANN_001, ATT_001, GST_001, CFG_001)
 -- Tanggal: 2026-10-29
 -- ============================================================================
 
@@ -63,6 +63,7 @@ CREATE SEQUENCE IF NOT EXISTS seq_events START 1;
 CREATE SEQUENCE IF NOT EXISTS seq_announcements START 1;
 CREATE SEQUENCE IF NOT EXISTS seq_attendance START 1;
 CREATE SEQUENCE IF NOT EXISTS seq_guests START 1;
+CREATE SEQUENCE IF NOT EXISTS seq_configurations START 1;
 
 -- ============================================================================
 -- 4. TABEL UTAMA SISTEM (PREFIXED HUMAN-READABLE TEXT PRIMARY KEYS)
@@ -164,6 +165,22 @@ CREATE INDEX IF NOT EXISTS idx_announcements_category ON public.announcements(ca
 CREATE INDEX IF NOT EXISTS idx_announcements_published ON public.announcements(is_published);
 CREATE INDEX IF NOT EXISTS idx_announcements_created ON public.announcements(created_at DESC);
 
+-- ----------------------------------------------------------------------------
+-- TABEL F: CONFIGURATIONS (KONFIGURASI GLOBAL & KUNCI SISTEM RAHASIA)
+-- Format ID: CFG_001, CFG_002, ...
+-- Digunakan untuk menyimpan Kunci Master Super Admin, Pengaturan Sistem, dll.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.configurations (
+    id TEXT PRIMARY KEY DEFAULT ('CFG_' || LPAD(nextval('seq_configurations')::text, 3, '0')),
+    key TEXT UNIQUE NOT NULL,
+    value TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_configurations_key ON public.configurations(key);
+
 -- ============================================================================
 -- 5. OTOMATISASI: AUTO-UPDATE UPDATED_AT TIMESTAMP
 -- ============================================================================
@@ -189,6 +206,11 @@ CREATE TRIGGER tr_events_updated_at
 DROP TRIGGER IF EXISTS tr_announcements_updated_at ON public.announcements;
 CREATE TRIGGER tr_announcements_updated_at
     BEFORE UPDATE ON public.announcements
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+DROP TRIGGER IF EXISTS tr_configurations_updated_at ON public.configurations;
+CREATE TRIGGER tr_configurations_updated_at
+    BEFORE UPDATE ON public.configurations
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- ============================================================================
@@ -263,6 +285,7 @@ ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.configurations ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
@@ -372,6 +395,20 @@ CREATE POLICY "Izinkan publik & admin menghapus warta pengumuman"
     TO public
     USING (true);
 
+-- RLS: CONFIGURATIONS
+DROP POLICY IF EXISTS "Konfigurasi dapat dibaca oleh publik & sistem" ON public.configurations;
+CREATE POLICY "Konfigurasi dapat dibaca oleh publik & sistem"
+    ON public.configurations FOR SELECT
+    TO public
+    USING (true);
+
+DROP POLICY IF EXISTS "Konfigurasi dapat diperbarui oleh sistem" ON public.configurations;
+CREATE POLICY "Konfigurasi dapat diperbarui oleh sistem"
+    ON public.configurations FOR ALL
+    TO public
+    USING (true)
+    WITH CHECK (true);
+
 -- ============================================================================
 -- 9. STORAGE BUCKETS (BANNER PENGUMUMAN & AVATAR PROFIL)
 -- ============================================================================
@@ -401,3 +438,10 @@ ON CONFLICT (phone) DO UPDATE
 SET id = 'ADM_001',
     role = 'admin',
     name = EXCLUDED.name;
+
+-- Kunci Rahasia / PIN Master Super Administrator (Tersimpan Aman di Database)
+INSERT INTO public.configurations (id, key, value, description)
+VALUES ('CFG_001', 'superadmin_pin', '9999', 'PIN Rahasia Master untuk Akses Vault Super Administrator')
+ON CONFLICT (key) DO UPDATE
+SET value = EXCLUDED.value,
+    description = EXCLUDED.description;
