@@ -2320,3 +2320,52 @@ Seluruh rangkaian pengujian regresi dan fitur baru berhasil lulus 100%:
 - **Total Keseluruhan**: `77 / 77 Skenario Berhasil Lulus Tanpa Regresi (100% PASS)`.
 - **Status Deployment**: Seluruh perubahan tersimpan aman di repositori lokal (TIDAK di-push ke GitHub & TIDAK di-deploy ke Vercel).
 
+
+
+---
+
+## 📖 Entri #21 — Resolusi Asset CSS & JS Superadmin di Vercel (Root-Relative Paths & Trailing Slash)
+
+### 1. 💬 Prompt User
+> ```
+> superadmin cssnya ga jalan, di vercel
+> ```
+
+---
+
+### 2. ⚠️ Analisis Akar Masalah (Root Cause)
+1. **Konfigurasi `trailingSlash` & Clean URLs di Vercel:**
+   - Pada `vercel.json`, konfigurasi `"cleanUrls": true` dan `"trailingSlash": true` sebelumnya memaksa rute `/superadmin` dialihkan (308 Redirect) menjadi `/superadmin/` (dengan garis miring di akhir).
+2. **Relative Path pada `superadmin.html`:**
+   - Di dalam `public/superadmin.html`, tautan stylesheet ditulis relatif tanpa garis miring di awal: `<link rel="stylesheet" href="css/superadmin.css?v=8.0">`.
+   - Begitu pula script JS modular: `<script src="js/superadmin.js?v=21.0"></script>`.
+   - Saat peramban berada di URL `https://wiharaabc.vercel.app/superadmin/`, peramban menganggap `/superadmin/` sebagai sub-direktori. Akibatnya, peramban meminta file ke `https://wiharaabc.vercel.app/superadmin/css/superadmin.css?v=8.0` yang menghasilkan **HTTP 404 (Not Found)**. Baik CSS maupun skrip JS Super Admin tidak dapat dimuat sama sekali.
+
+---
+
+### 3. 🛠️ Solusi & Implementasi Teknis
+1. **Penerapan `<base href="/">` & Root-Relative Paths (`public/superadmin.html`):**
+   - Menambahkan tag `<base href="/">` pada elemen `<head>`.
+   - Mengubah path CSS menjadi root-relative: `href="/css/superadmin.css?v=8.0"`.
+   - Mengubah seluruh script modular menjadi root-relative: `src="/js/supabase-client.js"`, `src="/js/geo.js"`, `src="/js/data.js"`, dan `src="/js/superadmin.js"`.
+   - Memperbarui tombol kembali aplikasi utama menjadi `href="/"`.
+2. **Penyesuaian `vercel.json`:**
+   - Mengubah `"trailingSlash": false` agar rute clean URLs `/superadmin` tidak dipaksa menjadi direktori `/superadmin/`.
+3. **Penerapan Serupa pada `public/index.html`:**
+   - Menambahkan `<base href="/">` untuk menjaga konsistensi resolusi aset di semua halaman.
+
+---
+
+### 4. 📁 File yang Diperbarui
+1. [`public/superadmin.html`](file:///c:/AKU_NYOBA/appvihara/public/superadmin.html): Penambahan `<base href="/">` dan root-relative paths untuk CSS & JS.
+2. [`public/index.html`](file:///c:/AKU_NYOBA/appvihara/public/index.html): Penambahan `<base href="/">`.
+3. [`vercel.json`](file:///c:/AKU_NYOBA/appvihara/vercel.json): Pengaturan `"trailingSlash": false`.
+4. [`docs/DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA/appvihara/docs/DOKUMENTASI_PEMBELAJARAN.md): Entri #21.
+
+---
+
+### 5. 🧪 Hasil Verifikasi Produksi Vercel
+- `https://wiharaabc.vercel.app/superadmin` -> **HTTP 200 (OK)**
+- `https://wiharaabc.vercel.app/css/superadmin.css?v=8.0` -> **HTTP 200 (text/css)**
+- `https://wiharaabc.vercel.app/js/superadmin.js?v=21.0` -> **HTTP 200 (application/javascript)**
+- Seluruh 77 skenario pengujian unit lokal (`npm test`) tetap **100% PASS**.
