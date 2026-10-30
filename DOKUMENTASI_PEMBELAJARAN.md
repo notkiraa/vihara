@@ -16,6 +16,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 8. [Entri #07 — Penghapusan Mode Uji Coba (Bypass) & Solusi Error Sensor Izin Geolocation](#entri-07--penghapusan-mode-uji-coba-bypass--solusi-error-sensor-izin-geolocation)
 9. [Entri #08 — Solusi "Location Access Allowed" Tetap Error (Siklus Reload Izin Peramban, Fallback GNSS Desktop, & Supabase Config Sync)](#entri-08--solusi-location-access-allowed-tetap-error-siklus-reload-izin-peramban-fallback-gnss-desktop--supabase-config-sync)
 10. [Entri #09 — Sinkronisasi Utuh Data Lokal vs Supabase Cloud & Batasan Waktu Presensi 30 Menit](#entri-09--sinkronisasi-utuh-data-lokal-vs-supabase-cloud--batasan-waktu-presensi-30-menit)
+11. [Entri #10 — Eksekusi & Validasi Otomatis Seluruh Checklist ScenarioTest.md](#entri-10--eksekusi--validasi-otomatis-seluruh-checklist-scenariotestmd)
 
 ---
 
@@ -1184,6 +1185,101 @@ async function setActiveEvent(eventId) {
    - Peningkatan versi skrip modular ke `?v=21.0`.
 5. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
    - Penambahan dokumentasi pembelajaran Entri #09.
+
+---
+
+## 📖 Entri #10 — Eksekusi & Validasi Otomatis Seluruh Checklist ScenarioTest.md
+
+### 1. 💬 Prompt User
+> *"jalankan scenariotest"*
+> *(Mengacu pada file checklist skenario pengujian komprehensif pada [`ScenarioTest.md`](file:///c:/AKU_NYOBA/appvihara/ScenarioTest.md))*
+
+### 2. ⚠️ Tujuan & Ruang Lingkup Pengujian
+Memvalidasi secara menyeluruh dan otomatis bahwa seluruh fitur baru dan perbaikan sinkronisasi berjalan 100% andal tanpa anomali (*zero defect*), mencakup:
+1. **Aturan Waktu Presensi**: Validasi jendela buka presensi T minus 30 menit, saat acara berlangsung, dan saat acara selesai.
+2. **Buat Acara**: Pembuatan acara baru dengan ID unik, penyimpanan ke tabel `events` Supabase, dan retensi data setelah refresh (F5).
+3. **Hapus Acara**: Penghapusan 1x klik dari memori lokal dan database Supabase, serta verifikasi bebas dari bug kemunculan kembali (*ghost events*).
+4. **Presensi & Geofencing**: Verifikasi jarak Haversine $\le 25\text{m}$ (diterima) vs $> 25\text{m}$ (ditolak), pencatatan ke tabel `attendance` Supabase, serta pencegahan presensi ganda (*double check-in prevention*).
+
+---
+
+### 3. 🔍 Hasil Eksekusi Pengujian Otomatis
+
+Uji otomatis dijalankan melalui test-runner Node.js yang mengeksekusi langsung modul [`js/data.js`](file:///c:/AKU_NYOBA/appvihara/js/data.js), [`js/geo.js`](file:///c:/AKU_NYOBA/appvihara/js/geo.js), dan terhubung ke PostgreSQL Supabase via REST PostgREST.
+
+```
+=================================================================
+🧪 HASIL EKSEKUSI PENGUJIAN OTOMATIS: ScenarioTest.md
+=================================================================
+
+📌 1. Pengujian Aturan Waktu Presensi (Window 30 Menit Sebelum Acara)
+  ✅ [PASS] 1.1 Tes Terlalu Cepat (> 30 mnt) (Pesan: "Presensi kebaktian belum dibuka...")
+  ✅ [PASS] 1.2 Tes Tepat Waktu (<= 30 mnt) (Presensi terbuka)
+  ✅ [PASS] 1.3 Tes Selama Acara Berlangsung (Presensi tetap aktif)
+  ✅ [PASS] 1.4 Tes Acara Sudah Selesai (Pesan: "Jadwal kebaktian ini telah selesai.")
+
+📌 2. Pengujian Buat Acara (1x Klik & Sinkron Database)
+  ✅ [PASS] 2.1 Pembuatan Acara Baru (Local State) (ID: EVT_001)
+  ✅ [PASS] 2.2 Persistensi Acara ke Cloud PostgreSQL Supabase (Tersimpan di tabel events Supabase)
+  ✅ [PASS] 2.3 Uji Refresh (F5) - Data Acara Tetap Utuh (Acara tidak hilang setelah reload)
+
+📌 3. Pengujian Hapus Acara (1x Klik & Tidak Muncul Kembali)
+  ✅ [PASS] 3.1 Hapus Acara Sekali Konfirmasi (Optimistic Update) (Acara langsung lenyap dari memori)
+  ✅ [PASS] 3.2 Penghapusan Acara di Supabase PostgreSQL Cloud (Terhapus permanen dari Supabase)
+  ✅ [PASS] 3.3 Uji Konsistensi Cloud (F5) - Acara Tidak Muncul Kembali (Bebas dari bug ghost event)
+
+📌 4. Pengujian Presensi & Sinkronisasi Kehadiran
+  ✅ [PASS] 4.1 Presensi Mandiri di Area Vihara (Radius <= 25m) (Jarak terhitung: 10 meter <= 25 meter)
+  ✅ [PASS] 4.1b Pencatatan Presensi ke State Lokal (ID Presensi: ATT_001)
+  ✅ [PASS] 4.2 Presensi di Luar Vihara (> 25m) (Jarak terhitung: 556 meter > 25 meter (Tertolak))
+  ✅ [PASS] 4.3 Sinkronisasi Presensi ke Cloud Database Supabase (Tercatat di Supabase: ATT_015)
+  ✅ [PASS] 4.4a Pengecekan Status Kehadiran (isUserCheckedIn) (Umat terdeteksi sudah hadir)
+  ✅ [PASS] 4.4b Pencegahan Double Presensi (Mengembalikan rekam jejak lama tanpa duplikat)
+
+=================================================================
+🎉 HASIL PENGUJIAN AKHIR: 16 / 16 SKENARIO BERHASIL! (100% PASS)
+=================================================================
+```
+
+---
+
+### 4. 💻 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Pembuatan Automated Integration Test Harness Tanpa Framework Eksternal
+Menggunakan vanilla JavaScript di lingkungan Node.js dengan teknik emulasi environment browser:
+```javascript
+// Mocking Browser Globals untuk Pengujian Headless
+global.localStorage = {
+  getItem: k => (k in localStorageData ? localStorageData[k] : null),
+  setItem: (k, v) => { localStorageData[k] = String(v); },
+  removeItem: k => { delete localStorageData[k]; }
+};
+
+// Validasi Asersi Berbasis Status Boolean & Logging Terstruktur
+function assert(condition, testName, details = '') {
+  if (condition) {
+    console.log(`  ✅ [PASS] ${testName} (${details})`);
+    return true;
+  } else {
+    console.error(`  ❌ [FAIL] ${testName} (${details})`);
+    return false;
+  }
+}
+```
+
+#### B. Pengujian Waktu Relatif (*Relative Time Testing*)
+Menggunakan kalkulasi selisih milidetik dinamis `(now.getTime() + N * 60 * 1000)` agar pengujian selalu valid kapan pun dan di zona waktu mana pun script dieksekusi, tanpa bergantung pada jam statis *hardcoded*.
+
+#### C. Pengujian Idempotensi Presensi
+Memastikan bahwa fungsi `addAttendanceRecord()` bersifat idempoten: memanggil presensi berkali-kali untuk `userId` dan `eventId` yang sama tidak menambah baris baru di array maupun database, melainkan mengembalikan *existing attendance record*.
+
+---
+
+### 5. 📂 File yang Diperbarui
+1. [`ScenarioTest.md`](file:///c:/AKU_NYOBA\appvihara/ScenarioTest.md)
+   - Pembaruan status checklist menjadi `[x] Lolos (PASSED)` dengan laporan detail hasil uji otomatis.
+2. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Dokumentasi pembelajaran Entri #10.
 
 ---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
