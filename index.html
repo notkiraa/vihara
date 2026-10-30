@@ -149,6 +149,15 @@
           <button type="button" class="nav-link admin-nav-item" data-nav="view-admin" data-target="view-admin" onclick="navigateTo('view-admin')" style="display: none;">
             <span>Buat Acara</span>
           </button>
+          <button type="button" class="nav-link admin-nav-item" id="desktop-nav-qr-btn" onclick="ViharaQR.openShowQrModal()" title="Tampilkan QR Presensi Dhammasala" style="display: none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>QR Dhammasala</span>
+          </button>
         </nav>
       </div>
 
@@ -204,6 +213,19 @@
                 </div>
                 <h2 class="card-title auth-card-title" style="font-size: 1.35rem; font-weight: 800; color: var(--maroon-800);">Vihara Amurwa Bhumi</h2>
                 <p class="card-subtitle auth-card-subtitle" style="font-size: 0.85rem; color: var(--ink-70);">Sistem Presensi Umat & Buku Tamu Digital</p>
+              </div>
+
+              <!-- Tombol Cepat Pindai QR di Meja Dhammasala (Fallback GPS / Belum Login) -->
+              <div class="auth-quick-qr-wrap" style="margin-bottom: 1.25rem;">
+                <button type="button" class="btn-quick-qr-dhammasala" onclick="ViharaQR.openScannerModal()" title="Pindai QR Hadir">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                  <span>Pindai QR Hadir Dhammasala</span>
+                </button>
               </div>
 
               <!-- Header Form Masuk (Hanya Login Akun Terdaftar) -->
@@ -388,9 +410,20 @@
             </div>
           </div>
 
-          <!-- Role Badge Pengguna Mobile (Pengurus / Umat) - Non-clickable -->
-          <div class="mobile-role-wrap">
-            <span id="umat-mobile-role" class="mobile-role-pill umat">Umat</span>
+          <!-- Bagian Kanan Mobile: Tombol QR & Role Badge -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" id="mobile-top-qr-btn" class="mobile-qr-header-btn" onclick="ViharaQR.handleHeaderQrClick()" title="Pindai QR Hadir">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span id="mobile-top-qr-label" class="mobile-qr-btn-text">QR Hadir</span>
+            </button>
+            <div class="mobile-role-wrap">
+              <span id="umat-mobile-role" class="mobile-role-pill umat">Umat</span>
+            </div>
           </div>
         </div>
 
@@ -1086,6 +1119,52 @@
               </div>
             </div>
 
+            <!-- SECTION KHUSUS: QR Presensi Dhammasala (Display Meja Resepsionis) -->
+            <div class="qr-admin-section-card rise d2">
+              <div class="qr-admin-card-header">
+                <div>
+                  <h3 class="qr-admin-card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="14" width="7" height="7"></rect>
+                      <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span>QR Presensi Dhammasala (Display Meja Resepsionis)</span>
+                  </h3>
+                  <p class="qr-admin-card-subtitle">
+                    Tampilkan kode QR di monitor atau cetak untuk umat yang terkendala sinyal GPS.
+                  </p>
+                </div>
+              </div>
+              <div class="qr-admin-card-actions">
+                <button type="button" onclick="ViharaQR.openStandeeMode()" class="btn btn-primary" style="padding: 9px 18px; font-size: 0.85rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                  <span>📺 Buka Layar Penuh QR (Mode Standee)</span>
+                </button>
+                <button type="button" onclick="ViharaQR.openShowQrModal()" class="btn btn-secondary" style="padding: 9px 16px; font-size: 0.85rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>Tampilkan Modal QR</span>
+                </button>
+                <button type="button" onclick="ViharaQR.printQrStandee()" class="btn btn-ghost" style="padding: 9px 16px; font-size: 0.85rem;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                  <span>🖨️ Cetak Lembar QR</span>
+                </button>
+              </div>
+            </div>
+
             <!-- BAGIAN 1: Jadwal Sedang Aktif -->
             <div class="events-split-section">
               <div class="events-split-header">
@@ -1479,6 +1558,15 @@
           </svg>
           <span>Coba Deteksi Ulang GPS</span>
         </button>
+        <button onclick="closeModal('modal-location-out-of-range'); ViharaQR.openScannerModal();" class="btn btn-secondary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Pindai QR Code di Meja Resepsionis</span>
+        </button>
         <button onclick="closeModal('modal-location-out-of-range')" class="btn btn-ghost btn-block">
           Tutup
         </button>
@@ -1524,6 +1612,15 @@
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
           <span>Coba Presensi Lagi</span>
+        </button>
+        <button onclick="closeModal('modal-location-permission-denied'); ViharaQR.openScannerModal();" class="btn btn-secondary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Pindai QR Code di Meja Resepsionis</span>
         </button>
         <button onclick="location.reload()" class="btn btn-secondary btn-block">
           Muat Ulang Halaman
@@ -1713,6 +1810,303 @@
   </div>
 
   <!-- ==========================================================================
+       [INDEX: HTML-17] MODAL: TAMPILAN QR PRESENSI ADMIN (#modal-qr-display)
+       Fungsi: Menampilkan kode QR acara aktif untuk difoto/dipindai umat di meja resepsionis.
+       ========================================================================== -->
+  <div id="modal-qr-display" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 480px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
+          QR Presensi Masuk Dhammasala
+        </h3>
+        <button onclick="closeModal('modal-qr-display')" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <span id="modal-qr-display-badge" class="badge-pill-soft" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; font-size: 0.825rem; padding: 4px 14px; border-radius: 999px;">
+          🟢 Aktif • Memuat Acara...
+        </span>
+        <div id="modal-qr-display-event-meta" style="font-size: 0.775rem; color: var(--ink-70); margin-top: 6px;">
+          Dhammasala Utama
+        </div>
+      </div>
+
+      <!-- Container Canvas QR Code -->
+      <div id="modal-qr-code-canvas-container" class="qr-display-canvas-wrap"></div>
+
+      <!-- Panduan Sesuai Copywriting Resmi -->
+      <p style="font-size: 0.85rem; color: var(--ink-80); font-style: italic; margin: 12px 0; line-height: 1.45;">
+        "Arahkan kamera HP Anda ke kode QR ini untuk konfirmasi kehadiran langsung di Vihara Amurwa Bhumi."
+      </p>
+
+      <div style="background: var(--maroon-50); border: 1px solid var(--maroon-100); border-radius: var(--r-sm); padding: 10px; font-size: 0.75rem; color: var(--maroon-900); display: flex; flex-direction: column; gap: 4px; text-align: left; margin-bottom: 16px;">
+        <div>🕒 Berlaku khusus sesi kebaktian hari ini</div>
+        <div>🛡️ Dilengkapi enkripsi waktu (Anti-duplikasi)</div>
+      </div>
+
+      <!-- Tombol Aksi Admin -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button onclick="ViharaQR.printQrStandee()" class="btn btn-secondary" style="flex: 1; padding: 9px 12px; font-size: 0.825rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span>🖨️ Cetak Lembar QR</span>
+        </button>
+        <button onclick="closeModal('modal-qr-display'); ViharaQR.openStandeeMode();" class="btn btn-primary" style="flex: 1; padding: 9px 12px; font-size: 0.825rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <span>⛶ Layar Penuh (Monitor Meja)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-18] MODAL: LAYAR PEMINDAI KAMERA (#modal-qr-scanner)
+       Fungsi: Membuka sensor kamera HP untuk memindai QR code di meja resepsionis.
+       ========================================================================== -->
+  <div id="modal-qr-scanner" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px; padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
+          Pindai QR Presensi Vihara
+        </h3>
+        <button onclick="ViharaQR.closeScannerModal()" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <!-- Panduan Bidik -->
+      <p style="font-size: 0.85rem; color: var(--ink-80); margin-bottom: 12px;">
+        "Posisikan kode QR di meja resepsionis ke dalam bingkai kamera."
+      </p>
+
+      <!-- Viewport Kamera -->
+      <div id="qr-scanner-viewport" class="qr-camera-viewport"></div>
+
+      <!-- Teks Bantuan & Tips -->
+      <p id="qr-scanner-status-text" style="font-size: 0.775rem; color: var(--ink-70); margin: 12px 0 16px 0; line-height: 1.45;">
+        "Pastikan ruangan cukup terang dan lensa kamera bersih. Jika kamera tidak aktif, pastikan izin kamera di browser telah diizinkan."
+      </p>
+
+      <!-- Tombol Kontrol Bantuan -->
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <button type="button" id="btn-qr-switch-camera" onclick="ViharaQR.switchCamera()" class="btn btn-secondary" style="display: none; padding: 8px 16px; font-size: 0.825rem;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>🔄 Putar Kamera (Depan/Belakang)</span>
+        </button>
+        <button type="button" onclick="ViharaQR.closeScannerModal()" class="btn btn-ghost" style="padding: 8px 20px; font-size: 0.825rem;">
+          ✕ Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-19] MODAL: PILIHAN ADMIN MOBILE (#modal-qr-admin-choice)
+       ========================================================================== -->
+  <div id="modal-qr-admin-choice" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 400px;">
+      <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-900); margin-bottom: 6px;">
+        Presensi QR Dhammasala
+      </h3>
+      <p style="font-size: 0.825rem; color: var(--ink-70); margin-bottom: 16px;">
+        Sebagai pengurus, pilih mode presensi QR yang ingin dijalankan:
+      </p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button onclick="closeModal('modal-qr-admin-choice'); ViharaQR.openShowQrModal();" class="btn btn-primary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Tampilkan QR Dhammasala</span>
+        </button>
+        <button onclick="closeModal('modal-qr-admin-choice'); ViharaQR.openScannerModal();" class="btn btn-secondary btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+          </svg>
+          <span>Pindai QR Presensi (Buka Kamera)</span>
+        </button>
+        <button onclick="closeModal('modal-qr-admin-choice')" class="btn btn-ghost btn-block">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-20] MODAL: FORM IDENTITAS KILAT (#modal-qr-quick-register)
+       Fungsi: Untuk Umat Belum Login / Pengunjung yang scan QR di meja Dhammasala.
+       ========================================================================== -->
+  <div id="modal-qr-quick-register" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 460px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--maroon-900); margin: 0 0 4px 0;">
+            Selamat Datang di Vihara Amurwa Bhumi! 🙏
+          </h3>
+          <p style="font-size: 0.825rem; color: var(--ink-70); margin: 0; line-height: 1.4;">
+            Kode QR valid. Lengkapi nama Anda untuk pencatatan daftar hadir kebaktian:
+          </p>
+        </div>
+        <button onclick="closeModal('modal-qr-quick-register')" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <span id="qr-quick-form-event-name" class="qr-quick-event-pill">Puja Bakti</span>
+      </div>
+
+      <form onsubmit="ViharaQR.handleQuickRegisterSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="qr-quick-input-name">Nama Lengkap *</label>
+          <input type="text" id="qr-quick-input-name" class="form-input" placeholder="Contoh: Tan Su Mei" required autocomplete="name">
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label" for="qr-quick-input-phone">Nomor WhatsApp *</label>
+          <input type="tel" id="qr-quick-input-phone" class="form-input" placeholder="Contoh: 081234567890" required autocomplete="tel">
+        </div>
+
+        <!-- Pilihan Radio: Umat vs Pengunjung -->
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">Kategori Kehadiran:</label>
+          <div class="qr-quick-radio-group">
+            <label class="qr-quick-radio-card">
+              <input type="radio" name="qr_quick_role" id="qr-radio-umat" value="umat" checked>
+              <span>◉ Umat Vihara Amurwa Bhumi</span>
+            </label>
+            <label class="qr-quick-radio-card">
+              <input type="radio" name="qr_quick_role" id="qr-radio-guest" value="guest">
+              <span>○ Pengunjung / Tamu Luar Kota</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button type="submit" class="btn btn-primary btn-block">
+            Konfirmasi Kehadiran Saya
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-21] MODAL: KONFIRMASI SUKSES PRESENSI QR (#modal-qr-success)
+       ========================================================================== -->
+  <div id="modal-qr-success" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #a7f3d0;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+
+      <span class="badge-pill-soft" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700; font-size: 0.775rem; padding: 4px 12px; border-radius: 999px;">
+        ✓ Hadir via QR Dhammasala
+      </span>
+
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--maroon-900); margin: 10px 0 8px 0;">
+        Presensi Berhasil Diverifikasi! 🙏
+      </h3>
+
+      <p id="modal-qr-success-message" style="font-size: 0.875rem; color: var(--ink-80); margin-bottom: 1.5rem; line-height: 1.55;">
+        Namo Buddhaya. Kehadiran Anda telah berhasil dicatat. Selamat beribadah dengan tenang dan bahagia.
+      </p>
+
+      <button onclick="closeModal('modal-qr-success'); if (typeof navigateTo === 'function') navigateTo('view-umat');" class="btn btn-primary btn-block">
+        Masuk ke Beranda
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-22] MODAL: ERROR / KENDALA PRESENSI QR (#modal-qr-error)
+       ========================================================================== -->
+  <div id="modal-qr-error" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <div style="width: 58px; height: 58px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #fecaca;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+
+      <h3 style="font-size: 1.2rem; font-weight: 800; color: #991b1b; margin-bottom: 8px;">
+        Kendala Presensi QR
+      </h3>
+
+      <p id="modal-qr-error-message" style="font-size: 0.85rem; color: var(--ink-80); margin-bottom: 1.5rem; line-height: 1.5;">
+        Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.
+      </p>
+
+      <button onclick="closeModal('modal-qr-error')" class="btn btn-secondary btn-block">
+        Mengerti
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       [INDEX: HTML-23] OVERLAY STANDEE LAYAR PENUH (#qr-standee-overlay)
+       Fungsi: Monitor Display Standee Meja Resepsionis Vihara
+       ========================================================================== -->
+  <div id="qr-standee-overlay" class="standee-overlay-fullscreen">
+    <!-- Header Standee -->
+    <div class="standee-header-bar">
+      <div class="standee-brand-pill">
+        <span>☸️ Vihara Amurwa Bhumi Cibinong • Dhammasala Utama</span>
+      </div>
+      <h1 class="standee-temple-name">PRESENSI MANDIRI DHAMMASALA</h1>
+      <div class="standee-clock-box">
+        <div id="standee-digital-clock" class="standee-clock-time">00:00:00 WIB</div>
+        <div id="standee-current-date" class="standee-clock-date">Memuat tanggal...</div>
+      </div>
+    </div>
+
+    <!-- Body Tengah Standee (QR Code Besar & Detail Acara) -->
+    <div class="standee-center-body">
+      <div class="standee-qr-frame">
+        <div id="standee-qr-code-container"></div>
+      </div>
+
+      <div class="standee-event-card">
+        <span class="standee-event-badge">🟢 AKTIF SEKARANG</span>
+        <h2 id="standee-event-title" class="standee-event-title">Kebaktian</h2>
+        <p id="standee-event-speaker" class="standee-event-speaker">Bhikkhu Sangha</p>
+        <div id="standee-event-time" class="standee-event-time">09:00 - 11:30 WIB</div>
+      </div>
+
+      <div class="standee-guide-text">
+        "Arahkan kamera HP Anda ke kode QR ini untuk konfirmasi kehadiran langsung di Vihara Amurwa Bhumi."
+      </div>
+    </div>
+
+    <!-- Footer Bar Standee -->
+    <div class="standee-footer-bar">
+      <div style="font-size: 0.8rem; color: #e5e7eb; text-align: left;">
+        🕒 Berlaku khusus sesi kebaktian hari ini • 🛡️ Dilengkapi enkripsi waktu (Anti-duplikasi)
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="ViharaQR.printQrStandee()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.825rem;">
+          🖨️ Cetak Lembar Meja
+        </button>
+        <button onclick="ViharaQR.closeStandeeMode()" class="btn btn-ghost" style="padding: 8px 16px; font-size: 0.825rem; color: #ffffff; border: 1px solid rgba(255,255,255,0.3);">
+          ✕ Keluar Layar Penuh (ESC)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
      [INDEX: HTML-16] TOAST NOTIFIKASI & SKRIP RUNTIME APLIKASI
      Fungsi: Wadah toast notifikasi melayang dan penyertaan skrip modular (v8.7).
      ID Terkait: #toast-container, js/animated-bg.js, js/data.js, js/auth.js, js/admin.js, js/app.js
@@ -1722,6 +2116,11 @@
   <!-- Supabase JS SDK & Integrasi Client Database -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js?v=21.0"></script>
+
+  <!-- Modul QR Code Generator & Scanner -->
+  <script src="js/libs/qrcode.min.js"></script>
+  <script src="js/libs/html5-qrcode.min.js"></script>
+  <script src="js/qr.js?v=21.0"></script>
 
   <!-- Canvas Animasi & Scripts Modular dengan Cache-Busting -->
   <script src="js/animated-bg.js?v=21.0"></script>

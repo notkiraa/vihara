@@ -20,7 +20,7 @@
  * Tanpa data dummy - Siap digunakan secara nyata di lapangan.
  */
 
-const ViharaData = (() => {
+var ViharaData = (() => {
 
   // ==========================================================================
   // [INDEX: JS-DATA-01] KONFIGURASI, SKEMA STORAGE KEYS & VERSI DATA
@@ -720,3 +720,13 @@ const ViharaData = (() => {
     setSession
   };
 })();
+
+if (typeof window !== 'undefined') {
+  window.ViharaData = ViharaData;
+}
+if (typeof global !== 'undefined') {
+  global.ViharaData = ViharaData;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { ViharaData };
+}

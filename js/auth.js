@@ -13,7 +13,7 @@
  * ============================================================================
  */
 
-const ViharaAuth = (() => {
+var ViharaAuth = (() => {
 
   // ==========================================================================
   // [INDEX: JS-AUTH-01] CURRENT USER & STATUS SESI AUTENTIKASI (RBAC)
@@ -250,3 +250,13 @@ const ViharaAuth = (() => {
     checkRouteAccess
   };
 })();
+
+if (typeof window !== 'undefined') {
+  window.ViharaAuth = ViharaAuth;
+}
+if (typeof global !== 'undefined') {
+  global.ViharaAuth = ViharaAuth;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { ViharaAuth };
+}

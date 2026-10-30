@@ -163,6 +163,16 @@ document.addEventListener('DOMContentLoaded', () => {
         el.style.display = isAdmin ? 'flex' : 'none';
       });
 
+      // Update Tooltip & Label Tombol QR Mobile Sesuai Matriks Hak Akses
+      const mobileQrBtn = document.getElementById('mobile-top-qr-btn');
+      const mobileQrLabel = document.getElementById('mobile-top-qr-label');
+      if (mobileQrBtn) {
+        mobileQrBtn.title = isAdmin ? 'Tampilkan & Pindai QR Presensi' : 'Pindai QR Hadir';
+      }
+      if (mobileQrLabel) {
+        mobileQrLabel.textContent = isAdmin ? 'QR Presensi' : 'QR Hadir';
+      }
+
       // Update badge unread notifikasi
       if (typeof updateNotificationsBadge === 'function') {
         updateNotificationsBadge();

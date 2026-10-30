@@ -17,6 +17,7 @@ Buku catatan ini dirancang khusus untuk dokumentasi perubahan sekaligus **pandua
 9. [Entri #08 — Solusi "Location Access Allowed" Tetap Error (Siklus Reload Izin Peramban, Fallback GNSS Desktop, & Supabase Config Sync)](#entri-08--solusi-location-access-allowed-tetap-error-siklus-reload-izin-peramban-fallback-gnss-desktop--supabase-config-sync)
 10. [Entri #09 — Sinkronisasi Utuh Data Lokal vs Supabase Cloud & Batasan Waktu Presensi 30 Menit](#entri-09--sinkronisasi-utuh-data-lokal-vs-supabase-cloud--batasan-waktu-presensi-30-menit)
 11. [Entri #10 — Eksekusi & Validasi Otomatis Seluruh Checklist ScenarioTest.md](#entri-10--eksekusi--validasi-otomatis-seluruh-checklist-scenariotestmd)
+12. [Entri #11 — Sistem Fallback QR Code Dinamis Dhammasala (Matriks Akses Perangkat, Standee Meja Resepsionis, & Presensi Instan Umat/Tamu)](#entri-11--sistem-fallback-qr-code-dinamis-dhammasala-matriks-akses-perangkat-standee-meja-resepsionis--presensi-instan-umattamu)
 
 ---
 
@@ -1282,6 +1283,195 @@ Memastikan bahwa fungsi `addAttendanceRecord()` bersifat idempoten: memanggil pr
    - Dokumentasi pembelajaran Entri #10.
 
 ---
+
+## [INDEX: LOG-11] Entri #11 — Sistem Fallback QR Code Dinamis Dhammasala (Matriks Akses Perangkat, Standee Meja Resepsionis, & Presensi Instan Umat/Tamu)
+
+### 1. 💬 Prompt / Permintaan Asli User
+> *"Side Question: Fallback QR Code Dinamis di Pintu Dhammasala:*
+> *Masalah: Kadang ada umat lansia atau HP tertentu yang modul GPS-nya lemah/rusak di dalam gedung.*
+> *Solusi: Admin dapat menampilkan QR Code Khusus Hari Ini di meja resepsionis/pintu masuk. Umat yang GPS-nya bermasalah cukup scan QR Code untuk presensi instan.*
+> *ini boleh jadi nanti ada kayak tombol icon qr itu dibagian atas kanan(mobile), kalo desktop nanti ada section qr, kalo desktop cuma bisa show qr, kalo mobile bisa show qr dan scan qr(admin), kalo user cuma bisa scan, dan ini nanti lgsg absen, kalo uda login, lgsg ke acc, kalo belom harus masukin identitas.*
+> *rancang kata katanya"*
+
+---
+
+### 2. 🔍 Analisis Kebutuhan & Akar Masalah
+
+#### A. Kendala Fisik Lingkungan & Variasi Perangkat Umat
+1. **Pelemahan Sinyal Satelit GPS di Dalam Bangunan (Indoor Attenuation):**
+   Gedung Dhammasala Vihara Amurwa Bhumi Cibinong memiliki atap dan dinding kokoh yang dapat memblokir sinyal satelit GNSS (*Global Navigation Satellite System*). Akibatnya, sebagian smartphone umat (terutama seri lama milik umat lansia) mengalami lonjakan nilai deviasi akurasi hingga $> 50$ meter atau memicu timeout penentuan posisi geofencing 25 meter.
+2. **Ketiadaan Alternatif Presensi Mandiri Non-GPS:**
+   Sebelum fitur ini dibangun, umat yang sensor GPS-nya bermasalah harus meminta pengurus secara manual mencari namanya di modal admin. Hal ini menimbulkan antrean panjang di meja resepsionis saat kebaktian ramai.
+3. **Kebutuhan Matriks Hak Akses Perangkat (*Device & Role Capability Matrix*):**
+   * **Desktop (PC/Laptop Meja Resepsionis):** Tidak dirancang untuk bergerak atau memindai kamera, melainkan berfungsi sebagai **layar penampil kode QR** (*Standee Monitor Display*) atau cetak fisik lembar presensi.
+   * **Mobile Admin (Pengurus di HP):** Fleksibel dapat menampilkan QR (untuk ditunjukkan ke umat lain) maupun memindai QR presensi.
+   * **Mobile Umat / Tamu:** Berfokus murni pada kecepatan memindai (*Scan Only*).
+4. **Alur Presensi Cepat Berdasarkan Status Sesi:**
+   * **Umat Terdaftar & Sudah Login:** Begitu kamera berhasil membaca QR, presensi otomatis diverifikasi instan (metode `qr_dhammasala`) dengan salam Buddhist resmi (*"Namo Buddhaya, [Nama Umat]..."*).
+   * **Pengunjung / Umat Belum Login:** Membuka form identitas kilat (Nama, No. WhatsApp, Kategori Umat vs Tamu) tanpa hambatan login yang rumit, lalu langsung mencatat kehadiran.
+   * **Dual Compatibility (Kamera Native vs In-App Scanner):** Umat lansia yang tidak membuka web browser tetapi langsung membidik QR via Google Lens atau kamera iPhone harus dapat langsung terarah ke halaman verifikasi presensi secara otomatis.
+
+---
+
+### 3. 🛠️ Solusi & Alur Kerja Sistem
+
+```
+                                  +---------------------------------------+
+                                  |   Admin / Meja Resepsionis Vihara    |
+                                  | (Desktop atau Mobile Pengurus Vihara) |
+                                  +---------------------------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  | Generate QR Code Dinamis Hari Ini    |
+                                  | URL: ?qr_event=EVT_XXX&vihara=VAB... |
+                                  +---------------------------------------+
+                                            /                  \
+                                           /                    \
+                                          v                      v
+                       [📺 Mode Standee Monitor]      [🖨️ Cetak Lembar Meja]
+                       - Layar Penuh (Fullscreen)     - Format Cetak A4
+                       - Jam Digital Realtime WIB     - QR Code Kontras Tinggi
+                       - Info Penceramah & Waktu      - Panduan Umat Lansia
+                                          \                      /
+                                           \                    /
+                                            +---------+--------+
+                                                      |
+                   +----------------------------------+----------------------------------+
+                   |                                                                     |
+                   v                                                                     v
+       [📱 In-App Web Scanner]                                               [📷 Native Camera / Lens]
+  - Html5Qrcode Camera Engine                                            - Google Lens / iOS Camera
+  - Tombol Ikon QR Header Kanan Atas                                     - Buka URL otomatis di peramban
+  - Dukungan Flip Kamera Belakang/Depan                                  - Tangkap parameter URL ?qr_event
+                   |                                                                     |
+                   +----------------------------------+----------------------------------+
+                                                      |
+                                                      v
+                                     +---------------------------------+
+                                     |  Validasi Waktu Presensi        |
+                                     |  (getEventCheckInWindow)        |
+                                     +---------------------------------+
+                                            /                     \
+                      Belum buka / Lewat   /                       \  Waktu Sah (<= 30 mnt s/d selesai)
+                                          v                         v
+                       +-----------------------+     +-------------------------------+
+                       | Modal Peringatan:     |     | Cek Status Autentikasi Umat   |
+                       | "Presensi dibuka      |     +-------------------------------+
+                       |  maksimal 30 menit    |             /               \
+                       |  sebelum acara..."    |  Sudah Login /                 \ Belum Login /
+                       +-----------------------+             /                   \ Pengunjung
+                                                            v                     v
+                                            +---------------------+  +------------------------+
+                                            | Instant Check-In    |  | Form Identitas Kilat   |
+                                            | method:             |  | - Nama Lengkap         |
+                                            | 'qr_dhammasala'     |  | - Nomor WhatsApp       |
+                                            +---------------------+  | - Umat vs Pengunjung   |
+                                                            |        +------------------------+
+                                                            |                     |
+                                                            \                     /
+                                                             v                   v
+                                            +-------------------------------------------------+
+                                            | Pop-up Sukses Buddhist:                         |
+                                            | "Presensi Berhasil Diverifikasi! 🙏             |
+                                            |  Namo Buddhaya, [Nama]. Kehadiran Anda..."     |
+                                            +-------------------------------------------------+
+```
+
+#### A. Rincian Implementasi Modul Modular (`js/qr.js`)
+1. **Manajemen Pemindaian Kamera (`Html5Qrcode`):**
+   * Mengintegrasikan library `html5-qrcode` yang disimpan lokal di [`js/libs/html5-qrcode.min.js`](file:///c:/AKU_NYOBA/appvihara/js/libs/html5-qrcode.min.js).
+   * Mendeteksi resolusi viewfinder responsif, mengutamakan sensor kamera belakang (*environment facing mode*), dan menyediakan tombol putar kamera (*switch camera*).
+   * Mematikan sensor kamera (*stream tracks release*) secara instan saat QR terdeteksi atau modal ditutup untuk menghemat baterai HP dan menjaga privasi pengguna.
+2. **Generator Kode QR Kontras Tinggi (`QRCodeJS`):**
+   * Menggunakan library `qrcodejs` lokal di [`js/libs/qrcode.min.js`](file:///c:/AKU_NYOBA/appvihara/js/libs/qrcode.min.js) dengan level koreksi kesalahan tinggi (*Level H Error Correction*).
+   * Kode QR tetap dapat terbaca sempurna meskipun layar monitor resepsionis mengalami pantulan cahaya lampu atau permukaan cetak terlipat.
+3. **Mode Standee Monitor Meja Resepsionis (`openStandeeMode`):**
+   * Menampilkan antarmuka layar penuh khusus monitor meja dengan background gradasi gelap sakral (*maroon-radial*).
+   * Jam digital realtime format `HH:mm:ss WIB` dan tanggal bahasa Indonesia lengkap.
+   * Frame QR besar (320px) dengan kartu ringkasan kebaktian aktif (nama acara, penceramah, rentang jam).
+4. **Pencegahan Duplikasi & Idempotensi Presensi:**
+   * Memeriksa daftar rekam jejak `ViharaData.getAttendanceList()`: jika nomor WhatsApp atau user ID sudah tercatat hadir pada event ini, sistem tidak membuat rekor baru melainkan menampilkan pesan ramah: *"Anda sudah tercatat hadir pada kebaktian ini sebelumnya. Terima kasih atas partisipasi kebajikan Anda."*
+5. **Integrasi Tombol Fallback di Modal Error GPS:**
+   * Di dalam `#modal-location-out-of-range` (di luar radius 25 meter) dan `#modal-location-permission-denied` (izin lokasi browser ditolak), disematkan tombol aksi langsung: `[📷 Pindai QR Code di Meja Resepsionis]`. Umat lansia yang mengalami kendala GPS tidak perlu panik atau mencari menu lain.
+
+---
+
+### 4. 💡 Sintaks & Konsep yang Digunakan untuk Belajar
+
+#### A. Format Payload Fleksibel Berbasis URL Param
+Dengan menyandikan ID acara ke dalam skema URL lengkap:
+```javascript
+function generateQrPayload(event) {
+  const origin = window.location.origin;
+  const pathname = window.location.pathname;
+  return `${origin}${pathname}?qr_event=${encodeURIComponent(event.id)}&date=${encodeURIComponent(event.date)}&vihara=VAB_CIBINONG`;
+}
+```
+* **Kelebihan In-App Scanner:** Scanner internal web mengekstrak parameter `qr_event` via objek standar `URL` / `URLSearchParams`.
+* **Kelebihan Kamera Bawaan HP:** Kamera iOS atau Google Lens mengenali string ini sebagai tautan web yang dapat diklik langsung, membuka peramban, dan langsung memicu `initUrlScanHandler()` saat DOM siap.
+
+#### B. Safe Modal Caller Pattern & Universal Global Attaching
+Agar modul JavaScript dapat dijalankan tanpa error di browser (lingkup `window`) maupun di lingkungan CLI / headless test runner (lingkup `global` Node.js):
+```javascript
+function safeOpenModal(id) {
+  if (typeof window !== 'undefined' && typeof window.openModal === 'function') {
+    window.openModal(id);
+  } else if (typeof openModal === 'function') {
+    openModal(id);
+  }
+}
+
+// Universal Global Export
+if (typeof window !== 'undefined') window.ViharaQR = ViharaQR;
+if (typeof global !== 'undefined') global.ViharaQR = ViharaQR;
+if (typeof module !== 'undefined' && module.exports) module.exports = { ViharaQR };
+```
+
+#### C. Matriks Deteksi Perangkat Non-Intrusif
+Memadukan pengecekan User-Agent, lebar resolusi viewport (`<= 860px`), dan kapabilitas sentuh (*touch points*):
+```javascript
+function isMobileDevice() {
+  const nav = (typeof window !== 'undefined' && window.navigator) ? window.navigator : navigator;
+  const ua = (nav.userAgent || nav.vendor || '').toLowerCase();
+  const isMobileUA = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua);
+  const winWidth = typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 1024;
+  const isSmallScreen = winWidth <= 860;
+  const hasTouch = (typeof window !== 'undefined' && 'ontouchstart' in window) || (nav.maxTouchPoints > 0);
+  return isMobileUA || (isSmallScreen && hasTouch);
+}
+```
+
+---
+
+### 5. 📂 File yang Diperbarui & Ditambahkan
+1. [`js/libs/qrcode.min.js`](file:///c:/AKU_NYOBA\appvihara/js/libs/qrcode.min.js) *(File Baru)*
+   - Library generator kode QR performa tinggi independen dari koneksi CDN luar.
+2. [`js/libs/html5-qrcode.min.js`](file:///c:/AKU_NYOBA\appvihara/js/libs/html5-qrcode.min.js) *(File Baru)*
+   - Engine pemindai kamera web mobile lintas peramban (Chrome Android, Safari iOS).
+3. [`js/qr.js`](file:///c:/AKU_NYOBA\appvihara/js/qr.js) *(File Baru)*
+   - Modul inti `ViharaQR`: generator payload, kontrol modal show/scan, standee meja resepsionis, form kilat unauthenticated, dan validasi jendela waktu 30 menit.
+4. [`index.html`](file:///c:/AKU_NYOBA\appvihara/index.html)
+   - Tombol icon QR di mobile top bar kanan atas.
+   - Tombol cepat presensi QR di halaman login (`#view-login`).
+   - Tombol menu QR Dhammasala pada desktop header admin.
+   - Section khusus kartu "QR Presensi Dhammasala (Display Meja Resepsionis)" di `#view-admin`.
+   - Modals: `#modal-qr-display`, `#modal-qr-scanner`, `#modal-qr-admin-choice`, `#modal-qr-quick-register`, `#modal-qr-success`, `#modal-qr-error`.
+   - Overlay Standee Monitor Layar Penuh `#qr-standee-overlay`.
+   - Tombol shortcut QR di `#modal-location-out-of-range` & `#modal-location-permission-denied`.
+5. [`css/style.css`](file:///c:/AKU_NYOBA\appvihara/css/style.css)
+   - Kelas styling `.mobile-qr-header-btn`, `.btn-quick-qr-dhammasala`, `.qr-admin-section-card`, `.qr-camera-viewport`, `.standee-overlay-fullscreen`, `.standee-clock-time`.
+6. [`js/app.js`](file:///c:/AKU_NYOBA\appvihara/js/app.js)
+   - Pembaruan tooltip dan label dinamis tombol QR di header mobile (`updateNavigationUI`) sesuai role (Admin vs Umat).
+7. [`js/data.js`](file:///c:/AKU_NYOBA\appvihara/js/data.js) & [`js/auth.js`](file:///c:/AKU_NYOBA\appvihara/js/auth.js)
+   - Universal scope declaration (`var` & attaching to `global`) untuk kompatibilitas penuh lingkungan browser dan headless runner.
+8. [`scratch/test_qr_feature.cjs`](file:///c:/AKU_NYOBA\appvihara/scratch/test_qr_feature.cjs) *(File Baru)*
+   - Suite pengujian otomatis mencakup 15 skenario: matriks hak akses, payload URL, batasan 30 menit, instant check-in umat, anti-duplikasi, dan form kilat pengunjung (100% Lulus).
+9. [`DOKUMENTASI_PEMBELAJARAN.md`](file:///c:/AKU_NYOBA\appvihara/DOKUMENTASI_PEMBELAJARAN.md)
+   - Penambahan log dokumentasi pembelajaran Entri #11.
+
+---
 *Dokumen ini akan terus diperbarui secara otomatis pada setiap pengembangan dan perbaikan selanjutnya.*
+
 
 
