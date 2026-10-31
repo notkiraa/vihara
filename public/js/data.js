@@ -258,6 +258,15 @@ var ViharaData = (() => {
       return { isOpen: false, reason: 'no_event', message: 'Tidak ada jadwal kebaktian yang sedang dibuka.' };
     }
 
+    // Jika acara telah diarsipkan, presensi mandiri ditutup total
+    if (event.archived) {
+      return {
+        isOpen: false,
+        reason: 'archived',
+        message: 'Jadwal kebaktian ini telah diarsipkan dan tidak lagi menerima presensi mandiri.'
+      };
+    }
+
     const now = new Date();
     const [startH, startM] = (event.startTime || '09:00').split(':').map(Number);
     const [endH, endM] = (event.endTime || '11:00').split(':').map(Number);
@@ -728,6 +737,12 @@ var ViharaData = (() => {
     const targetEvent = eventId ? events.find(e => String(e.id) === String(eventId)) : getActiveEvent();
     const targetEventId = targetEvent ? targetEvent.id : 'EVT_001';
 
+    // Jika acara telah diarsipkan, pengguna biasa (mandiri/QR) tidak bisa presensi lagi, KECUALI admin yang mencatat sendiri (manual_admin)
+    if (targetEvent && targetEvent.archived && method !== 'manual_admin') {
+      console.warn('[ViharaData] Presensi ditolak: Jadwal kebaktian telah diarsipkan.');
+      return null;
+    }
+
     // Cek pencegahan data double: jika user sudah tercatat hadir pada event ini, jangan masukkan duplikat
     const existing = list.find(item => 
       (String(item.userId) === String(userId) || (userPhone && item.userPhone === userPhone)) &&
@@ -779,6 +794,13 @@ var ViharaData = (() => {
     const list = getGuestList();
     const events = getEvents();
     const targetEvent = (eventId ? events.find(e => String(e.id) === String(eventId)) : null) || findEventForCurrentTime();
+
+    // Jika acara telah diarsipkan, buku tamu ditolak
+    if (targetEvent && targetEvent.archived) {
+      console.warn('[ViharaData] Buku tamu ditolak: Jadwal kebaktian telah diarsipkan.');
+      return null;
+    }
+
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
 

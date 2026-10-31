@@ -779,14 +779,24 @@
       // Mode Acara Spesifik Berdasarkan ID Acara
       targetEvent = events.find(e => String(e.id) === String(parsed.eventId));
 
-      if (!targetEvent && events.length > 0) {
-        targetEvent = events.find(e => !e.archived) || events[events.length - 1] || events[0];
+      if (targetEvent && targetEvent.archived) {
+        showScanErrorModal('Jadwal kebaktian ini telah diarsipkan dan tidak lagi menerima presensi.');
+        return;
       }
 
-      if (!targetEvent) {
+      if (!targetEvent && events.length > 0) {
+        targetEvent = events.find(e => !e.archived);
+      }
+
+      if (!targetEvent || targetEvent.archived) {
         showScanErrorModal('Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.');
         return;
       }
+    }
+
+    if (targetEvent && targetEvent.archived) {
+      showScanErrorModal('Jadwal kebaktian ini telah diarsipkan dan tidak lagi menerima presensi.');
+      return;
     }
 
     // Validasi Jendela Waktu Presensi:
@@ -809,8 +819,8 @@
 
             showScanErrorModal(`Presensi kebaktian ini baru dibuka maksimal 30 menit sebelum acara (pukul ${openTimeStr} WIB). Silakan scan kembali mendekati waktu ibadah.`);
             return;
-          } else if (windowStatus.reason === 'expired') {
-            showScanErrorModal('Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.');
+          } else if (windowStatus.reason === 'archived' || windowStatus.reason === 'expired') {
+            showScanErrorModal('Jadwal kebaktian ini telah diarsipkan atau telah selesai. Harap hubungi pengurus di meja resepsionis.');
             return;
           }
         }

@@ -221,6 +221,55 @@ it('6.5 Pengguna tanpa login (sesi null) ditolak dari seluruh operasi admin', ()
   assert.strictEqual(ViharaAdmin.setActiveEvent('EVT_001').success, false);
 });
 
+it('6.6 Presensi mandiri / QR umat ditolak jika acara telah diarsipkan', () => {
+  ViharaData.setSession({ id: 'ADM_001', name: 'Pengurus Admin', phone: '08119999888', role: 'admin' });
+  const archivedEvt = ViharaData.createEvent({
+    name: 'Kebaktian Lampau',
+    speaker: 'Bhikkhu Subha',
+    date: '2026-01-01',
+    startTime: '09:00',
+    endTime: '11:00'
+  });
+  ViharaData.archiveEvent(archivedEvt.id);
+
+  // Umat mencoba presensi mandiri ke acara yang telah diarsipkan
+  const attMandiri = ViharaData.addAttendanceRecord({
+    userId: 'usr_sec_umat_02',
+    userName: 'Umat Coba Presensi',
+    userPhone: '081299990002',
+    eventId: archivedEvt.id,
+    method: 'mandiri'
+  });
+  assert.strictEqual(attMandiri, null, 'Presensi mandiri ke acara arsip harus ditolak!');
+
+  // Umat mencoba scan QR ke acara yang telah diarsipkan
+  const attQR = ViharaData.addAttendanceRecord({
+    userId: 'usr_sec_umat_02',
+    userName: 'Umat Coba Presensi',
+    userPhone: '081299990002',
+    eventId: archivedEvt.id,
+    method: 'qr_dhammasala'
+  });
+  assert.strictEqual(attQR, null, 'Presensi QR ke acara arsip harus ditolak!');
+});
+
+it('6.7 Admin tetap berhak mencatat presensi secara manual pada acara arsip (manual_admin)', () => {
+  const events = ViharaData.getEvents();
+  const archivedEvt = events.find(e => e.archived);
+  assert(archivedEvt, 'Harus ada acara arsip');
+
+  // Admin menambah / toggle kehadiran di modal acara arsip
+  const attAdmin = ViharaData.addAttendanceRecord({
+    userId: 'usr_sec_umat_03',
+    userName: 'Umat Ditambahkan Admin',
+    userPhone: '081299990003',
+    eventId: archivedEvt.id,
+    method: 'manual_admin'
+  });
+  assert(attAdmin !== null, 'Admin harus tetap bisa set kehadiran manual di acara arsip');
+  assert.strictEqual(attAdmin.method, 'manual_admin');
+});
+
 console.log('\n======================================================');
 console.log(`🎉 HASIL PENGUJIAN: ${passCount} / ${totalCount} SKENARIO BERHASIL! (${Math.round((passCount/totalCount)*100)}% PASS)`);
 console.log('======================================================\n');
