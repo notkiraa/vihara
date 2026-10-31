@@ -363,6 +363,7 @@ const ViharaSupabase = (() => {
           speakerTitle: e.speaker_title,
           dhammasala: e.dhammasala,
           isActive: Boolean(e.is_active),
+          archived: !Boolean(e.is_active),
           createdAt: e.created_at
         }));
 

@@ -268,13 +268,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkinBtn = document.getElementById('btn-umat-checkin');
     const myLogs = ViharaData.getAttendanceList().filter(a => a.userId === user.id);
     const allEvents = ViharaData.getEvents();
+    const activeEventsList = allEvents.filter(e => e.isActive && !e.archived && !ViharaData.isEventExpired(e));
 
     // 3 Metrik di Glass Card (Image 1)
     const statTotal = document.getElementById('stat-umat-total');
     if (statTotal) statTotal.innerText = myLogs.length;
 
     const statActiveEvents = document.getElementById('stat-umat-active-events');
-    if (statActiveEvents) statActiveEvents.innerText = allEvents.length;
+    if (statActiveEvents) statActiveEvents.innerText = activeEventsList.length;
 
     const statRate = document.getElementById('stat-umat-rate');
     if (statRate) {

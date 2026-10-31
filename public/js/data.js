@@ -206,11 +206,9 @@ var ViharaData = (() => {
 
   function getActiveEvent() {
     const events = getEvents();
-    // Hanya ambil acara yang ditandai aktif DAN belum kedaluwarsa & tidak diarsipkan
-    let activeEvents = events.filter(e => e.isActive && !e.archived && !isEventExpired(e));
-    if (activeEvents.length === 0) {
-      activeEvents = events.filter(e => !e.archived && !isEventExpired(e));
-    }
+    // Hanya ambil acara yang secara eksplisit ditandai aktif (isActive === true)
+    // DAN belum kedaluwarsa & tidak diarsipkan
+    const activeEvents = events.filter(e => e.isActive && !e.archived && !isEventExpired(e));
     if (activeEvents.length === 0) return null;
 
     // Urutkan dari yang paling duluan mulainya (tanggal & jam mulai paling awal)
@@ -236,9 +234,9 @@ var ViharaData = (() => {
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     // 1. Cek acara hari ini yang jam mulainya <= sekarang <= jam berakhir (+ 30 menit toleransi)
-    // Urutkan dari yang paling duluan mulainya jika terdapat lebih dari satu acara
+    // dan harus aktif (isActive === true) serta tidak diarsipkan
     const matched = events.filter(e => {
-      if (e.date !== today || e.archived || isEventExpired(e)) return false;
+      if (e.date !== today || e.archived || !e.isActive || isEventExpired(e)) return false;
       const [startH, startM] = (e.startTime || '09:00').split(':').map(Number);
       const [endH, endM] = (e.endTime || '11:00').split(':').map(Number);
       const startMin = startH * 60 + startM;
