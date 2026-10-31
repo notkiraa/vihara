@@ -676,9 +676,12 @@ const ViharaSupabase = (() => {
         window.ViharaDeletedEventIds.add(String(eventId));
       }
 
-      // Hapus presensi terkait acara terlebih dahulu untuk menjamin konsistensi
+      // Hapus presensi & buku tamu terkait acara terlebih dahulu untuk menjamin konsistensi
       try {
         await sb.from('attendance').delete().eq('event_id', String(eventId));
+      } catch (_) {}
+      try {
+        await sb.from('guests').delete().eq('event_id', String(eventId));
       } catch (_) {}
 
       const { data, error } = await sb.from('events').delete().eq('id', String(eventId));
@@ -724,24 +727,33 @@ const ViharaSupabase = (() => {
 
       if (error) throw error;
       if (data && Array.isArray(data)) {
+        const localEvents = typeof ViharaData !== 'undefined' ? ViharaData.getEvents() : [];
+        const validEventIds = new Set(localEvents.map(e => String(e.id)));
+
         // Jika Supabase kosong namun storage lokal memiliki data presensi, lakukan migrasi seeding ke remote db
+        // HANYA untuk acara yang saat ini masih valid terdaftar
         if (data.length === 0) {
           try {
             const localAtt = localStorage.getItem('vihara_attendance');
             if (localAtt) {
               const parsed = JSON.parse(localAtt);
-              if (Array.isArray(parsed) && parsed.length > 0) {
+              const validToSeed = Array.isArray(parsed)
+                ? parsed.filter(a => a.eventId && (validEventIds.size === 0 || validEventIds.has(String(a.eventId))))
+                : [];
+              if (validToSeed.length > 0) {
                 console.info('[Supabase] Seeding data presensi lokal ke cloud...');
-                for (const a of parsed) {
+                for (const a of validToSeed) {
                   await insertAttendance(a.eventId, a.userId, a.method === 'mandiri' ? 'self_checkin' : 'manual_admin');
                 }
-                return parsed;
+                return validToSeed;
               }
             }
           } catch (_) {}
         }
 
-        const mapped = data.map(a => {
+        const mapped = data
+          .filter(a => a.event_id && (validEventIds.size === 0 || validEventIds.has(String(a.event_id))))
+          .map(a => {
           const evt = a.events || {};
           const prof = a.profiles || {};
           const checkinDate = a.checkin_time ? new Date(a.checkin_time) : new Date();

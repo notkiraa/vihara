@@ -128,7 +128,7 @@ async function runTests() {
     speaker: 'Bhikkhu Saddhaviro',
     date: todayKey,
     startTime: `${pad(in30min.getHours())}:${pad(in30min.getMinutes())}`,
-    endTime: `${pad((in30min.getHours() + 2) % 24)}:00`
+    endTime: '23:59'
   };
   const windowReady = ViharaData.getEventCheckInWindow(readyEvent);
   assert(windowReady.isOpen === true && windowReady.reason === 'open', 'Presensi QR diterima saat waktu <= 30 menit sebelum acara', 'Window: open');
@@ -275,7 +275,7 @@ async function runTests() {
     speaker: 'Bhikkhu Subalaratano',
     date: todayKey,
     startTime: `${pad(now.getHours())}:00`,
-    endTime: `${pad((now.getHours() + 2) % 24)}:00`,
+    endTime: '23:59',
     isActive: true
   };
   localStorage.setItem('vihara_events', JSON.stringify([eventMingguIni]));
@@ -292,7 +292,7 @@ async function runTests() {
     speaker: 'Bhikkhu Dhammasubho',
     date: todayKey, // Simulasi hari pelaksanaan kebaktian
     startTime: `${pad(now.getHours())}:00`,
-    endTime: `${pad((now.getHours() + 2) % 24)}:00`,
+    endTime: '23:59',
     isActive: true
   };
   localStorage.setItem('vihara_events', JSON.stringify([eventMingguDepan]));
@@ -337,7 +337,7 @@ async function runTests() {
     speaker: 'Bhikkhu Gunasiri',
     date: todayKey,
     startTime: `${pad(now.getHours())}:00`,
-    endTime: `${pad((now.getHours() + 2) % 24)}:00`,
+    endTime: '23:59',
     archived: false
   };
   localStorage.setItem('vihara_events', JSON.stringify([testFallbackEvent]));

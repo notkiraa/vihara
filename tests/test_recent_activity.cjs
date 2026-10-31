@@ -55,4 +55,10 @@ assert(appJs.includes('window.handleAdminDuplicateEvent = function(eventId)'), '
 assert(appJs.includes('handleAdminDuplicateEvent'), 'createAdminEventCard must support duplicate button for archived events');
 console.log('✅ 6. Event archive, duplicate template into form, and permanent delete verified');
 
+// 7. Verify zero-attendance guarantee on createEvent & cascade delete on deleteEvent
+assert(dataJs.includes('cleanAtt = rawAtt.filter'), 'createEvent must purge any residual attendance for the new ID');
+assert(dataJs.includes('filteredAtt = rawAtt.filter'), 'deleteEvent must cascade delete attendance in localStorage');
+assert(dataJs.includes('filteredGuests = rawGuests.filter'), 'deleteEvent must cascade delete guests in localStorage');
+console.log('✅ 7. Zero attendance on event creation & cascade delete on deleteEvent verified');
+
 console.log('\n🎉 All verification checks passed with 100% success!');

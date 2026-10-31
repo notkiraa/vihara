@@ -265,9 +265,10 @@ var ViharaData = (() => {
     };
   }
 
-  // Generator ID Acara Monotonik (Mencegah Tabrakan ID Kunci Primer)
+  // Generator ID Acara Monotonik (Mencegah Tabrakan ID Kunci Primer & Daur Ulang ID)
   function generateNextEventId(events) {
     let maxNum = 0;
+    // 1. Scan semua acara aktif & arsip
     (events || []).forEach(e => {
       const match = String(e && e.id ? e.id : '').match(/EVT_(\d+)/);
       if (match) {
@@ -275,7 +276,35 @@ var ViharaData = (() => {
         if (n > maxNum) maxNum = n;
       }
     });
-    return 'EVT_' + String(maxNum + 1).padStart(3, '0');
+
+    // 2. Scan semua ID acara pada log kehadiran dan buku tamu lokal
+    try {
+      const rawAtt = JSON.parse(localStorage.getItem(STORAGE_KEYS.ATTENDANCE) || '[]');
+      rawAtt.forEach(a => {
+        const match = String(a && a.eventId ? a.eventId : '').match(/EVT_(\d+)/);
+        if (match) {
+          const n = parseInt(match[1], 10);
+          if (n > maxNum) maxNum = n;
+        }
+      });
+      const rawGuests = JSON.parse(localStorage.getItem(STORAGE_KEYS.GUESTS) || '[]');
+      rawGuests.forEach(g => {
+        const match = String(g && g.eventId ? g.eventId : '').match(/EVT_(\d+)/);
+        if (match) {
+          const n = parseInt(match[1], 10);
+          if (n > maxNum) maxNum = n;
+        }
+      });
+      const storedSeq = parseInt(localStorage.getItem('vihara_event_seq_max') || '0', 10);
+      if (storedSeq > maxNum) maxNum = storedSeq;
+    } catch (_) {}
+
+    const nextNum = maxNum + 1;
+    try {
+      localStorage.setItem('vihara_event_seq_max', String(nextNum));
+    } catch (_) {}
+
+    return 'EVT_' + String(nextNum).padStart(3, '0');
   }
 
   // Generator ID Presensi Monotonik (Mencegah Tabrakan ID Kunci Primer)
@@ -324,6 +353,20 @@ var ViharaData = (() => {
 
     // Nonaktifkan acara lain
     events.forEach(e => { e.isActive = false; });
+
+    // Pastikan log kehadiran dan buku tamu bersih dari residu ID ini (Zero Attendance Guarantee)
+    try {
+      const rawAtt = JSON.parse(localStorage.getItem(STORAGE_KEYS.ATTENDANCE) || '[]');
+      const cleanAtt = rawAtt.filter(a => String(a.eventId) !== String(newId));
+      if (cleanAtt.length !== rawAtt.length) {
+        localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(cleanAtt));
+      }
+      const rawGuests = JSON.parse(localStorage.getItem(STORAGE_KEYS.GUESTS) || '[]');
+      const cleanGuests = rawGuests.filter(g => String(g.eventId) !== String(newId));
+      if (cleanGuests.length !== rawGuests.length) {
+        localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify(cleanGuests));
+      }
+    } catch (_) {}
 
     const targetDate = date || getTodayKey();
     const targetEndTime = endTime || '11:00';
@@ -379,13 +422,14 @@ var ViharaData = (() => {
   }
 
   function deleteEvent(eventId) {
+    const sId = String(eventId);
     if (typeof window !== 'undefined') {
       window.ViharaDeletedEventIds = window.ViharaDeletedEventIds || new Set();
-      window.ViharaDeletedEventIds.add(String(eventId));
+      window.ViharaDeletedEventIds.add(sId);
     }
 
     let events = getEvents();
-    events = events.filter(e => e.id !== eventId);
+    events = events.filter(e => String(e.id) !== sId);
     // Jika tidak ada acara aktif, jangan paksa acara kedaluwarsa jadi aktif
     const hasActiveUnexpired = events.some(e => e.isActive && !isEventExpired(e));
     if (!hasActiveUnexpired) {
@@ -393,6 +437,17 @@ var ViharaData = (() => {
       if (firstValid) firstValid.isActive = true;
     }
     localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
+
+    // Cascade Delete di LocalStorage: Bersihkan presensi & buku tamu untuk acara yang dihapus
+    try {
+      const rawAtt = JSON.parse(localStorage.getItem(STORAGE_KEYS.ATTENDANCE) || '[]');
+      const filteredAtt = rawAtt.filter(a => String(a.eventId) !== sId);
+      localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(filteredAtt));
+
+      const rawGuests = JSON.parse(localStorage.getItem(STORAGE_KEYS.GUESTS) || '[]');
+      const filteredGuests = rawGuests.filter(g => String(g.eventId) !== sId);
+      localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify(filteredGuests));
+    } catch (_) {}
 
     // Hapus acara di Supabase secara permanen
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.deleteEvent === 'function') {
@@ -587,10 +642,17 @@ var ViharaData = (() => {
   function getAttendanceList() {
     init();
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEYS.ATTENDANCE) || '[]');
+    const events = getEvents();
+    const validEventIds = new Set(events.map(e => String(e.id)));
+
     // Deduplikasi otomatis: 1 umat hanya boleh tercatat 1 kali per acara kebaktian
     const seen = new Set();
     const deduped = [];
     raw.forEach(item => {
+      // Abaikan data presensi jika acaranya sudah tidak ada di sistem
+      if (validEventIds.size > 0 && !validEventIds.has(String(item.eventId))) {
+        return;
+      }
       const uKey = String(item.userId || item.userPhone || '');
       const eKey = String(item.eventId || item.dateKey || '');
       const combo = `${uKey}_${eKey}`;
