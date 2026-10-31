@@ -743,9 +743,31 @@
         targetEvent = events.find(e => !e.archived) || events[events.length - 1] || events[0];
       }
 
+      const todayKey = (typeof ViharaData !== 'undefined' && typeof ViharaData.getTodayKey === 'function') 
+        ? ViharaData.getTodayKey() 
+        : new Date().toISOString().split('T')[0];
+
       if (!targetEvent) {
-        showScanErrorModal('Tidak ada jadwal kebaktian yang sedang aktif saat ini. Harap hubungi pengurus di meja resepsionis.');
-        return;
+        // Fallback dinamis otomatis: Sesi Puja Bakti Hari Ini
+        targetEvent = {
+          id: 'EVT_001',
+          name: 'Puja Bakti Dhammasala',
+          date: todayKey,
+          dateText: 'Hari Ini',
+          startTime: '07:00',
+          endTime: '23:00',
+          timeSchedule: '07:00 - 23:00 WIB',
+          speaker: 'Bhikkhu Sangha / Pengurus',
+          speakerTitle: 'Dhammasala Vihara',
+          isActive: true
+        };
+      } else {
+        // Jika tanggal acara yang ditemukan di database sudah lewat, perbarui ke hari ini
+        if (targetEvent.date < todayKey) {
+          targetEvent.date = todayKey;
+          targetEvent.isActive = true;
+          targetEvent.archived = false;
+        }
       }
     } else {
       // Mode Acara Spesifik Berdasarkan ID Acara
@@ -761,25 +783,30 @@
       }
     }
 
-    // Validasi Jendela Waktu Presensi (Maksimal 30 Menit Sebelum Mulai)
-    if (typeof ViharaData !== 'undefined' && typeof ViharaData.getEventCheckInWindow === 'function') {
-      const windowStatus = ViharaData.getEventCheckInWindow(targetEvent);
+    // Validasi Jendela Waktu Presensi:
+    // PENTING: Untuk QR Tetap Dhammasala (Standee Meja Resepsionis / Universal Standee QR),
+    // umat yang hadir di vihara berhak melakukan presensi kapan saja tanpa terblokir 'expired' atau 'too_early'.
+    // Validasi restriktif hanya diterapkan untuk QR acara spesifik terjadwal.
+    if (!parsed.isDhammasala && parsed.eventId !== 'active') {
+      if (typeof ViharaData !== 'undefined' && typeof ViharaData.getEventCheckInWindow === 'function') {
+        const windowStatus = ViharaData.getEventCheckInWindow(targetEvent);
 
-      if (!windowStatus.isOpen) {
-        if (windowStatus.reason === 'too_early') {
-          // Hitung jam mulai presensi (30 menit sebelum start time)
-          const startTimeParts = (targetEvent.startTime || '09:00').split(':').map(Number);
-          let openMinutes = (startTimeParts[0] * 60 + startTimeParts[1]) - 30;
-          if (openMinutes < 0) openMinutes += 24 * 60;
-          const openH = String(Math.floor(openMinutes / 60)).padStart(2, '0');
-          const openM = String(openMinutes % 60).padStart(2, '0');
-          const openTimeStr = `${openH}:${openM}`;
+        if (!windowStatus.isOpen) {
+          if (windowStatus.reason === 'too_early') {
+            // Hitung jam mulai presensi (30 menit sebelum start time)
+            const startTimeParts = (targetEvent.startTime || '09:00').split(':').map(Number);
+            let openMinutes = (startTimeParts[0] * 60 + startTimeParts[1]) - 30;
+            if (openMinutes < 0) openMinutes += 24 * 60;
+            const openH = String(Math.floor(openMinutes / 60)).padStart(2, '0');
+            const openM = String(openMinutes % 60).padStart(2, '0');
+            const openTimeStr = `${openH}:${openM}`;
 
-          showScanErrorModal(`Presensi kebaktian ini baru dibuka maksimal 30 menit sebelum acara (pukul ${openTimeStr} WIB). Silakan scan kembali mendekati waktu ibadah.`);
-          return;
-        } else if (windowStatus.reason === 'expired') {
-          showScanErrorModal('Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.');
-          return;
+            showScanErrorModal(`Presensi kebaktian ini baru dibuka maksimal 30 menit sebelum acara (pukul ${openTimeStr} WIB). Silakan scan kembali mendekati waktu ibadah.`);
+            return;
+          } else if (windowStatus.reason === 'expired') {
+            showScanErrorModal('Kode QR ini tidak sesuai atau sesi kebaktian telah selesai. Harap hubungi pengurus di meja resepsionis.');
+            return;
+          }
         }
       }
     }

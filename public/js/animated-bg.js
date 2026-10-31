@@ -394,6 +394,12 @@
     function animate(currentTime = 0) {
       animationFrameId = requestAnimationFrame(animate);
 
+      // Jika ada modal terbuka (error, QR, presensi, dll) atau overlay standee aktif,
+      // lewati render canvas untuk membebaskan GPU mobile sepenuhnya dan mencegah tile drop
+      if (document.querySelector('.modal-backdrop.show') || document.body.classList.contains('standee-active')) {
+        return;
+      }
+
       // Throttling 30 FPS di mobile untuk kenyamanan baterai dan kompositor GPU
       const elapsed = currentTime - lastFrameTime;
       if (width < 768 && elapsed < 32) {
@@ -419,8 +425,6 @@
         const alpha = particles[i].update();
         particles[i].draw(alpha);
       }
-
-      animationFrameId = requestAnimationFrame(animate);
     }
 
     // --------------------------------------------------------------------------
@@ -473,6 +477,7 @@
       if (document.hidden) {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
       } else {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
         animate();
       }
     });
