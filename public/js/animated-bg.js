@@ -390,9 +390,24 @@
     // [INDEX: JS-BG-06] 60 FPS RENDER LOOP CONTROLLER, EVENT LISTENERS & VISIBILITY
     // Fungsi: Siklus animasi requestAnimationFrame 60 FPS dan pendengar resize/mouse.
     // ==========================================================================
+    let isScrolling = false;
+    let scrollTimeout = null;
+    window.addEventListener('scroll', function() {
+      isScrolling = true;
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(function() {
+        isScrolling = false;
+      }, 80);
+    }, { passive: true });
+
     let lastFrameTime = 0;
     function animate(currentTime = 0) {
       animationFrameId = requestAnimationFrame(animate);
+
+      // Lewati render jika layar sedang di-scroll pada mobile agar FPS scroll maksimal dan tidak lag
+      if (isScrolling && width < 768) {
+        return;
+      }
 
       // Jika ada modal terbuka (error, QR, presensi, dll) atau overlay standee aktif,
       // lewati render canvas untuk membebaskan GPU mobile sepenuhnya dan mencegah tile drop

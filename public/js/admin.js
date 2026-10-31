@@ -191,6 +191,16 @@ const ViharaAdmin = (() => {
     };
   }
 
+  function archiveEvent(eventId) {
+    if (!ViharaAuth.isAdmin()) return { success: false, message: 'Akses ditolak.' };
+    const archived = ViharaData.archiveEvent(eventId);
+    return {
+      success: true,
+      message: archived ? `Jadwal "${archived.name}" berhasil dipindahkan ke Arsip.` : 'Jadwal berhasil dipindahkan ke Arsip.',
+      event: archived
+    };
+  }
+
   function deleteEvent(eventId) {
     if (!ViharaAuth.isAdmin()) return { success: false, message: 'Akses ditolak.' };
     ViharaData.deleteEvent(eventId);
@@ -281,6 +291,7 @@ const ViharaAdmin = (() => {
     registerAndAssignUmatToEvent,
     createNewEvent,
     setActiveEvent,
+    archiveEvent,
     deleteEvent,
     exportEventToCSV
   };

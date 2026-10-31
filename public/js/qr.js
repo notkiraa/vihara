@@ -180,15 +180,12 @@
     if (!targetEvent && typeof ViharaData !== 'undefined') {
       targetEvent = ViharaData.getActiveEvent();
     }
-    if (!targetEvent && events.length > 0) {
-      targetEvent = events[0];
-    }
 
     if (!targetEvent) {
       if (typeof showToast === 'function') {
-        showToast('Belum ada jadwal kebaktian untuk dibuatkan kode QR.', 'warning');
+        showToast('Tidak ada jadwal kebaktian yang sedang aktif untuk menampilkan kode QR.', 'warning');
       } else {
-        alert('Belum ada jadwal kebaktian untuk dibuatkan kode QR.');
+        alert('Tidak ada jadwal kebaktian yang sedang aktif untuk menampilkan kode QR.');
       }
       return;
     }
@@ -226,13 +223,12 @@
     if (!targetEvent && typeof ViharaData !== 'undefined') {
       targetEvent = ViharaData.getActiveEvent();
     }
-    if (!targetEvent && events.length > 0) {
-      targetEvent = events[0];
-    }
 
     if (!targetEvent) {
       if (typeof showToast === 'function') {
-        showToast('Tidak ada jadwal kebaktian aktif untuk Standee Monitor.', 'warning');
+        showToast('Tidak ada jadwal kebaktian yang sedang aktif untuk Standee Monitor.', 'warning');
+      } else {
+        alert('Tidak ada jadwal kebaktian yang sedang aktif untuk Standee Monitor.');
       }
       return;
     }
@@ -317,8 +313,14 @@
   function printQrStandee(eventId = null) {
     const events = typeof ViharaData !== 'undefined' ? ViharaData.getEvents() : [];
     let targetEvent = eventId ? events.find(e => String(e.id) === String(eventId)) : (typeof ViharaData !== 'undefined' ? ViharaData.getActiveEvent() : null);
-    if (!targetEvent && events.length > 0) targetEvent = events[0];
-    if (!targetEvent) return;
+    if (!targetEvent) {
+      if (typeof showToast === 'function') {
+        showToast('Tidak ada jadwal kebaktian yang sedang aktif untuk dicetak.', 'warning');
+      } else {
+        alert('Tidak ada jadwal kebaktian yang sedang aktif untuk dicetak.');
+      }
+      return;
+    }
 
     const payload = generateQrPayload(targetEvent);
 
@@ -748,6 +750,10 @@
         : new Date().toISOString().split('T')[0];
 
       if (!targetEvent) {
+        if (!events || events.length === 0) {
+          showScanErrorModal('Tidak ada jadwal kebaktian yang sedang aktif saat ini. Harap hubungi pengurus di meja resepsionis.');
+          return;
+        }
         // Fallback dinamis otomatis: Sesi Puja Bakti Hari Ini
         targetEvent = {
           id: 'EVT_001',

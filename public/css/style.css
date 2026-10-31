@@ -2066,6 +2066,24 @@ body.user-logged-out #view-guest.active {
    [INDEX: CSS-11] VIEW 3: RIWAYAT KEHADIRAN UMAT (CLEAN NO-LINE CARDS)
    Fungsi: Daftar rekam jejak presensi bersih tanpa garis tabel, badge verifikasi.
    ========================================================================== */
+/* Tampilan Responsif Riwayat: Di Desktop tampilkan Tabel, di HP tampilkan Kartu Bersih */
+@media (min-width: 769px) {
+  #umat-history-mobile-list {
+    display: none !important;
+  }
+  #umat-history-table-wrapper {
+    display: block !important;
+  }
+}
+@media (max-width: 768px) {
+  #umat-history-table-wrapper {
+    display: none !important;
+  }
+  #umat-history-mobile-list {
+    display: flex !important;
+  }
+}
+
 .history-cards-list,
 .timeline-list {
   position: relative;
@@ -2460,21 +2478,62 @@ body.user-logged-out #view-guest.active {
 
 .event-card-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 12px;
+  width: 100%;
 }
 
 .btn-event-primary {
-  flex: 1;
-  padding: 12px 18px;
-  font-size: 14px;
+  flex: 1.15;
+  min-width: 0;
+  width: auto;
+  height: 44px;
+  padding: 0 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
 }
 
 .btn-event-secondary {
-  padding: 11px 14px;
-  font-size: 13px;
+  flex: 1;
+  min-width: 0;
   width: auto;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: var(--ink-80, #374151);
+  border: 1.5px solid var(--line, #e5e7eb);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-event-secondary:hover {
+  background: var(--maroon-50, #fdf2f4);
+  border-color: var(--maroon-200, #eed4da);
+  color: var(--maroon-800, #7a1a30);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(122, 26, 48, 0.08);
+}
+
+.btn-event-secondary:active {
+  transform: scale(0.97);
 }
 
 .btn-danger-icon {
@@ -2482,8 +2541,8 @@ body.user-logged-out #view-guest.active {
   border: 1.5px solid #fecaca;
   width: 48px;
   min-width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  height: 44px;
+  border-radius: 12px;
   cursor: pointer;
   color: #dc2626;
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -2492,11 +2551,12 @@ body.user-logged-out #view-guest.active {
   justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(220, 38, 38, 0.08);
+  box-sizing: border-box;
 }
 
 .btn-danger-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 23px;
+  height: 23px;
   stroke-width: 2.2;
 }
 
@@ -2512,20 +2572,23 @@ body.user-logged-out #view-guest.active {
   transform: scale(0.96);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
   .event-card-actions {
     flex-wrap: wrap;
+    gap: 8px;
   }
-  .btn-event-primary {
+  .event-card-actions .btn-event-primary {
     width: 100%;
+    flex: 1 1 100%;
     order: 1;
   }
-  .btn-event-secondary {
+  .event-card-actions .btn-event-secondary {
     flex: 1;
     order: 2;
   }
-  .btn-danger-icon {
+  .event-card-actions .btn-danger-icon {
     order: 3;
+    flex-shrink: 0;
   }
 }
 

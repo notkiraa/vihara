@@ -648,7 +648,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.handleResetUserPassword = async function() {
-    const userId = document.getElementById('modal-edit-id')?.value;
+    const editIdEl = document.getElementById('modal-edit-id');
+    const userId = editIdEl ? editIdEl.value : null;
     if (!userId) return;
     if (!confirm('Apakah Anda yakin ingin me-reset kata sandi pengguna ini ke bawaan (123456)?')) {
       return;

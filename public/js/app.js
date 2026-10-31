@@ -380,17 +380,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const recent = myLogs.slice(-3).reverse();
     if (recent.length > 0) {
+      const allEvts = (typeof ViharaData !== 'undefined' && typeof ViharaData.getEvents === 'function') ? ViharaData.getEvents() : [];
+
       recent.forEach(item => {
         const div = document.createElement('div');
         div.className = 'timeline-item';
         div.style.marginBottom = '10px';
+        div.style.cursor = 'pointer';
+        div.setAttribute('role', 'button');
+        div.setAttribute('tabindex', '0');
+        div.title = 'Lihat detail lengkap kehadiran';
+        div.onclick = function() {
+          window.showRecentActivityDetail(item);
+        };
+        div.onkeydown = function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            window.showRecentActivityDetail(item);
+          }
+        };
+
+        const matched = allEvts.find(e => (item.eventId && String(e.id) === String(item.eventId)) || (item.kebaktianName && e.name === item.kebaktianName));
+        const itemSched = (matched && matched.timeSchedule) 
+          ? matched.timeSchedule 
+          : ((matched && matched.startTime && matched.endTime) 
+              ? `${matched.startTime} - ${matched.endTime} WIB` 
+              : (item.eventSchedule || ''));
+
         div.innerHTML = `
-          <div class="timeline-icon-box" style="background: var(--success-bg); color: var(--success); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+          <div class="timeline-icon-box" style="background: var(--success-bg); color: var(--success); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
           </div>
-          <div class="timeline-content">
+          <div class="timeline-content" style="flex: 1; min-width: 0;">
             <div class="timeline-top-row">
               <div class="timeline-title">${escapeHTML(item.kebaktianName)}</div>
               <div class="timeline-date">${item.dateKey === ViharaData.getTodayKey() ? 'Hari ini' : item.dateKey}</div>
@@ -400,11 +423,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
-                <span>Dhammasala Utama</span>
+                <span>${escapeHTML(matched && matched.dhammasala ? matched.dhammasala : 'Dhammasala Utama')}</span>
               </span>
               <span style="margin: 0 4px;">&bull;</span>
-              <span>${item.timeStr}</span>
+              <span>${escapeHTML(item.timeStr)}</span>
             </div>
+          </div>
+          <div style="display: flex; align-items: center; color: var(--ink-40); margin-left: 6px; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
           </div>
         `;
         container.appendChild(div);
@@ -412,14 +440,41 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (activeEvent) {
       const div = document.createElement('div');
       div.className = 'timeline-item';
+      div.style.cursor = 'pointer';
+      div.setAttribute('role', 'button');
+      div.setAttribute('tabindex', '0');
+      div.title = 'Lihat detail jadwal aktif';
+      div.onclick = function() {
+        window.showRecentActivityDetail({
+          kebaktianName: activeEvent.name,
+          speaker: activeEvent.speaker,
+          dateKey: activeEvent.date,
+          timeStr: activeEvent.timeSchedule,
+          dhammasala: activeEvent.dhammasala,
+          isActiveEvent: true
+        });
+      };
+      div.onkeydown = function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.showRecentActivityDetail({
+            kebaktianName: activeEvent.name,
+            speaker: activeEvent.speaker,
+            dateKey: activeEvent.date,
+            timeStr: activeEvent.timeSchedule,
+            dhammasala: activeEvent.dhammasala,
+            isActiveEvent: true
+          });
+        }
+      };
       div.innerHTML = `
-        <div class="timeline-icon-box" style="background: var(--maroon-50); color: var(--maroon-700); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <div class="timeline-icon-box" style="background: var(--maroon-50); color: var(--maroon-700); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
             <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
           </svg>
         </div>
-        <div class="timeline-content">
+        <div class="timeline-content" style="flex: 1; min-width: 0;">
           <div class="timeline-top-row">
             <div class="timeline-title">${escapeHTML(activeEvent.name)}</div>
             <div class="timeline-date">Sedang Dibuka</div>
@@ -432,13 +487,109 @@ document.addEventListener('DOMContentLoaded', () => {
               <span>${escapeHTML(activeEvent.dhammasala)}</span>
             </span>
             <span style="margin: 0 4px;">&bull;</span>
-            <span>${activeEvent.timeSchedule}</span>
+            <span>${escapeHTML(activeEvent.timeSchedule)}</span>
           </div>
+        </div>
+        <div style="display: flex; align-items: center; color: var(--ink-40); margin-left: 6px; flex-shrink: 0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
         </div>
       `;
       container.appendChild(div);
     }
   }
+
+  // Modal Rincian Lengkap Aktivitas Kehadiran Umat
+  window.showRecentActivityDetail = function(item) {
+    if (!item) return;
+
+    const events = (typeof ViharaData !== 'undefined' && typeof ViharaData.getEvents === 'function') ? ViharaData.getEvents() : [];
+    const matchedEvent = events.find(e => (item.eventId && String(e.id) === String(item.eventId)) || (item.kebaktianName && e.name === item.kebaktianName));
+
+    const titleEl = document.getElementById('modal-activity-title');
+    const speakerEl = document.getElementById('modal-activity-speaker');
+    const dateEl = document.getElementById('modal-activity-date');
+    const scheduleEl = document.getElementById('modal-activity-schedule');
+    const timeEl = document.getElementById('modal-activity-time');
+    const locationEl = document.getElementById('modal-activity-location');
+    const methodEl = document.getElementById('modal-activity-method');
+    const statusBadgeEl = document.getElementById('modal-activity-status-badge');
+    const iconBoxEl = document.getElementById('modal-activity-icon-box');
+
+    const eventName = item.kebaktianName || (matchedEvent ? matchedEvent.name : 'Puja Bakti');
+    const speakerName = (item.speaker && item.speaker !== '-') ? item.speaker : (matchedEvent ? matchedEvent.speaker : '-');
+    const dateVal = item.dateKey ? (typeof ViharaData !== 'undefined' && typeof ViharaData.formatDateIndonesia === 'function' ? ViharaData.formatDateIndonesia(item.dateKey) : item.dateKey) : (matchedEvent ? (matchedEvent.dateText || matchedEvent.date) : '-');
+    
+    // Jadwal Acara Lengkap (misal: 19:00 - 21:00 WIB)
+    const scheduleVal = (matchedEvent && matchedEvent.timeSchedule) 
+      ? matchedEvent.timeSchedule 
+      : ((matchedEvent && matchedEvent.startTime && matchedEvent.endTime) 
+          ? `${matchedEvent.startTime} - ${matchedEvent.endTime} WIB` 
+          : (item.eventSchedule || item.timeSchedule || 'Sesuai Jadwal Vihara'));
+
+    // Jam Presensi Umat
+    const timeVal = item.timeStr ? item.timeStr : (item.isActiveEvent ? 'Belum Presensi' : '-');
+    const locationVal = (matchedEvent && matchedEvent.dhammasala) ? matchedEvent.dhammasala : 'Dhammasala Utama';
+
+    let methodText = 'Presensi Mandiri (Mobile)';
+    if (item.method === 'qr_dhammasala' || item.method === 'qr_scan') {
+      methodText = 'Pindai QR Dhammasala';
+    } else if (item.method === 'manual_admin') {
+      methodText = 'Manual oleh Pengurus';
+    } else if (item.isActiveEvent) {
+      methodText = 'Jadwal Acara Aktif';
+    }
+
+    if (titleEl) titleEl.innerText = eventName;
+    if (speakerEl) speakerEl.innerText = speakerName;
+    if (dateEl) dateEl.innerText = dateVal;
+    if (scheduleEl) scheduleEl.innerText = scheduleVal;
+    if (timeEl) timeEl.innerText = timeVal;
+    if (locationEl) locationEl.innerText = locationVal;
+    if (methodEl) methodEl.innerText = methodText;
+
+    if (statusBadgeEl) {
+      if (item.isActiveEvent) {
+        statusBadgeEl.innerText = 'Acara Sedang Dibuka';
+        statusBadgeEl.style.background = 'var(--maroon-50)';
+        statusBadgeEl.style.color = 'var(--maroon-700)';
+        statusBadgeEl.style.borderColor = 'var(--maroon-100)';
+      } else {
+        statusBadgeEl.innerText = 'Tercatat Hadir';
+        statusBadgeEl.style.background = 'var(--success-bg)';
+        statusBadgeEl.style.color = 'var(--success)';
+        statusBadgeEl.style.borderColor = 'var(--success-border)';
+      }
+    }
+
+    if (iconBoxEl) {
+      if (item.isActiveEvent) {
+        iconBoxEl.style.background = 'var(--maroon-50)';
+        iconBoxEl.style.color = 'var(--maroon-700)';
+        iconBoxEl.style.borderColor = 'var(--maroon-100)';
+        iconBoxEl.innerHTML = `
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        `;
+      } else {
+        iconBoxEl.style.background = 'var(--success-bg)';
+        iconBoxEl.style.color = 'var(--success)';
+        iconBoxEl.style.borderColor = 'var(--success-border)';
+        iconBoxEl.innerHTML = `
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        `;
+      }
+    }
+
+    if (typeof openModal === 'function') {
+      openModal('modal-activity-detail');
+    }
+  };
 
   // Handler Tombol Presensi Umat Langsung Berbasis Geolocation Radius 25 Meter
   window.handleUmatCheckIn = async function() {
@@ -695,16 +846,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Render riwayat di bawah bulan tersebut
       groupItems.forEach(item => {
+        const allEvts = (typeof ViharaData !== 'undefined' && typeof ViharaData.getEvents === 'function') ? ViharaData.getEvents() : [];
+        const matched = allEvts.find(e => (item.eventId && String(e.id) === String(item.eventId)) || (item.kebaktianName && e.name === item.kebaktianName));
+        const itemSched = (matched && matched.timeSchedule) 
+          ? matched.timeSchedule 
+          : ((matched && matched.startTime && matched.endTime) 
+              ? `${matched.startTime} - ${matched.endTime} WIB` 
+              : (item.eventSchedule || '-'));
+
         // Desktop Table Row
         const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.title = 'Klik untuk melihat detail kehadiran';
+        tr.onclick = function() { window.showRecentActivityDetail(item); };
         tr.innerHTML = `
           <td>${overallIndex++}</td>
           <td>
             <strong>${escapeHTML(item.kebaktianName)}</strong>
-            <div style="font-size: 0.75rem; color: var(--ink-50);">Penceramah: ${escapeHTML(item.speaker || '-')}</div>
+            <div style="font-size: 0.75rem; color: var(--ink-50); margin-top: 2px;">
+              <span>Penceramah: ${escapeHTML(item.speaker || '-')}</span>
+              <span style="margin: 0 4px;">&bull;</span>
+              <span>Jadwal: <strong>${escapeHTML(itemSched)}</strong></span>
+            </div>
           </td>
           <td>${item.dateKey}</td>
-          <td>${item.timeStr}</td>
+          <td><strong>${item.timeStr}</strong></td>
           <td>
             <span class="pill-status hadir">${item.status}</span>
             <span style="font-size: 0.75rem; color: var(--ink-50); margin-left: 6px;">(${item.method === 'manual_admin' ? 'Manual Admin' : 'Mandiri'})</span>
@@ -715,6 +881,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Connected Timeline Item (Image 2)
         const tItem = document.createElement('div');
         tItem.className = 'timeline-item';
+        tItem.style.cursor = 'pointer';
+        tItem.setAttribute('role', 'button');
+        tItem.setAttribute('tabindex', '0');
+        tItem.title = 'Klik untuk melihat detail kehadiran';
+        tItem.onclick = function() { window.showRecentActivityDetail(item); };
+        tItem.onkeydown = function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            window.showRecentActivityDetail(item);
+          }
+        };
         
         const dateParts = (item.dateKey || '').split('-');
         const formattedDate = dateParts.length === 3 ? `${dateParts[2]} ${getMonthShortName(parseInt(dateParts[1]))}` : item.dateKey;
@@ -728,14 +905,16 @@ document.addEventListener('DOMContentLoaded', () => {
               <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
           </div>
-          <div class="timeline-content">
+          <div class="timeline-content" style="flex: 1; min-width: 0;">
             <div class="timeline-top-row">
               <div class="timeline-title">${escapeHTML(item.kebaktianName)}</div>
-              <div class="timeline-date">${escapeHTML(formattedDate)}<br><span style="font-size: 0.7rem; color: var(--ink-50);">${escapeHTML(item.timeStr)}</span></div>
+              <div class="timeline-date">${escapeHTML(formattedDate)}<br><span style="font-size: 0.7rem; color: var(--ink-50); font-weight: 700;">Hadir: ${escapeHTML(item.timeStr)}</span></div>
             </div>
             <div class="timeline-sub">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              <span>Dhammasala Utama</span>
+              <span>${escapeHTML(matched && matched.dhammasala ? matched.dhammasala : 'Dhammasala Utama')}</span>
+              <span style="margin: 0 4px;">&bull;</span>
+              <span>Jadwal: <strong>${escapeHTML(itemSched)}</strong></span>
             </div>
             <div>
               <span class="timeline-tag-verified">
@@ -745,6 +924,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 Terverifikasi
               </span>
             </div>
+          </div>
+          <div style="display: flex; align-items: center; color: var(--ink-40); margin-left: 6px; flex-shrink: 0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
           </div>
         `;
         groupContainer.appendChild(tItem);
@@ -867,21 +1051,38 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
 
       <div class="event-card-actions">
-        <button onclick="openEventAttendanceModal(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn ${evt.isActive ? 'btn-primary' : 'btn-ghost'} btn-event-primary" style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon-svg">
+        <button onclick="openEventAttendanceModal(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn ${evt.isActive ? 'btn-primary' : 'btn-ghost'} btn-event-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ui-icon-svg">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
             <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
           </svg>
           <span>Daftar Hadir & Set Hadir</span>
         </button>
-        <button onclick="handleAdminDeleteEvent(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn btn-danger-icon" title="Hapus Jadwal Acara" aria-label="Hapus Jadwal Acara">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        ${isArchive ? `
+        <button type="button" onclick="handleAdminDuplicateEvent(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn btn-secondary btn-event-secondary" title="Salin data jadwal ini ke formulir untuk membuat acara baru">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Gunakan Ulang</span>
+        </button>
+        <button onclick="handleAdminDeleteEvent(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn btn-danger-icon" title="Hapus Permanen dari Database" aria-label="Hapus Permanen dari Database">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             <line x1="10" y1="11" x2="10" y2="17"></line>
             <line x1="14" y1="11" x2="14" y2="17"></line>
           </svg>
         </button>
+        ` : `
+        <button onclick="handleAdminArchiveEvent(this.dataset.id)" data-id="${escapeHTML(evt.id)}" class="btn btn-danger-icon" title="Selesaikan & Pindahkan ke Arsip" aria-label="Selesaikan & Pindahkan ke Arsip">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </button>
+        `}
       </div>
     `;
     return card;
@@ -1195,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const firstChip = document.querySelector('#speaker-type-chips .chip');
       if (firstChip) selectSpeakerType('Bhikkhu Sangha', firstChip);
 
-      renderAdminDashboard();
+      renderAdminDashboard(true);
       const activeContainer = document.getElementById('admin-active-events-container');
       if (activeContainer) {
         activeContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1209,20 +1410,96 @@ document.addEventListener('DOMContentLoaded', () => {
     const res = ViharaAdmin.setActiveEvent(eventId);
     if (res.success) {
       showToast(res.message, 'success');
-      renderAdminDashboard();
+      renderAdminDashboard(true);
     } else {
       showToast(res.message, 'error');
     }
   };
 
-  window.handleAdminDeleteEvent = function(eventId) {
-    if (confirm('Yakin ingin menghapus jadwal kebaktian ini?')) {
-      const res = ViharaAdmin.deleteEvent(eventId);
+  window.handleAdminArchiveEvent = function(eventId) {
+    const events = (typeof ViharaData !== 'undefined' && typeof ViharaData.getEvents === 'function') ? ViharaData.getEvents() : [];
+    const evt = events.find(e => String(e.id) === String(eventId));
+    const nameStr = evt ? ` "${evt.name}"` : '';
+
+    if (confirm(`Pindahkan jadwal kebaktian${nameStr} ke Arsip & Riwayat?`)) {
+      const res = (typeof ViharaAdmin !== 'undefined' && typeof ViharaAdmin.archiveEvent === 'function') 
+        ? ViharaAdmin.archiveEvent(eventId) 
+        : { success: true, message: `Jadwal${nameStr} berhasil dipindahkan ke Arsip.` };
+
       if (res.success) {
         showToast(res.message, 'info');
-        renderAdminDashboard();
+        renderAdminDashboard(true);
+      } else {
+        showToast(res.message, 'error');
       }
     }
+  };
+
+  window.handleAdminDeleteEvent = function(eventId) {
+    const events = (typeof ViharaData !== 'undefined' && typeof ViharaData.getEvents === 'function') ? ViharaData.getEvents() : [];
+    const evt = events.find(e => String(e.id) === String(eventId));
+    const nameStr = evt ? ` "${evt.name}"` : '';
+
+    if (confirm(`Yakin ingin menghapus permanen jadwal kebaktian${nameStr} dari database?\n\nPERINGATAN: Seluruh data riwayat acara ini akan dihapus selamanya.`)) {
+      const res = ViharaAdmin.deleteEvent(eventId);
+      if (res.success) {
+        showToast('Jadwal kebaktian berhasil dihapus permanen dari database.', 'info');
+        renderAdminDashboard(true);
+      } else {
+        showToast(res.message, 'error');
+      }
+    }
+  };
+
+  window.handleAdminDuplicateEvent = function(eventId) {
+    const events = (typeof ViharaData !== 'undefined' && typeof ViharaData.getEvents === 'function') ? ViharaData.getEvents() : [];
+    const evt = events.find(e => String(e.id) === String(eventId));
+    if (!evt) {
+      showToast('Data jadwal tidak ditemukan.', 'error');
+      return;
+    }
+
+    const nameInp = document.getElementById('event-input-name');
+    const speakerInp = document.getElementById('event-input-speaker');
+    const dateInp = document.getElementById('event-input-date');
+    const startInp = document.getElementById('event-input-start');
+    const endInp = document.getElementById('event-input-end');
+    const dhammasalaInp = document.getElementById('event-input-dhammasala');
+
+    if (nameInp) nameInp.value = evt.name || '';
+    if (dateInp) dateInp.value = ViharaData.getTodayKey();
+    if (startInp) startInp.value = evt.startTime || '09:00';
+    if (endInp) endInp.value = evt.endTime || '11:00';
+    if (dhammasalaInp) dhammasalaInp.value = evt.dhammasala || 'Dhammasala Utama';
+
+    // Set jenis pembicara dan chip
+    const titleType = evt.speakerTitle || 'Bhikkhu Sangha';
+    let matchingChip = null;
+    document.querySelectorAll('#speaker-type-chips .chip').forEach(c => {
+      const txt = c.textContent.trim().toLowerCase();
+      if ((titleType === 'Bhikkhu Sangha' && txt.includes('bhikkhu')) ||
+          (titleType === 'Romo / Pandita' && txt.includes('romo')) ||
+          (titleType === 'Tidak Ada' && txt.includes('tidak ada')) ||
+          (titleType === 'Penceramah Tamu' && txt.includes('penceramah'))) {
+        matchingChip = c;
+      }
+    });
+
+    if (typeof selectSpeakerType === 'function') {
+      selectSpeakerType(titleType, matchingChip);
+    }
+    if (speakerInp && titleType !== 'Tidak Ada') {
+      speakerInp.value = (evt.speaker && evt.speaker !== 'Tidak Ada') ? evt.speaker : '';
+    }
+
+    // Scroll mulus ke formulir pembuatan acara
+    const formEl = document.getElementById('form-create-event');
+    if (formEl) {
+      formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (nameInp) setTimeout(() => nameInp.focus(), 350);
+    }
+
+    showToast(`Informasi jadwal "${evt.name}" berhasil disalin ke formulir. Silakan sesuaikan dan klik Simpan Acara.`, 'success');
   };
 
   // ==========================================================================
@@ -1386,8 +1663,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.handleLoginSubmit = async function(event) {
     event.preventDefault();
-    const phone = (document.getElementById('login-input-phone')?.value || '').trim();
-    const password = (document.getElementById('login-input-password')?.value || '').trim();
+    const phoneEl = document.getElementById('login-input-phone');
+    const passwordEl = document.getElementById('login-input-password');
+    const phone = (phoneEl ? phoneEl.value : '').trim();
+    const password = (passwordEl ? passwordEl.value : '').trim();
     const rememberCheckbox = document.getElementById('login-remember-me');
     const rememberMe = rememberCheckbox ? rememberCheckbox.checked : true;
 
@@ -1469,8 +1748,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handler Ganti Password Wajib (Login Pertama)
   window.handleForceChangePasswordSubmit = async function(event) {
     if (event) event.preventDefault();
-    const newPass = (document.getElementById('force-new-password')?.value || '').trim();
-    const confPass = (document.getElementById('force-confirm-password')?.value || '').trim();
+    const newPassEl = document.getElementById('force-new-password');
+    const confPassEl = document.getElementById('force-confirm-password');
+    const newPass = (newPassEl ? newPassEl.value : '').trim();
+    const confPass = (confPassEl ? confPassEl.value : '').trim();
 
     if (!newPass || newPass.length < 6) {
       showToast('Kata sandi baru harus minimal 6 karakter!', 'warning');
@@ -1555,9 +1836,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const oldPass = (document.getElementById('user-old-password')?.value || '').trim();
-    const newPass = (document.getElementById('user-new-password')?.value || '').trim();
-    const confPass = (document.getElementById('user-confirm-password')?.value || '').trim();
+    const oldPassEl = document.getElementById('user-old-password');
+    const newPassEl = document.getElementById('user-new-password');
+    const confPassEl = document.getElementById('user-confirm-password');
+    const oldPass = (oldPassEl ? oldPassEl.value : '').trim();
+    const newPass = (newPassEl ? newPassEl.value : '').trim();
+    const confPass = (confPassEl ? confPassEl.value : '').trim();
 
     if (!oldPass) {
       showToast('Masukkan kata sandi saat ini.', 'warning');

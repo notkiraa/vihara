@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Vihara Amurwa Bhumi Cibinong - Presensi Umat & Buku Tamu Digital</title>
   
   <!-- Font Plus Jakarta Sans -->
@@ -11,9 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- Custom Stylesheet dengan Cache-Busting -->
-  <base href="/">
-  <!-- Custom Stylesheet dengan Cache-Busting -->
-  <link rel="stylesheet" href="/css/style.css?v=23.0">
+  <link rel="stylesheet" href="css/style.css?v=23.0">
 </head>
 <body class="user-logged-out">
 
@@ -99,6 +97,23 @@
   </div>
 
   <script>
+    // Polyfill Promise.allSettled untuk browser lama / legacy mobile (ES2020)
+    if (typeof Promise !== 'undefined' && !Promise.allSettled) {
+      Promise.allSettled = function(promises) {
+        return Promise.all(Array.prototype.slice.call(promises).map(function(p) {
+          return Promise.resolve(p).then(
+            function(v) { return { status: 'fulfilled', value: v }; },
+            function(r) { return { status: 'rejected', reason: r }; }
+          );
+        }));
+      };
+    }
+    // Safety net penangkap runtime error agar preloader tidak pernah macet
+    window.addEventListener('error', function() {
+      if (typeof window.hideDhammaLoading === 'function') {
+        window.hideDhammaLoading();
+      }
+    });
     // Early global helpers untuk modal & preloader dismissal agar aman dari race conditions di ponsel
     window.hideDhammaLoading = function() {
       var p = document.getElementById('dhamma-preloader');
@@ -1459,6 +1474,70 @@
   </div>
 
   <!-- ==========================================================================
+       [INDEX: HTML-13C] MODAL POPUP: DETAIL LENGKAP AKTIVITAS KEHADIRAN (UMAT)
+       Fungsi: Menampilkan rincian lengkap presensi/acara saat aktivitas terakhir diklik.
+       ID Terkait: #modal-activity-detail
+       ========================================================================== -->
+  <div id="modal-activity-detail" class="modal-backdrop">
+    <div class="modal-box" style="text-align: center; max-width: 440px;">
+      <!-- Header Modal -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
+          Detail Kehadiran
+        </h3>
+        <button onclick="closeModal('modal-activity-detail')" class="btn-modal-close-round" title="Tutup">&times;</button>
+      </div>
+
+      <!-- Icon & Status Badge -->
+      <div id="modal-activity-icon-box" style="width: 54px; height: 54px; border-radius: 50%; background: var(--success-bg); color: var(--success); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto; border: 2px solid var(--success-border);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <div id="modal-activity-status-badge" style="display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 0.775rem; font-weight: 800; background: var(--success-bg); color: var(--success); margin-bottom: 10px; border: 1px solid var(--success-border);">
+        Tercatat Hadir
+      </div>
+
+      <h4 id="modal-activity-title" style="font-size: 1.15rem; font-weight: 800; color: var(--ink); margin: 0 0 14px 0; line-height: 1.35;">
+        -
+      </h4>
+
+      <!-- Card Rincian -->
+      <div style="background: var(--maroon-50); padding: 14px; border-radius: var(--r-md); text-align: left; font-size: 0.825rem; margin-bottom: 16px; border: 1px solid var(--maroon-100); display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;">
+          <span style="color: var(--ink-50); flex-shrink: 0;">Penceramah:</span>
+          <strong id="modal-activity-speaker" style="color: var(--maroon-700); text-align: right;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 8px;">
+          <span style="color: var(--ink-50); flex-shrink: 0;">Hari &amp; Tanggal:</span>
+          <strong id="modal-activity-date" style="color: var(--ink); text-align: right;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 8px;">
+          <span style="color: var(--ink-50); flex-shrink: 0;">Jadwal Kebaktian:</span>
+          <strong id="modal-activity-schedule" style="color: var(--maroon-900); text-align: right;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 8px;">
+          <span style="color: var(--ink-50); flex-shrink: 0;">Jam Presensi:</span>
+          <strong id="modal-activity-time" style="color: var(--ink); text-align: right;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 8px;">
+          <span style="color: var(--ink-50); flex-shrink: 0;">Ruangan / Lokasi:</span>
+          <strong id="modal-activity-location" style="color: var(--ink); text-align: right;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 8px; padding-top: 6px; border-top: 1px dashed var(--maroon-100);">
+          <span style="color: var(--ink-50); flex-shrink: 0;">Metode Presensi:</span>
+          <strong id="modal-activity-method" style="color: var(--maroon-900); text-align: right;">-</strong>
+        </div>
+      </div>
+
+      <!-- Tombol Aksi -->
+      <button type="button" onclick="closeModal('modal-activity-detail')" class="btn btn-secondary btn-block" style="padding: 11px; font-size: 0.875rem; font-weight: 700;">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
        [INDEX: HTML-13B] MODAL POPUP: DI LUAR RADIUS LOKASI VIHARA (GEOLOCATION GEOFENCE)
        Fungsi: Menolak presensi mandiri jika umat berada di luar radius 25 meter dari Vihara.
        ID Terkait: #modal-location-out-of-range, #modal-geo-current-distance, #modal-geo-max-radius
@@ -1818,12 +1897,6 @@
   <div id="modal-qr-scanner" class="modal-backdrop">
     <div class="modal-box" style="text-align: center; max-width: 440px; padding: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <button type="button" onclick="ViharaQR.closeScannerModal()" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.825rem; display: inline-flex; align-items: center; gap: 4px;" title="Kembali">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-          <span>Kembali</span>
-        </button>
         <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-900); margin: 0;">
           Pindai QR Presensi
         </h3>
@@ -1849,7 +1922,7 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
           </svg>
-          <span>🔄 Putar Kamera (Depan/Belakang)</span>
+          <span> Putar Kamera </span>
         </button>
         <button type="button" onclick="ViharaQR.closeScannerModal()" class="btn btn-ghost" style="padding: 8px 20px; font-size: 0.825rem;">
           ✕ Batal

@@ -49,6 +49,8 @@ var ViharaAuth = (() => {
     if (!plainText) return '';
     try {
       const msgUint8 = new TextEncoder().encode(plainText);
+      const hasCrypto = typeof crypto !== 'undefined' && crypto && crypto.subtle && typeof crypto.subtle.digest === 'function';
+      if (!hasCrypto) return (plainText === DEFAULT_PASSWORD_PLAIN) ? DEFAULT_PASSWORD_HASH : '';
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');

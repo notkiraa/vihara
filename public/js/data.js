@@ -168,9 +168,24 @@ var ViharaData = (() => {
 
   function getActiveEvent() {
     const events = getEvents();
-    // Hanya ambil acara yang ditandai aktif DAN belum kedaluwarsa
-    const active = events.find(e => e.isActive && !isEventExpired(e));
-    return active || null;
+    // Hanya ambil acara yang ditandai aktif DAN belum kedaluwarsa & tidak diarsipkan
+    let activeEvents = events.filter(e => e.isActive && !e.archived && !isEventExpired(e));
+    if (activeEvents.length === 0) {
+      activeEvents = events.filter(e => !e.archived && !isEventExpired(e));
+    }
+    if (activeEvents.length === 0) return null;
+
+    // Urutkan dari yang paling duluan mulainya (tanggal & jam mulai paling awal)
+    activeEvents.sort((a, b) => {
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const timeA = a.startTime || '00:00';
+      const timeB = b.startTime || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+
+    return activeEvents[0];
   }
 
   // Menemukan acara yang sedang berlangsung berdasarkan jam saat ini
@@ -183,18 +198,19 @@ var ViharaData = (() => {
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     // 1. Cek acara hari ini yang jam mulainya <= sekarang <= jam berakhir (+ 30 menit toleransi)
-    const matched = events.find(e => {
-      if (e.date !== today) return false;
+    // Urutkan dari yang paling duluan mulainya jika terdapat lebih dari satu acara
+    const matched = events.filter(e => {
+      if (e.date !== today || e.archived || isEventExpired(e)) return false;
       const [startH, startM] = (e.startTime || '09:00').split(':').map(Number);
       const [endH, endM] = (e.endTime || '11:00').split(':').map(Number);
       const startMin = startH * 60 + startM;
       const endMin = endH * 60 + endM + 30; // 30 menit setelah selesai masih tercakup
       return currentMinutes >= (startMin - 30) && currentMinutes <= endMin;
-    });
+    }).sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
-    if (matched) return matched;
+    if (matched.length > 0) return matched[0];
 
-    // 2. Fallback ke acara aktif yang belum expired
+    // 2. Fallback ke acara aktif yang belum expired (yang paling duluan mulainya)
     return getActiveEvent();
   }
 
@@ -338,6 +354,28 @@ var ViharaData = (() => {
       ViharaSupabase.insertEvent(newEvent);
     }
     return newEvent;
+  }
+
+  function archiveEvent(eventId) {
+    const rawEvents = JSON.parse(localStorage.getItem(STORAGE_KEYS.EVENTS) || '[]');
+    let target = null;
+    rawEvents.forEach(e => {
+      if (String(e.id) === String(eventId)) {
+        e.isActive = false;
+        e.archived = true;
+        target = e;
+      }
+    });
+    localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(rawEvents));
+
+    // Update is_active di Supabase jika terhubung
+    if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.getClient === 'function') {
+      const sb = ViharaSupabase.getClient();
+      if (sb) {
+        sb.from('events').update({ is_active: false }).eq('id', String(eventId)).then(() => {}).catch(() => {});
+      }
+    }
+    return target;
   }
 
   function deleteEvent(eventId) {
@@ -722,6 +760,7 @@ var ViharaData = (() => {
     findEventForCurrentTime,
     setActiveEvent,
     createEvent,
+    archiveEvent,
     deleteEvent,
     getUsers,
     findUserByPhone,
