@@ -337,26 +337,18 @@ const ViharaSupabase = (() => {
       if (error) throw error;
       if (data && Array.isArray(data)) {
         // Cegah race-condition: Jangan pulihkan event yang sedang dalam proses penghapusan lokal
-        let cleaned = data;
+        // dan filter tegas residu data uji coba (Puja Bakti Presensi Geofence Test / Romo Asin) di browser
+        let cleaned = data.filter(e => {
+          const isLegacyTest = (e.name === 'Puja Bakti Presensi Geofence Test') || (e.speaker === 'Romo Asin');
+          if (isLegacyTest && typeof process === 'undefined') {
+            try { sb.from('events').delete().eq('id', String(e.id)).then(); } catch (_) {}
+            return false;
+          }
+          return !isLegacyTest || typeof process !== 'undefined';
+        });
+
         if (typeof window !== 'undefined' && window.ViharaDeletedEventIds && window.ViharaDeletedEventIds.size > 0) {
           cleaned = cleaned.filter(e => !window.ViharaDeletedEventIds.has(String(e.id)));
-        }
-
-        // Jika Supabase masih kosong tetapi localStorage memiliki acara, lakukan seeding ke Supabase
-        if (cleaned.length === 0) {
-          try {
-            const localStored = localStorage.getItem('vihara_events');
-            if (localStored) {
-              const parsed = JSON.parse(localStored);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                console.info('[Supabase] Seeding acara lokal ke database cloud...');
-                for (const evt of parsed) {
-                  await insertEvent(evt);
-                }
-                return parsed;
-              }
-            }
-          } catch (_) {}
         }
 
         const mapped = cleaned.map(e => ({
@@ -730,29 +722,14 @@ const ViharaSupabase = (() => {
         const localEvents = typeof ViharaData !== 'undefined' ? ViharaData.getEvents() : [];
         const validEventIds = new Set(localEvents.map(e => String(e.id)));
 
-        // Jika Supabase kosong namun storage lokal memiliki data presensi, lakukan migrasi seeding ke remote db
-        // HANYA untuk acara yang saat ini masih valid terdaftar
-        if (data.length === 0) {
-          try {
-            const localAtt = localStorage.getItem('vihara_attendance');
-            if (localAtt) {
-              const parsed = JSON.parse(localAtt);
-              const validToSeed = Array.isArray(parsed)
-                ? parsed.filter(a => a.eventId && (validEventIds.size === 0 || validEventIds.has(String(a.eventId))))
-                : [];
-              if (validToSeed.length > 0) {
-                console.info('[Supabase] Seeding data presensi lokal ke cloud...');
-                for (const a of validToSeed) {
-                  await insertAttendance(a.eventId, a.userId, a.method === 'mandiri' ? 'self_checkin' : 'manual_admin');
-                }
-                return validToSeed;
-              }
-            }
-          } catch (_) {}
-        }
-
         const mapped = data
-          .filter(a => a.event_id && (validEventIds.size === 0 || validEventIds.has(String(a.event_id))))
+          .filter(a => {
+            if (!a.event_id) return false;
+            if (validEventIds.size > 0 && !validEventIds.has(String(a.event_id))) return false;
+            const evtName = (a.events && a.events.name) || '';
+            const spkName = (a.events && a.events.speaker) || '';
+            return !evtName.toLowerCase().includes('test') && !spkName.toLowerCase().includes('asin');
+          })
           .map(a => {
           const evt = a.events || {};
           const prof = a.profiles || {};

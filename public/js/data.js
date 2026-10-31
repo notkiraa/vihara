@@ -123,6 +123,38 @@ var ViharaData = (() => {
     if (!localStorage.getItem(STORAGE_KEYS.GUESTS)) {
       localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify([]));
     }
+
+    // Bersihkan data uji coba / residu testing otomatis dari localStorage di lingkungan browser
+    if (typeof process === 'undefined') {
+      try {
+        const rawEvts = localStorage.getItem(STORAGE_KEYS.EVENTS);
+        if (rawEvts) {
+          const evts = JSON.parse(rawEvts);
+          if (Array.isArray(evts)) {
+            const cleanEvts = evts.filter(e => {
+              const isTest = (e.name === 'Puja Bakti Presensi Geofence Test') || (e.speaker === 'Romo Asin');
+              return !isTest;
+            });
+            if (cleanEvts.length !== evts.length) {
+              localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(cleanEvts));
+            }
+          }
+        }
+        const rawAtt = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
+        if (rawAtt) {
+          const atts = JSON.parse(rawAtt);
+          if (Array.isArray(atts)) {
+            const cleanAtts = atts.filter(a => {
+              const isTest = (a.kebaktianName === 'Puja Bakti Presensi Geofence Test') || (a.speaker === 'Romo Asin');
+              return !isTest;
+            });
+            if (cleanAtts.length !== atts.length) {
+              localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(cleanAtts));
+            }
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   // ==========================================================================
