@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const safeAvatar = sanitizeImageUrl(user.avatar);
       const avatarHtml = safeAvatar
         ? `<img src="${escapeHTML(safeAvatar)}" alt="${escapeHTML(user.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-        : initials;
+        : escapeHTML(initials);
 
       // 1. Tampilan Desktop Table Row
       if (tbody) {

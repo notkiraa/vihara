@@ -17,7 +17,6 @@
 
 /**
  * data.js - Data Layer & Persistence for Vihara Amurwa Bhumi Cibinong
- * Tanpa data dummy - Siap digunakan secara nyata di lapangan.
  */
 
 var ViharaData = (() => {
@@ -168,8 +167,15 @@ var ViharaData = (() => {
     const endH = !isNaN(parts[0]) ? parts[0] : 23;
     const endM = !isNaN(parts[1]) ? parts[1] : 59;
     
+    const [startH, startM] = (evt.startTime || '00:00').split(':').map(Number);
+    const eventStart = new Date(`${evt.date}T${String(!isNaN(startH) ? startH : 0).padStart(2, '0')}:${String(!isNaN(startM) ? startM : 0).padStart(2, '0')}:00`);
+
     // Bandingkan waktu selesai acara dengan waktu saat ini (WIB / Local)
-    const eventEnd = new Date(`${evt.date}T${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`);
+    let eventEnd = new Date(`${evt.date}T${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`);
+    if (eventEnd <= eventStart) {
+      // Acara berakhir melewati tengah malam (keesokan harinya)
+      eventEnd = new Date(eventEnd.getTime() + 24 * 60 * 60 * 1000);
+    }
     const now = new Date();
     return now > eventEnd;
   }
@@ -260,8 +266,11 @@ var ViharaData = (() => {
     const eventStart = new Date(`${event.date}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
     // Waktu presensi dibuka: 30 menit sebelum acara mulai
     const checkInOpen = new Date(eventStart.getTime() - 30 * 60 * 1000);
-    // Waktu acara selesai
-    const eventEnd = new Date(`${event.date}T${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`);
+    // Waktu acara selesai (mendukung acara yang berakhir melewati tengah malam)
+    let eventEnd = new Date(`${event.date}T${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`);
+    if (eventEnd <= eventStart) {
+      eventEnd = new Date(eventEnd.getTime() + 24 * 60 * 60 * 1000);
+    }
 
     const openTimeStr = `${String(checkInOpen.getHours()).padStart(2, '0')}:${String(checkInOpen.getMinutes()).padStart(2, '0')}`;
     const startTimeStr = `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`;

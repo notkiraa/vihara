@@ -183,6 +183,44 @@ it('5.1 Validasi Geolocation menolak koordinat di luar rentang valid (-90 s/d 90
   assert(errRadius, 'Radius < 5 meter harus ditolak dengan error!');
 });
 
+console.log('\n📌 6. Pengujian Otorisasi Ketat Operasi Admin (RBAC Strict Defense)');
+
+it('6.1 Umat biasa ditolak saat mencoba membuat jadwal acara (createNewEvent)', () => {
+  ViharaData.setSession({ id: 'usr_sec_umat', name: 'Umat Biasa', phone: '081299990001', role: 'umat' });
+  const res = ViharaAdmin.createNewEvent({ name: 'Acara Palsu', speaker: 'Penyerang' });
+  assert.strictEqual(res.success, false);
+  assert.strictEqual(res.message, 'Akses ditolak.');
+});
+
+it('6.2 Umat biasa ditolak saat mencoba menghapus jadwal acara (deleteEvent)', () => {
+  ViharaData.setSession({ id: 'usr_sec_umat', name: 'Umat Biasa', phone: '081299990001', role: 'umat' });
+  const res = ViharaAdmin.deleteEvent('EVT_001');
+  assert.strictEqual(res.success, false);
+  assert.strictEqual(res.message, 'Akses ditolak.');
+});
+
+it('6.3 Umat biasa ditolak saat mencoba mengarsipkan jadwal acara (archiveEvent)', () => {
+  ViharaData.setSession({ id: 'usr_sec_umat', name: 'Umat Biasa', phone: '081299990001', role: 'umat' });
+  const res = ViharaAdmin.archiveEvent('EVT_001');
+  assert.strictEqual(res.success, false);
+  assert.strictEqual(res.message, 'Akses ditolak.');
+});
+
+it('6.4 Umat biasa ditolak saat mencoba mengubah acara aktif (setActiveEvent)', () => {
+  ViharaData.setSession({ id: 'usr_sec_umat', name: 'Umat Biasa', phone: '081299990001', role: 'umat' });
+  const res = ViharaAdmin.setActiveEvent('EVT_001');
+  assert.strictEqual(res.success, false);
+  assert.strictEqual(res.message, 'Akses ditolak.');
+});
+
+it('6.5 Pengguna tanpa login (sesi null) ditolak dari seluruh operasi admin', () => {
+  ViharaData.setSession(null);
+  assert.strictEqual(ViharaAdmin.createNewEvent({ name: 'Acara Anonim', speaker: 'Anon' }).success, false);
+  assert.strictEqual(ViharaAdmin.deleteEvent('EVT_001').success, false);
+  assert.strictEqual(ViharaAdmin.archiveEvent('EVT_001').success, false);
+  assert.strictEqual(ViharaAdmin.setActiveEvent('EVT_001').success, false);
+});
+
 console.log('\n======================================================');
 console.log(`🎉 HASIL PENGUJIAN: ${passCount} / ${totalCount} SKENARIO BERHASIL! (${Math.round((passCount/totalCount)*100)}% PASS)`);
 console.log('======================================================\n');

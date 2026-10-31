@@ -296,3 +296,13 @@ const ViharaAdmin = (() => {
     exportEventToCSV
   };
 })();
+
+if (typeof window !== 'undefined') {
+  window.ViharaAdmin = ViharaAdmin;
+}
+if (typeof global !== 'undefined') {
+  global.ViharaAdmin = ViharaAdmin;
+}
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { ViharaAdmin };
+}
