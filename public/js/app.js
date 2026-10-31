@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statRate) {
       statRate.innerText = allEvents.length > 0
         ? `${Math.min(100, Math.round((myLogs.length / Math.max(allEvents.length, 1)) * 100))}%`
-        : '100%';
+        : '0%';
     }
 
     // Tanggal Hari Ini di Hero Card

@@ -72,7 +72,8 @@ async function runScenarioTests() {
   }
 
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const dateStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayStr = dateStr(now);
   const padTime = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
   // ==========================================================================
@@ -86,7 +87,7 @@ async function runScenarioTests() {
   const evtTooEarly = {
     id: 'TEST_EVT_001',
     name: 'Kebaktian Siang',
-    date: todayStr,
+    date: dateStr(timeStart1),
     startTime: padTime(timeStart1),
     endTime: padTime(timeEnd1)
   };
@@ -99,7 +100,7 @@ async function runScenarioTests() {
   const evtInWindow = {
     id: 'TEST_EVT_002',
     name: 'Kebaktian Tepat Waktu',
-    date: todayStr,
+    date: dateStr(timeStart2),
     startTime: padTime(timeStart2),
     endTime: padTime(timeEnd2)
   };
@@ -112,7 +113,7 @@ async function runScenarioTests() {
   const evtOngoing = {
     id: 'TEST_EVT_003',
     name: 'Kebaktian Sedang Berlangsung',
-    date: todayStr,
+    date: dateStr(timeStart3),
     startTime: padTime(timeStart3),
     endTime: padTime(timeEnd3)
   };
@@ -125,7 +126,7 @@ async function runScenarioTests() {
   const evtFinished = {
     id: 'TEST_EVT_004',
     name: 'Kebaktian Lampau',
-    date: todayStr,
+    date: dateStr(timeStart4),
     startTime: padTime(timeStart4),
     endTime: padTime(timeEnd4)
   };

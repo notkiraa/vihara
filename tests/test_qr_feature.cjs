@@ -109,26 +109,29 @@ async function runTests() {
   console.log('\n--- 3. Validasi Batasan Waktu 30 Menit Presensi QR ---');
 
   // A. Terlalu Cepat (> 30 Menit sebelum mulai)
+  const timeFutureStart = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const timeFutureEnd = new Date(now.getTime() + 4 * 60 * 60 * 1000);
   const futureEvent = {
     id: 'EVT_FUTURE',
     name: 'Kebaktian Sore',
     speaker: 'Romo Asoka',
-    date: todayKey,
-    startTime: `${pad((now.getHours() + 2) % 24)}:00`,
-    endTime: `${pad((now.getHours() + 4) % 24)}:00`
+    date: `${timeFutureStart.getFullYear()}-${pad(timeFutureStart.getMonth() + 1)}-${pad(timeFutureStart.getDate())}`,
+    startTime: `${pad(timeFutureStart.getHours())}:${pad(timeFutureStart.getMinutes())}`,
+    endTime: `${pad(timeFutureEnd.getHours())}:${pad(timeFutureEnd.getMinutes())}`
   };
   const windowFuture = ViharaData.getEventCheckInWindow(futureEvent);
   assert(windowFuture.isOpen === false && windowFuture.reason === 'too_early', 'Presensi QR ditolak jika > 30 menit sebelum acara', 'Window: too_early');
 
   // B. Tepat Waktu (<= 30 Menit sebelum mulai)
   const in30min = new Date(now.getTime() + 15 * 60 * 1000);
+  const in90min = new Date(now.getTime() + 90 * 60 * 1000);
   const readyEvent = {
     id: 'EVT_READY',
     name: 'Kebaktian Siang',
     speaker: 'Bhikkhu Saddhaviro',
-    date: todayKey,
+    date: `${in30min.getFullYear()}-${pad(in30min.getMonth() + 1)}-${pad(in30min.getDate())}`,
     startTime: `${pad(in30min.getHours())}:${pad(in30min.getMinutes())}`,
-    endTime: '23:59'
+    endTime: `${pad(in90min.getHours())}:${pad(in90min.getMinutes())}`
   };
   const windowReady = ViharaData.getEventCheckInWindow(readyEvent);
   assert(windowReady.isOpen === true && windowReady.reason === 'open', 'Presensi QR diterima saat waktu <= 30 menit sebelum acara', 'Window: open');
