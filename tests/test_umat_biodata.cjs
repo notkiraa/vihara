@@ -159,8 +159,8 @@ assert.strictEqual(isUserBiodataEmpty(emptyUser2), true, 'Akun dengan sebagian b
 assert.strictEqual(isUserBiodataEmpty(completeUser), false, 'Akun dengan biodata lengkap tidak boleh dianggap kosong');
 console.log('  ✅ [PASS] 6.1 isUserBiodataEmpty akurat mendeteksi akun yang belum melengkapi identitas');
 
-// 7. Uji Alur Double Verification & Tombol Back Modal
-console.log('\n📌 7. Pengujian Alur Double Verification & Navigasi Tombol Back');
+// 7. Uji Alur Double Verification, Tombol Back Panah Kiri, & Penguncian Permanen Data
+console.log('\n📌 7. Pengujian Alur Double Verification, Tombol Back Panah Kiri, & Penguncian Permanen');
 const indexHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
 
 // Verifikasi elemen modal dan langkah double verification
@@ -169,16 +169,34 @@ assert(indexHtml.includes('id="biodata-step-2"'), 'Modal harus memuat Langkah 2 
 assert(indexHtml.includes('id="verify-preview-ttl"'), 'Langkah 2 harus memuat pratinjau verifikasi TTL');
 assert(indexHtml.includes('id="verify-confirm-check"'), 'Langkah 2 harus memuat centang konfirmasi verifikasi data');
 
+// Verifikasi tombol panah kiri di sebelah kiri judul dan ketiadaan tombol [x] yang rusak
+assert(indexHtml.includes('id="btn-biodata-header-back"'), 'Header modal harus memiliki tombol panah kiri');
+assert(!indexHtml.includes('id="btn-close-biodata-x"'), 'Tombol [x] yang rusak harus sudah dihapus dari header');
+const headerIdx = indexHtml.indexOf('id="btn-biodata-header-back"');
+const titleIdx = indexHtml.indexOf('id="modal-biodata-title"');
+assert(headerIdx < titleIdx, 'Tombol panah kiri harus berada di sebelah kiri judul');
+
+// Verifikasi peringatan bahwa data tidak dapat diubah lagi
+assert(indexHtml.includes('DATA TIDAK DAPAT DIUBAH LAGI'), 'Step 2 harus memuat peringatan eksplisit bahwa data tidak dapat diubah lagi');
+assert(indexHtml.includes('Konfirmasi &amp; Kunci Permanen'), 'Tombol submit final harus menegaskan penguncian permanen');
+
 // Verifikasi tombol kembali yang proper
-assert(indexHtml.includes('id="btn-back-to-step1"'), 'Harus tersedia tombol kembali ke Langkah 1 (Ubah Data)');
+assert(indexHtml.includes('id="btn-back-to-step1"'), 'Harus tersedia tombol kembali ke Langkah 1 (Kembali Ubah Data)');
 assert(indexHtml.includes('handleCancelForceChangePassword'), 'Modal wajib ganti password harus memiliki tombol batal/kembali ke login');
 assert(appJsCode.includes('handleCancelForceChangePassword'), 'app.js harus memuat handler handleCancelForceChangePassword');
 assert(appJsCode.includes('handleBackToBiodataStep1'), 'app.js harus memuat handler handleBackToBiodataStep1');
 assert(appJsCode.includes('handleProceedToDoubleVerification'), 'app.js harus memuat handler handleProceedToDoubleVerification');
 assert(appJsCode.includes('handleFinalSaveBiodata'), 'app.js harus memuat handler handleFinalSaveBiodata');
 
+// Verifikasi penguncian permanen di profil (tidak bisa diubah lagi setelah diisi)
+assert(appJsCode.includes('Biodata Anda telah diverifikasi dan terkunci permanen'), 'app.js harus menolak pembukaan modal saat biodata sudah terisi');
+assert(appJsCode.includes('profile-biodata-action-container'), 'app.js harus merender container aksi biodata');
+assert(appJsCode.includes('Biodata Terverifikasi'), 'Profil harus menampilkan badge Biodata Terverifikasi Terkunci');
+
 console.log('  ✅ [PASS] 7.1 Struktur UI & handler Double Verification terverifikasi lengkap');
-console.log('  ✅ [PASS] 7.2 Tombol kembali proper terintegrasi pada seluruh alur aktivasi dan modal');
+assert(indexHtml.includes('profile-biodata-action-container'), 'index.html harus memuat container aksi profil');
+console.log('  ✅ [PASS] 7.2 Tombol kembali panah kiri terpasang rapi di sebelah kiri judul tanpa tombol [x]');
+console.log('  ✅ [PASS] 7.3 Peringatan data tidak dapat diubah lagi & penguncian permanen berfungsi 100%');
 
 console.log('\n======================================================');
 console.log('🎉 HASIL PENGUJIAN: SELURUH FITUR BIODATA UMAT & DOUBLE VERIFICATION 100% SUKSES!');

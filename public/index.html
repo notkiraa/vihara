@@ -1265,14 +1265,16 @@
               </div>
             </div>
 
-            <!-- Tombol Lengkapi / Ubah Biodata Diri -->
-            <button type="button" onclick="openUserEditBiodataModal()" class="btn btn-block" style="padding: 12px; font-size: 0.85rem; background: #ffffff; color: var(--maroon-800); border: 1.5px solid var(--line); border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-              </svg>
-              <span>Lengkapi / Ubah Biodata Diri</span>
-            </button>
+            <!-- Container Aksi Biodata Umat (Lengkapi jika belum, Terkunci Permanen jika sudah) -->
+            <div id="profile-biodata-action-container">
+              <button type="button" id="btn-open-biodata-profile" onclick="openUserEditBiodataModal()" class="btn btn-block" style="padding: 12px; font-size: 0.85rem; background: var(--maroon-700); color: #ffffff; border: none; border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(124, 45, 18, 0.15);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Lengkapi Biodata Diri (Wajib)</span>
+              </button>
+            </div>
 
             <!-- Tombol Ganti Kata Sandi Akun -->
             <button type="button" onclick="openUserChangePasswordModal()" class="btn btn-block" style="padding: 12px; font-size: 0.85rem; background: #ffffff; color: var(--maroon-800); border: 1.5px solid var(--line); border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
@@ -1873,24 +1875,17 @@
   <div id="modal-user-edit-biodata" class="modal-backdrop">
     <div class="modal-box" style="max-width: 500px;">
       
-      <!-- Header Modal -->
-      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <button type="button" id="btn-biodata-header-back" onclick="handleBiodataBackClick()" class="btn-modal-back-round" title="Kembali" style="display: none;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12"></line>
-              <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-          </button>
-          <h3 id="modal-biodata-title" style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-800); display: flex; align-items: center; gap: 8px; margin: 0;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--maroon-700);">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-            <span id="modal-biodata-heading-text">Lengkapi Biodata Diri</span>
-          </h3>
-        </div>
-        <button type="button" id="btn-close-biodata-x" onclick="handleCloseBiodataModal()" class="btn-close-modal" title="Tutup">&times;</button>
+      <!-- Header Modal Biodata Mandiri (Panah Kiri di sebelah kiri judul) -->
+      <div style="display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 14px;">
+        <button type="button" id="btn-biodata-header-back" onclick="handleBiodataBackClick()" class="btn-modal-back-round" title="Kembali" aria-label="Kembali" style="display: inline-flex; width: 34px; height: 34px; flex-shrink: 0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+        </button>
+        <h3 id="modal-biodata-title" style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-800); margin: 0; line-height: 1.25;">
+          <span id="modal-biodata-heading-text">Lengkapi Biodata Diri</span>
+        </h3>
       </div>
 
       <!-- LANGKAH 1: FORMULIR INPUT DATA BIODATA -->
@@ -1948,18 +1943,21 @@
         </form>
       </div>
 
-      <!-- LANGKAH 2: DOUBLE VERIFICATION (KONFIRMASI AKURASI DATA) -->
+      <!-- LANGKAH 2: DOUBLE VERIFICATION (KONFIRMASI AKURASI DATA & PERINGATAN KUNCI PERMANEN) -->
       <div id="biodata-step-2" style="display: none;">
-        <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 1.25rem;">
-          <div style="display: flex; align-items: center; gap: 8px; color: #166534; font-weight: 800; font-size: 0.9rem; margin-bottom: 4px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              <polyline points="9 12 11 14 15 10"></polyline>
+        
+        <!-- Peringatan Kritis: Data Tidak Dapat Diubah Lagi -->
+        <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 8px; color: #b45309; font-weight: 800; font-size: 0.9rem; margin-bottom: 5px;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-            <span>Verifikasi Ganda Data Identitas</span>
+            <span>PERINGATAN: DATA TIDAK DAPAT DIUBAH LAGI</span>
           </div>
-          <p style="font-size: 0.8rem; color: #15803d; margin: 0; line-height: 1.45;">
-            Mohon teliti dan periksa kembali kebenaran data Anda sebelum disimpan ke server basis data vihara.
+          <p style="font-size: 0.82rem; color: #92400e; margin: 0; line-height: 1.5;">
+            Setelah Anda mengonfirmasi dan menyimpan, data identitas ini akan <strong>terkunci permanen dan tidak dapat diubah lagi</strong> secara mandiri. Mohon pastikan seluruh data 100% benar dan sesuai identitas resmi Anda (KTP).
           </p>
         </div>
 
@@ -1984,9 +1982,9 @@
         </div>
 
         <div style="margin-bottom: 1.25rem;">
-          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.825rem; color: var(--ink-80); cursor: pointer; user-select: none;">
-            <input type="checkbox" id="verify-confirm-check" style="margin-top: 3px; accent-color: var(--maroon-700);" required>
-            <span>Saya menyatakan bahwa data yang saya isi adalah benar dan sesuai identitas saya.</span>
+          <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 0.825rem; color: var(--ink-90); cursor: pointer; user-select: none; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 12px;">
+            <input type="checkbox" id="verify-confirm-check" style="margin-top: 2px; accent-color: var(--maroon-700); width: 16px; height: 16px; flex-shrink: 0;" required>
+            <span>Saya menyatakan bahwa data yang saya isi adalah benar dan memahami bahwa data ini <strong>TIDAK DAPAT DIUBAH LAGI</strong> setelah disimpan.</span>
           </label>
         </div>
 
@@ -2001,9 +1999,10 @@
           </button>
           <button type="button" id="btn-final-save-biodata" onclick="handleFinalSaveBiodata(event)" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"></polyline>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            <span>Konfirmasi &amp; Simpan</span>
+            <span>Konfirmasi &amp; Kunci Permanen</span>
           </button>
         </div>
       </div>

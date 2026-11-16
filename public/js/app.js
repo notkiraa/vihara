@@ -2083,6 +2083,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRemove) {
       btnRemove.style.display = user.avatar ? 'inline-flex' : 'none';
     }
+
+    // Render Aksi Biodata (Jika belum lengkap: tombol lengkapi; Jika sudah: badge Terverifikasi & Terkunci Permanen)
+    const biodataActionContainer = document.getElementById('profile-biodata-action-container');
+    if (biodataActionContainer) {
+      if (!isUserBiodataEmpty(user)) {
+        biodataActionContainer.innerHTML = `
+          <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <polyline points="9 12 11 14 15 10"></polyline>
+              </svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-size: 0.85rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                <span>Biodata Terverifikasi</span>
+                <span style="font-size: 0.68rem; font-weight: 700; color: #475569; background: #e2e8f0; padding: 2px 7px; border-radius: 999px;">Terkunci</span>
+              </div>
+              <div style="font-size: 0.73rem; color: #64748b; margin-top: 2px; line-height: 1.35;">
+                Data identitas permanen. Hubungi Pengurus Vihara jika ada kekeliruan data.
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        biodataActionContainer.innerHTML = `
+          <button type="button" id="btn-open-biodata-profile" onclick="openUserEditBiodataModal()" class="btn btn-block" style="padding: 12px; font-size: 0.85rem; background: var(--maroon-700); color: #ffffff; border: none; border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(124, 45, 18, 0.15);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span>Lengkapi Biodata Diri (Wajib)</span>
+          </button>
+        `;
+      }
+    }
   }
 
   window.openProfileModal = function() {
@@ -2167,6 +2203,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = ViharaAuth.currentUser();
     if (!user) return;
 
+    // Jika biodata sudah lengkap, data terkunci permanen dan tidak dapat diubah lagi secara mandiri
+    if (!isUserBiodataEmpty(user)) {
+      showToast('Biodata Anda telah diverifikasi dan terkunci permanen. Hubungi Pengurus Vihara jika ada kekeliruan data.', 'info');
+      return;
+    }
+
     // Reset ke Langkah 1
     const step1 = document.getElementById('biodata-step-1');
     const step2 = document.getElementById('biodata-step-2');
@@ -2181,13 +2223,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (banner) banner.style.display = isInitial ? 'block' : 'none';
     if (headingText) {
-      headingText.innerText = isInitial ? 'Aktivasi Biodata Akun' : 'Lengkapi / Ubah Biodata Diri';
+      headingText.innerText = isInitial ? 'Aktivasi Biodata Akun' : 'Lengkapi Biodata Diri';
     }
     if (btnCancelText) {
       btnCancelText.innerText = isInitial ? 'Lewati untuk Sekarang' : 'Batal';
     }
     if (headerBack) {
-      headerBack.style.display = 'none';
+      headerBack.style.display = 'inline-flex';
     }
 
     // Prefill form
@@ -2263,7 +2305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (step2) step2.style.display = 'block';
 
     const headingText = document.getElementById('modal-biodata-heading-text');
-    if (headingText) headingText.innerText = 'Verifikasi Ganda Biodata';
+    if (headingText) headingText.innerText = 'Konfirmasi & Kunci Biodata';
 
     const headerBack = document.getElementById('btn-biodata-header-back');
     if (headerBack) headerBack.style.display = 'inline-flex';
@@ -2278,11 +2320,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const headingText = document.getElementById('modal-biodata-heading-text');
     if (headingText) {
-      headingText.innerText = window.isInitialBiodataCompletion ? 'Aktivasi Biodata Akun' : 'Lengkapi / Ubah Biodata Diri';
+      headingText.innerText = window.isInitialBiodataCompletion ? 'Aktivasi Biodata Akun' : 'Lengkapi Biodata Diri';
     }
 
     const headerBack = document.getElementById('btn-biodata-header-back');
-    if (headerBack) headerBack.style.display = 'none';
+    if (headerBack) headerBack.style.display = 'inline-flex';
   };
 
   window.handleBiodataBackClick = function() {
@@ -2338,7 +2380,8 @@ document.addEventListener('DOMContentLoaded', () => {
         gender,
         tempat_lahir,
         tanggal_lahir,
-        alamat
+        alamat,
+        biodata_locked: true
       });
 
       if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
@@ -2355,13 +2398,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       closeModal('modal-user-edit-biodata');
-      showToast('Biodata Anda telah diverifikasi ganda dan berhasil disimpan!', 'success');
+      showToast('Biodata Anda telah diverifikasi dan berhasil dikunci permanen!', 'success');
+
+      renderUserProfile();
 
       if (window.isInitialBiodataCompletion) {
         window.isInitialBiodataCompletion = false;
         navigateTo('view-umat');
-      } else {
-        renderUserProfile();
       }
     } catch (err) {
       console.error('Error saat simpan biodata:', err);
