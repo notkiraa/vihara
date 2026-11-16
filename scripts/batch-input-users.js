@@ -76,6 +76,10 @@ function parseCSV(content) {
   const idxPhone = rawHeaders.findIndex(h => h.includes('phone') || h.includes('hp') || h.includes('telp') || h.includes('wa') || h.includes('telepon'));
   const idxEmail = rawHeaders.findIndex(h => h.includes('email') || h.includes('surel'));
   const idxRole = rawHeaders.findIndex(h => h.includes('role') || h.includes('akses') || h.includes('hak'));
+  const idxGender = rawHeaders.findIndex(h => h.includes('gender') || h.includes('kelamin') || h.includes('jenis'));
+  const idxPob = rawHeaders.findIndex(h => h.includes('tempat') || h.includes('pob') || h.includes('lahirkota'));
+  const idxDob = rawHeaders.findIndex(h => h.includes('tanggal') || h.includes('dob') || h.includes('tgl') || h.includes('birth'));
+  const idxAddress = rawHeaders.findIndex(h => h.includes('alamat') || h.includes('address') || h.includes('domisili'));
 
   const users = [];
   for (let i = 1; i < lines.length; i++) {
@@ -86,12 +90,20 @@ function parseCSV(content) {
     const phone = idxPhone !== -1 ? cols[idxPhone] : cols[1];
     const email = idxEmail !== -1 ? cols[idxEmail] : (cols[2] || '');
     const role = idxRole !== -1 ? cols[idxRole] : (cols[3] || 'umat');
+    const gender = idxGender !== -1 ? cols[idxGender] : (cols[4] || '');
+    const tempat_lahir = idxPob !== -1 ? cols[idxPob] : (cols[5] || '');
+    const tanggal_lahir = idxDob !== -1 ? cols[idxDob] : (cols[6] || '');
+    const alamat = idxAddress !== -1 ? cols[idxAddress] : (cols[7] || '');
 
     if (name && phone) {
       users.push({
         name: name.trim(),
         phone: normalizePhone(phone),
         email: email.trim() && email.includes('@') ? email.trim().toLowerCase() : null,
+        gender: gender.trim() || null,
+        tempat_lahir: tempat_lahir.trim() || null,
+        tanggal_lahir: tanggal_lahir.trim() || null,
+        alamat: alamat.trim() || null,
         password_hash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
         must_change_password: true,
         role: role.toLowerCase().includes('admin') || role.toLowerCase().includes('pengurus') ? 'admin' : 'umat'
@@ -247,6 +259,10 @@ Meilani Chen,081299990000,meilani@gmail.com,umat
           name: (u.name || '').trim(),
           phone: normalizePhone(u.phone),
           email: u.email && u.email.includes('@') ? u.email.trim().toLowerCase() : null,
+          gender: (u.gender || '').trim() || null,
+          tempat_lahir: (u.tempat_lahir || u.pob || '').trim() || null,
+          tanggal_lahir: (u.tanggal_lahir || u.dob || '').trim() || null,
+          alamat: (u.alamat || u.address || '').trim() || null,
           password_hash: u.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
           must_change_password: u.must_change_password !== false,
           role: u.role === 'admin' ? 'admin' : 'umat'

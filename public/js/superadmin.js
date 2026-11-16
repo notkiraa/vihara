@@ -33,6 +33,43 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const SUPERADMIN_SESSION_KEY = 'vihara_superadmin_auth_v5';
+  const SUPERADMIN_ATTEMPTS_KEY = 'vihara_superadmin_failed_attempts';
+  const SUPERADMIN_LOCKOUT_KEY = 'vihara_superadmin_lockout_until';
+  const MAX_SUPERADMIN_ATTEMPTS = 5;
+  const SUPERADMIN_LOCKOUT_DURATION_MS = 60 * 1000; // 60 detik lockout
+
+  function getSuperadminLockoutRemainingSeconds() {
+    try {
+      const lockoutUntil = parseInt(localStorage.getItem(SUPERADMIN_LOCKOUT_KEY) || '0', 10);
+      const now = Date.now();
+      if (lockoutUntil > now) {
+        return Math.ceil((lockoutUntil - now) / 1000);
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  function recordFailedSuperadminAttempt() {
+    try {
+      let attempts = parseInt(localStorage.getItem(SUPERADMIN_ATTEMPTS_KEY) || '0', 10) + 1;
+      localStorage.setItem(SUPERADMIN_ATTEMPTS_KEY, String(attempts));
+      if (attempts >= MAX_SUPERADMIN_ATTEMPTS) {
+        const lockoutUntil = Date.now() + SUPERADMIN_LOCKOUT_DURATION_MS;
+        localStorage.setItem(SUPERADMIN_LOCKOUT_KEY, String(lockoutUntil));
+        return { locked: true, attempts, remainingSec: Math.ceil(SUPERADMIN_LOCKOUT_DURATION_MS / 1000) };
+      }
+      return { locked: false, attempts, remainingAttempts: MAX_SUPERADMIN_ATTEMPTS - attempts };
+    } catch (_) {
+      return { locked: false, attempts: 1, remainingAttempts: MAX_SUPERADMIN_ATTEMPTS - 1 };
+    }
+  }
+
+  function clearFailedSuperadminAttempts() {
+    try {
+      localStorage.removeItem(SUPERADMIN_ATTEMPTS_KEY);
+      localStorage.removeItem(SUPERADMIN_LOCKOUT_KEY);
+    } catch (_) {}
+  }
 
   let currentFilterRole = 'all'; // 'all' | 'umat' | 'admin'
   let currentSearchQuery = '';
@@ -65,6 +102,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.handleSuperAdminLogin = async function(e) {
     if (e) e.preventDefault();
+
+    // Proteksi brute force lockout
+    const remainingLockSec = getSuperadminLockoutRemainingSeconds();
+    if (remainingLockSec > 0) {
+      showToast(`Akses terkunci sementara karena terlalu banyak percobaan gagal! Tunggu ${remainingLockSec} detik.`, 'error');
+      return;
+    }
+
     const pin = (gatePinInput ? gatePinInput.value : '').trim();
 
     if (!pin) {
@@ -87,27 +132,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       let isVerified = false;
-      let dbPin = null;
 
-      // Ambil PIN Master secara aman langsung dari tabel configurations di Supabase
-      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.getConfiguration === 'function') {
-        dbPin = await ViharaSupabase.getConfiguration('superadmin_pin');
-      }
-
-      if (dbPin !== null && dbPin !== undefined) {
-        isVerified = (pin === String(dbPin).trim());
-      } else {
-        // Jika tabel belum di-create di Supabase atau offline
-        showToast('Gagal memverifikasi: Tabel "configurations" belum dibuat di Supabase atau jaringan offline.', 'error');
-        return;
+      // Verifikasi menggunakan RPC terproteksi (SECURITY DEFINER)
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.verifyMasterPin === 'function') {
+        isVerified = await ViharaSupabase.verifyMasterPin(pin);
+      } else if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.getConfiguration === 'function') {
+        const dbPin = await ViharaSupabase.getConfiguration('superadmin_pin');
+        if (dbPin !== null && dbPin !== undefined) {
+          isVerified = (pin === String(dbPin).trim());
+        }
       }
 
       if (isVerified) {
+        clearFailedSuperadminAttempts();
         sessionStorage.setItem(SUPERADMIN_SESSION_KEY, 'true');
         showToast('Akses Super Administrator berhasil diverifikasi.', 'success');
         checkAuthState();
       } else {
-        showToast('Kunci Rahasia / PIN Super Admin salah atau tidak sesuai!', 'error');
+        const lockInfo = recordFailedSuperadminAttempt();
+        if (lockInfo.locked) {
+          showToast(`Terlalu banyak percobaan gagal (${MAX_SUPERADMIN_ATTEMPTS}x)! Gerbang terkunci selama ${lockInfo.remainingSec} detik.`, 'error');
+        } else {
+          showToast(`Kunci Rahasia / PIN Super Admin salah! Sisa percobaan: ${lockInfo.remainingAttempts}`, 'error');
+        }
         if (gatePinInput) {
           gatePinInput.focus();
           gatePinInput.select();
@@ -134,16 +181,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // MANAJEMEN PIN MASTER SUPER ADMIN (SIMPAN KE SUPABASE CONFIGURATIONS)
   // ==========================================================================
   window.openChangePinModal = function() {
+    const oldPinInput = document.getElementById('modal-old-pin');
     const newPinInput = document.getElementById('modal-new-pin');
     const confirmPinInput = document.getElementById('modal-confirm-pin');
+    if (oldPinInput) oldPinInput.value = '';
     if (newPinInput) newPinInput.value = '';
     if (confirmPinInput) confirmPinInput.value = '';
     openModal('modal-change-pin');
-    if (newPinInput) setTimeout(() => newPinInput.focus(), 150);
+    if (oldPinInput) setTimeout(() => oldPinInput.focus(), 150);
+    else if (newPinInput) setTimeout(() => newPinInput.focus(), 150);
   };
 
   window.handleChangeMasterPinSubmit = async function(e) {
     if (e) e.preventDefault();
+    const oldPin = (document.getElementById('modal-old-pin') ? document.getElementById('modal-old-pin').value : '').trim();
     const newPin = (document.getElementById('modal-new-pin') ? document.getElementById('modal-new-pin').value : '').trim();
     const confirmPin = (document.getElementById('modal-confirm-pin') ? document.getElementById('modal-confirm-pin').value : '').trim();
 
@@ -164,20 +215,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateConfiguration === 'function') {
-        const success = await ViharaSupabase.updateConfiguration(
+      let success = false;
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateMasterPin === 'function') {
+        success = await ViharaSupabase.updateMasterPin(oldPin, newPin);
+      } else if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateConfiguration === 'function') {
+        success = await ViharaSupabase.updateConfiguration(
           'superadmin_pin',
           newPin,
           'PIN Rahasia Master untuk Akses Vault Super Administrator'
         );
-        if (success) {
-          showToast('PIN Master Super Admin berhasil diperbarui di Supabase!', 'success');
-          closeModal('modal-change-pin');
-        } else {
-          showToast('Gagal memperbarui PIN di Supabase. Periksa schema atau koneksi.', 'error');
-        }
+      }
+
+      if (success) {
+        showToast('PIN Master Super Admin berhasil diperbarui di Supabase!', 'success');
+        closeModal('modal-change-pin');
       } else {
-        showToast('Koneksi Supabase belum siap.', 'error');
+        showToast('Gagal memperbarui PIN di Supabase. Pastikan PIN lama benar atau periksa schema.', 'error');
       }
     } catch (err) {
       console.error('Error saat simpan PIN master:', err);
@@ -318,7 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const matchPhone = (user.phone || '').includes(q);
       const matchEmail = (user.email || '').toLowerCase().includes(q);
       const matchId = (user.id || '').toLowerCase().includes(q);
-      return matchName || matchPhone || matchEmail || matchId;
+      const matchAddress = (user.alamat || '').toLowerCase().includes(q);
+      const matchPob = (user.tempat_lahir || '').toLowerCase().includes(q);
+      const matchGender = (user.gender || '').toLowerCase().includes(q);
+      return matchName || matchPhone || matchEmail || matchId || matchAddress || matchPob || matchGender;
     });
 
     const tbody = document.getElementById('super-users-tbody');
@@ -346,6 +402,22 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<img src="${escapeHTML(safeAvatar)}" alt="${escapeHTML(user.name)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
         : escapeHTML(initials);
 
+      // Biodata tags (Gender, TTL, Alamat)
+      let ttlStr = '';
+      if (user.tempat_lahir && user.tanggal_lahir) {
+        ttlStr = `${user.tempat_lahir}, ${user.tanggal_lahir}`;
+      } else if (user.tempat_lahir) {
+        ttlStr = user.tempat_lahir;
+      } else if (user.tanggal_lahir) {
+        ttlStr = user.tanggal_lahir;
+      }
+
+      const genderBadge = user.gender ? `
+        <span style="display:inline-flex; align-items:center; gap:2px; font-size:0.68rem; font-weight:700; padding:1px 6px; border-radius:10px; background:${user.gender.toLowerCase().includes('perempuan') ? 'rgba(244,114,182,0.15)' : 'rgba(96,165,250,0.15)'}; color:${user.gender.toLowerCase().includes('perempuan') ? '#f472b6' : '#93c5fd'}; border:1px solid ${user.gender.toLowerCase().includes('perempuan') ? 'rgba(244,114,182,0.3)' : 'rgba(96,165,250,0.3)'};">
+          ${user.gender.toLowerCase().includes('perempuan') ? '♀' : '♂'} ${escapeHTML(user.gender)}
+        </span>
+      ` : '';
+
       // 1. Tampilan Desktop Table Row
       if (tbody) {
         const tr = document.createElement('tr');
@@ -356,7 +428,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${avatarHtml}
               </div>
               <div>
-                <div class="user-name-title">${escapeHTML(user.name)}</div>
+                <div class="user-name-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span>${escapeHTML(user.name)}</span>
+                  ${genderBadge}
+                </div>
                 <div class="user-id-sub">
                   ID: ${escapeHTML(user.id)} &bull; 
                   <span style="display:inline-flex; align-items:center; gap:3px;">
@@ -367,6 +442,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>${escapeHTML(user.email || '(tanpa email)')}</span>
                   </span>
                 </div>
+                ${(ttlStr || user.alamat) ? `
+                  <div style="font-size:0.725rem; color:var(--color-text-subtle); margin-top:4px; line-height:1.35; display:flex; flex-direction:column; gap:2px;">
+                    ${ttlStr ? `
+                      <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span>TTL: ${escapeHTML(ttlStr)}</span>
+                      </span>
+                    ` : ''}
+                    ${user.alamat ? `
+                      <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span style="max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHTML(user.alamat)}">${escapeHTML(user.alamat)}</span>
+                      </span>
+                    ` : ''}
+                  </div>
+                ` : ''}
               </div>
             </div>
           </td>
@@ -448,7 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${avatarHtml}
               </div>
               <div>
-                <div class="user-name-title">${escapeHTML(user.name)}</div>
+                <div class="user-name-title" style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <span>${escapeHTML(user.name)}</span>
+                  ${genderBadge}
+                </div>
                 <div class="user-id-sub" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
                   <span style="display:inline-flex; align-items:center; gap:3px;">
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -465,6 +559,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>${escapeHTML(user.email || '(tanpa email)')}</span>
                   </span>
                 </div>
+                ${(ttlStr || user.alamat) ? `
+                  <div style="font-size:0.725rem; color:var(--color-text-subtle); margin-top:5px; line-height:1.35; display:flex; flex-direction:column; gap:2px;">
+                    ${ttlStr ? `
+                      <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span>TTL: ${escapeHTML(ttlStr)}</span>
+                      </span>
+                    ` : ''}
+                    ${user.alamat ? `
+                      <span style="display:inline-flex; align-items:center; gap:4px;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <span>${escapeHTML(user.alamat)}</span>
+                      </span>
+                    ` : ''}
+                  </div>
+                ` : ''}
               </div>
             </div>
             <span class="role-badge-pill ${escapeHTML(user.role || 'umat')}">
@@ -554,11 +664,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const phoneInput = document.getElementById('modal-create-phone');
     const emailInput = document.getElementById('modal-create-email');
     const roleSelect = document.getElementById('modal-create-role');
+    const genderSelect = document.getElementById('modal-create-gender');
+    const pobInput = document.getElementById('modal-create-pob');
+    const dobInput = document.getElementById('modal-create-dob');
+    const addressInput = document.getElementById('modal-create-address');
 
     if (nameInput) nameInput.value = '';
     if (phoneInput) phoneInput.value = '';
     if (emailInput) emailInput.value = '';
     if (roleSelect) roleSelect.value = 'umat';
+    if (genderSelect) genderSelect.value = '';
+    if (pobInput) pobInput.value = '';
+    if (dobInput) dobInput.value = '';
+    if (addressInput) addressInput.value = '';
 
     openModal('modal-create-user');
   };
@@ -569,6 +687,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const phone = document.getElementById('modal-create-phone').value.trim();
     const email = document.getElementById('modal-create-email') ? document.getElementById('modal-create-email').value.trim() : '';
     const role = document.getElementById('modal-create-role').value;
+    const gender = document.getElementById('modal-create-gender') ? document.getElementById('modal-create-gender').value : '';
+    const tempat_lahir = document.getElementById('modal-create-pob') ? document.getElementById('modal-create-pob').value.trim() : '';
+    const tanggal_lahir = document.getElementById('modal-create-dob') ? document.getElementById('modal-create-dob').value : '';
+    const alamat = document.getElementById('modal-create-address') ? document.getElementById('modal-create-address').value.trim() : '';
 
     if (!name || !phone) {
       showToast('Nama lengkap dan nomor telepon wajib diisi.', 'warning');
@@ -581,7 +703,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const created = ViharaData.registerUser(name, phone, role, email);
+    const created = ViharaData.addUser({
+      name,
+      phone,
+      role,
+      email,
+      gender,
+      tempat_lahir,
+      tanggal_lahir,
+      alamat
+    });
     if (created) {
       showToast(`Pengguna baru ${created.name} (${role === 'admin' ? 'Admin' : 'Umat'}) berhasil ditambahkan.`, 'success');
       closeModal('modal-create-user');
@@ -590,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // EDIT PENGGUNA (HANYA SUPER ADMIN YANG BERWENANG MENGUBAH NAMA, NO HP, & EMAIL)
+  // EDIT PENGGUNA (HANYA SUPER ADMIN YANG BERWENANG MENGUBAH DATA LENGKAP PENGGUNA)
   // ==========================================================================
   window.openEditUserModal = function(userId) {
     const users = ViharaData.getUsers();
@@ -604,6 +735,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (emailInput) emailInput.value = user.email || '';
     document.getElementById('modal-edit-role').value = user.role;
 
+    const genderSelect = document.getElementById('modal-edit-gender');
+    if (genderSelect) genderSelect.value = user.gender || '';
+    const pobInput = document.getElementById('modal-edit-pob');
+    if (pobInput) pobInput.value = user.tempat_lahir || '';
+    const dobInput = document.getElementById('modal-edit-dob');
+    if (dobInput) dobInput.value = user.tanggal_lahir || '';
+    const addressInput = document.getElementById('modal-edit-address');
+    if (addressInput) addressInput.value = user.alamat || '';
+
     openModal('modal-edit-user');
   };
 
@@ -614,6 +754,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const phone = document.getElementById('modal-edit-phone').value.trim();
     const email = document.getElementById('modal-edit-email') ? document.getElementById('modal-edit-email').value.trim() : '';
     const role = document.getElementById('modal-edit-role').value;
+    const gender = document.getElementById('modal-edit-gender') ? document.getElementById('modal-edit-gender').value : '';
+    const tempat_lahir = document.getElementById('modal-edit-pob') ? document.getElementById('modal-edit-pob').value.trim() : '';
+    const tanggal_lahir = document.getElementById('modal-edit-dob') ? document.getElementById('modal-edit-dob').value : '';
+    const alamat = document.getElementById('modal-edit-address') ? document.getElementById('modal-edit-address').value.trim() : '';
 
     if (!name || !phone) {
       showToast('Nama dan nomor telepon tidak boleh kosong.', 'warning');
@@ -631,10 +775,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    const updated = ViharaData.updateUser(userId, { name, phone, email, role });
+    const payloadUpdates = { name, phone, email, role, gender, tempat_lahir, tanggal_lahir, alamat };
+    const updated = ViharaData.updateUser(userId, payloadUpdates);
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
       try {
-        await ViharaSupabase.updateProfile(user ? (user.id || user.phone) : userId, { name, phone, email, role });
+        await ViharaSupabase.updateProfile(user ? (user.id || user.phone) : userId, payloadUpdates);
       } catch (err) {
         console.warn('[Supabase] Gagal sync user profile ke database:', err);
       }
@@ -791,6 +936,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const rawPhone = cols[1];
       const email = cols[2] || '';
       const role = cols[3] || 'umat';
+      const gender = cols[4] || '';
+      const tempat_lahir = cols[5] || '';
+      const tanggal_lahir = cols[6] || '';
+      const alamat = cols[7] || '';
 
       let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
       if (cleanPhone.startsWith('62')) cleanPhone = '0' + cleanPhone.slice(2);
@@ -800,6 +949,10 @@ document.addEventListener('DOMContentLoaded', () => {
           name: name,
           phone: cleanPhone,
           email: email.includes('@') ? email.toLowerCase() : '',
+          gender: gender || '',
+          tempat_lahir: tempat_lahir || '',
+          tanggal_lahir: tanggal_lahir || '',
+          alamat: alamat || '',
           password_hash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
           must_change_password: true,
           role: role.toLowerCase().includes('admin') ? 'admin' : 'umat'
@@ -889,11 +1042,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let csv = 'data:text/csv;charset=utf-8,\uFEFF';
     csv += 'Laporan Master Pengguna - Vihara Amurwa Bhumi Cibinong\n';
     csv += `Waktu Unduh,${new Date().toLocaleString('id-ID')}\n\n`;
-    csv += 'No,ID Pengguna,Nama Lengkap,Nomor Telepon,Role/Hak Akses,Tanggal Terdaftar\n';
+    csv += 'No,ID Pengguna,Nama Lengkap,Nomor Telepon,Alamat Email,Jenis Kelamin,Tempat Lahir,Tanggal Lahir,Alamat Tinggal,Role/Hak Akses,Tanggal Terdaftar\n';
 
     allUsers.forEach((u, i) => {
       const roleStr = u.role === 'admin' ? 'Pengurus / Admin' : 'Umat';
-      csv += `${i + 1},${escapeCSVField(u.id)},${escapeCSVField(u.name)},${escapeCSVField(u.phone)},${escapeCSVField(roleStr)},${escapeCSVField(u.registeredAt || '-')}\n`;
+      csv += `${i + 1},${escapeCSVField(u.id)},${escapeCSVField(u.name)},${escapeCSVField(u.phone)},${escapeCSVField(u.email || '')},${escapeCSVField(u.gender || '')},${escapeCSVField(u.tempat_lahir || '')},${escapeCSVField(u.tanggal_lahir || '')},${escapeCSVField(u.alamat || '')},${escapeCSVField(roleStr)},${escapeCSVField(u.registeredAt || '-')}\n`;
     });
 
     const encodedUri = encodeURI(csv);

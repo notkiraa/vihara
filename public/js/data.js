@@ -66,6 +66,10 @@ var ViharaData = (() => {
       phone: '08119999888',
       email: 'admin@amurwabhumi.or.id',
       avatar: '',
+      gender: 'Laki-laki',
+      tempat_lahir: 'Bogor',
+      tanggal_lahir: '1985-01-01',
+      alamat: 'Cibinong, Bogor, Jawa Barat',
       role: 'admin',
       registeredAt: getTodayKey()
     }
@@ -100,13 +104,17 @@ var ViharaData = (() => {
     if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
     } else {
-      // Pastikan semua user memiliki properti email dan avatar
+      // Pastikan semua user memiliki properti email, avatar, dan biodata
       try {
         const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
         let modified = false;
         users.forEach(u => {
           if (u.email === undefined) { u.email = u.role === 'admin' ? 'admin@amurwabhumi.or.id' : ''; modified = true; }
           if (u.avatar === undefined) { u.avatar = ''; modified = true; }
+          if (u.gender === undefined) { u.gender = ''; modified = true; }
+          if (u.alamat === undefined) { u.alamat = ''; modified = true; }
+          if (u.tempat_lahir === undefined) { u.tempat_lahir = ''; modified = true; }
+          if (u.tanggal_lahir === undefined) { u.tanggal_lahir = ''; modified = true; }
         });
         if (modified) {
           localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
@@ -519,14 +527,23 @@ var ViharaData = (() => {
     return users.find(u => u.phone.replace(/[^0-9]/g, '') === cleanPhone);
   }
 
-  function registerUser(name, phone, role = 'umat', email = '', avatar = '') {
+  function registerUser(name, phone, role = 'umat', email = '', avatar = '', biodata = {}) {
     const users = getUsers();
     const cleanPhone = phone.replace(/[^0-9]/g, '');
     const cleanEmail = (email || '').trim().toLowerCase();
+    const bGender = (biodata && biodata.gender) || '';
+    const bAlamat = (biodata && biodata.alamat) || '';
+    const bTempatLahir = (biodata && biodata.tempat_lahir) || '';
+    const bTanggalLahir = (biodata && biodata.tanggal_lahir) || '';
+
     const existing = users.find(u => u.phone.replace(/[^0-9]/g, '') === cleanPhone);
     if (existing) {
       if (cleanEmail && !existing.email) existing.email = cleanEmail;
       if (avatar && !existing.avatar) existing.avatar = avatar;
+      if (bGender && !existing.gender) existing.gender = bGender;
+      if (bAlamat && !existing.alamat) existing.alamat = bAlamat;
+      if (bTempatLahir && !existing.tempat_lahir) existing.tempat_lahir = bTempatLahir;
+      if (bTanggalLahir && !existing.tanggal_lahir) existing.tanggal_lahir = bTanggalLahir;
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
       // Sinkronisasi update ke database Supabase
       if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.insertProfile === 'function') {
@@ -542,6 +559,10 @@ var ViharaData = (() => {
       phone: cleanPhone,
       email: cleanEmail,
       avatar: avatar || '',
+      gender: bGender,
+      tempat_lahir: bTempatLahir,
+      tanggal_lahir: bTanggalLahir,
+      alamat: bAlamat,
       password_hash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
       must_change_password: true,
       role: role,
@@ -577,19 +598,25 @@ var ViharaData = (() => {
 
   /**
    * Menambahkan pengguna baru secara polimorfik:
-   * Menerima objek { name, phone, role, email, avatar } atau argumen posisi
-   * (name, phone, role, email, avatar), mendelegasikan secara bersih ke registerUser.
+   * Menerima objek { name, phone, role, email, avatar, gender, alamat, tempat_lahir, tanggal_lahir }
+   * atau argumen posisi (name, phone, role, email, avatar, biodata), mendelegasikan secara bersih ke registerUser.
    */
-  function addUser(nameOrObj, phone, role = 'umat', email = '', avatar = '') {
+  function addUser(nameOrObj, phone, role = 'umat', email = '', avatar = '', biodata = {}) {
     if (nameOrObj && typeof nameOrObj === 'object') {
       const uName = nameOrObj.name || '';
       const uPhone = nameOrObj.phone || '';
       const uRole = nameOrObj.role || 'umat';
       const uEmail = nameOrObj.email || '';
       const uAvatar = nameOrObj.avatar || '';
-      return registerUser(uName, uPhone, uRole, uEmail, uAvatar);
+      const bData = {
+        gender: nameOrObj.gender || (biodata && biodata.gender) || '',
+        alamat: nameOrObj.alamat || (biodata && biodata.alamat) || '',
+        tempat_lahir: nameOrObj.tempat_lahir || (biodata && biodata.tempat_lahir) || '',
+        tanggal_lahir: nameOrObj.tanggal_lahir || (biodata && biodata.tanggal_lahir) || ''
+      };
+      return registerUser(uName, uPhone, uRole, uEmail, uAvatar, bData);
     }
-    return registerUser(nameOrObj, phone, role, email, avatar);
+    return registerUser(nameOrObj, phone, role, email, avatar, biodata);
   }
 
   function updateUserRole(userId, newRole) {
@@ -614,7 +641,7 @@ var ViharaData = (() => {
     return user;
   }
 
-  function updateUser(userId, { name, phone, email, avatar, role, password_hash, must_change_password }) {
+  function updateUser(userId, { name, phone, email, avatar, role, password_hash, must_change_password, gender, alamat, tempat_lahir, tanggal_lahir }) {
     const users = getUsers();
     const user = users.find(u => u.id === userId);
     if (!user) return null;
@@ -625,6 +652,10 @@ var ViharaData = (() => {
     if (role !== undefined) user.role = role;
     if (password_hash !== undefined) user.password_hash = password_hash;
     if (must_change_password !== undefined) user.must_change_password = must_change_password;
+    if (gender !== undefined) user.gender = gender;
+    if (alamat !== undefined) user.alamat = alamat;
+    if (tempat_lahir !== undefined) user.tempat_lahir = tempat_lahir;
+    if (tanggal_lahir !== undefined) user.tanggal_lahir = tanggal_lahir;
     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
 
     // Update active session jika user yang sedang login diubah
@@ -636,7 +667,19 @@ var ViharaData = (() => {
 
     // Sinkronisasi pembaruan profil ke database Supabase
     if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
-      ViharaSupabase.updateProfile(user.id || user.phone, { name, phone, email, avatar, role, password_hash, must_change_password }).catch(err => {
+      ViharaSupabase.updateProfile(user.id || user.phone, { 
+        name, 
+        phone, 
+        email, 
+        avatar, 
+        role, 
+        password_hash, 
+        must_change_password,
+        gender,
+        alamat,
+        tempat_lahir,
+        tanggal_lahir
+      }).catch(err => {
         console.warn('[Supabase] Warning saat update profil di cloud:', err);
       });
     }

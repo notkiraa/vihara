@@ -1,6 +1,6 @@
-name,phone,email,role
-Budi Santoso,081211112222,budi@gmail.com,umat
-Suryani Wijaya,081233334444,suryani@gmail.com,umat
-Hendrik Pratama,081255556666,hendrik@gmail.com,umat
-Vincen Tan,081277778888,vincen@amurwabhumi.or.id,admin
-Meilani Chen,081299990000,meilani@gmail.com,umat
+name,phone,email,role,gender,tempat_lahir,tanggal_lahir,alamat
+Budi Santoso,081211112222,budi@gmail.com,umat,Laki-laki,Bogor,1990-05-12,"Jl. Mayor Oking No. 12, Cibinong"
+Suryani Wijaya,081233334444,suryani@gmail.com,umat,Perempuan,Jakarta,1992-08-20,"Jl. Raya Jakarta-Bogor KM 43, Cibinong"
+Hendrik Pratama,081255556666,hendrik@gmail.com,umat,Laki-laki,Depok,1988-11-04,"Ciriung, Cibinong, Bogor"
+Vincen Tan,081277778888,vincen@amurwabhumi.or.id,admin,Laki-laki,Bogor,1995-02-14,"Cibinong, Bogor, Jawa Barat"
+Meilani Chen,081299990000,meilani@gmail.com,umat,Perempuan,Bandung,1996-07-25,"Pabuaran, Cibinong, Bogor"

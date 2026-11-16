@@ -43,20 +43,55 @@ var ViharaAuth = (() => {
   let pendingRememberMe = true;
 
   // ==========================================================================
-  // HELPER HASHING SHA-256 (WEB CRYPTO STANDAR, HASIL SAMA PERSIS DENGAN PGCRYPTO)
+  // HELPER HASHING SHA-256 & SALTED HASH (MENDUKUNG FORMAT TERSALT "s1:salt:hash"
+  // DAN FULL BACKWARD-COMPATIBLE DENGAN LEGACY RAW SHA-256 & DEFAULT HASH)
   // ==========================================================================
-  async function hashPassword(plainText) {
-    if (!plainText) return '';
+  async function computeSha256(text) {
+    if (!text) return '';
     try {
-      const msgUint8 = new TextEncoder().encode(plainText);
+      const msgUint8 = new TextEncoder().encode(text);
       const hasCrypto = typeof crypto !== 'undefined' && crypto && crypto.subtle && typeof crypto.subtle.digest === 'function';
-      if (!hasCrypto) return (plainText === DEFAULT_PASSWORD_PLAIN) ? DEFAULT_PASSWORD_HASH : '';
+      if (!hasCrypto) {
+        if (text === DEFAULT_PASSWORD_PLAIN) return DEFAULT_PASSWORD_HASH;
+        return '';
+      }
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     } catch (e) {
-      console.error('Hashing error:', e);
+      console.error('computeSha256 error:', e);
       return '';
+    }
+  }
+
+  async function hashPassword(plainText, salt = null) {
+    if (!plainText) return '';
+    try {
+      if (salt === '' || salt === false) {
+        return await computeSha256(plainText);
+      }
+
+      let useSalt = salt;
+      if (!useSalt) {
+        if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+          const arr = new Uint8Array(8);
+          crypto.getRandomValues(arr);
+          useSalt = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        } else {
+          useSalt = Math.random().toString(36).substring(2, 10);
+        }
+      }
+
+      const combined = `${useSalt}:${plainText}`;
+      const hashed = await computeSha256(combined);
+
+      if (salt === null) {
+        return `s1:${useSalt}:${hashed}`;
+      }
+      return hashed;
+    } catch (e) {
+      console.error('Hashing error:', e);
+      return (plainText === DEFAULT_PASSWORD_PLAIN) ? DEFAULT_PASSWORD_HASH : '';
     }
   }
 
@@ -68,8 +103,27 @@ var ViharaAuth = (() => {
       if (full && full.password_hash) storedHash = full.password_hash;
     }
     if (!storedHash) storedHash = DEFAULT_PASSWORD_HASH;
-    const inputHash = await hashPassword(plainPassword);
-    return inputHash === storedHash;
+
+    if (typeof storedHash === 'string' && storedHash.startsWith('s1:')) {
+      const parts = storedHash.split(':');
+      if (parts.length === 3) {
+        const salt = parts[1];
+        const expectedHash = parts[2];
+        const computed = await hashPassword(plainPassword, salt);
+        return computed === expectedHash;
+      }
+    }
+
+    const legacyHash = await computeSha256(plainPassword);
+    if (storedHash === legacyHash) {
+      return true;
+    }
+
+    if (storedHash === DEFAULT_PASSWORD_HASH && plainPassword === DEFAULT_PASSWORD_PLAIN) {
+      return true;
+    }
+
+    return false;
   }
 
   function setPendingFirstLogin(user, rememberMe = true) {

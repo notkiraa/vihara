@@ -79,6 +79,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     name TEXT NOT NULL,
     phone TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE,
+    gender TEXT,
+    alamat TEXT,
+    tempat_lahir TEXT,
+    tanggal_lahir DATE,
     password_hash TEXT DEFAULT encode(digest('123456', 'sha256'), 'hex'),
     must_change_password BOOLEAN DEFAULT true NOT NULL,
     role user_role NOT NULL DEFAULT 'umat',
@@ -89,6 +93,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 CREATE INDEX IF NOT EXISTS idx_profiles_phone ON public.profiles(phone);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_gender ON public.profiles(gender);
+CREATE INDEX IF NOT EXISTS idx_profiles_tempat_lahir ON public.profiles(tempat_lahir);
 
 -- ----------------------------------------------------------------------------
 -- TABEL B: EVENTS (JADWAL KEBAKTIAN & ACARA VIHARA)
@@ -402,7 +408,7 @@ DROP POLICY IF EXISTS "Konfigurasi dapat dibaca oleh publik & sistem" ON public.
 CREATE POLICY "Konfigurasi dapat dibaca oleh publik & sistem"
     ON public.configurations FOR SELECT
     TO public
-    USING (true);
+    USING (key != 'superadmin_pin');
 
 DROP POLICY IF EXISTS "Konfigurasi dapat diperbarui oleh sistem" ON public.configurations;
 CREATE POLICY "Konfigurasi dapat diperbarui oleh sistem"
@@ -410,6 +416,86 @@ CREATE POLICY "Konfigurasi dapat diperbarui oleh sistem"
     TO public
     USING (true)
     WITH CHECK (true);
+
+-- FUNGSI KEAMANAN: VERIFIKASI PIN SUPER ADMIN TANPA EKSPOSUR
+CREATE OR REPLACE FUNCTION public.verify_master_pin(p_pin TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_correct_pin TEXT;
+BEGIN
+    IF p_pin IS NULL OR length(trim(p_pin)) < 4 THEN
+        RETURN false;
+    END IF;
+
+    SELECT value INTO v_correct_pin
+    FROM public.configurations
+    WHERE key = 'superadmin_pin';
+
+    IF v_correct_pin IS NULL THEN
+        RETURN false;
+    END IF;
+
+    IF v_correct_pin = trim(p_pin) OR v_correct_pin = encode(digest(trim(p_pin), 'sha256'), 'hex') THEN
+        RETURN true;
+    END IF;
+
+    RETURN false;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_master_pin(p_old_pin TEXT, p_new_pin TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF NOT public.verify_master_pin(p_old_pin) THEN
+        RETURN false;
+    END IF;
+
+    IF p_new_pin IS NULL OR length(trim(p_new_pin)) < 4 THEN
+        RETURN false;
+    END IF;
+
+    UPDATE public.configurations
+    SET value = trim(p_new_pin),
+        updated_at = timezone('utc'::text, now())
+    WHERE key = 'superadmin_pin';
+
+    RETURN true;
+END;
+$$;
+
+-- TRIGGER KEAMANAN: CEGAH ELEVASI ROLE KE ADMIN VIA ANON REST
+CREATE OR REPLACE FUNCTION public.prevent_role_escalation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF (OLD.role = 'umat' AND NEW.role = 'admin') THEN
+        IF current_setting('request.jwt.claim.role', true) = 'anon' OR current_setting('request.jwt.claim.role', true) IS NULL THEN
+            NEW.role := OLD.role;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_prevent_role_escalation ON public.profiles;
+CREATE TRIGGER trg_prevent_role_escalation
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_role_escalation();
+
+GRANT EXECUTE ON FUNCTION public.verify_master_pin(TEXT) TO public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.update_master_pin(TEXT, TEXT) TO public, anon, authenticated;
 
 -- ============================================================================
 -- 9. STORAGE BUCKETS (BANNER PENGUMUMAN & AVATAR PROFIL)

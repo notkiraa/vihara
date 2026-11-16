@@ -3,31 +3,50 @@
     "name": "Budi Santoso",
     "phone": "081211112222",
     "email": "budi@gmail.com",
-    "role": "umat"
+    "role": "umat",
+    "gender": "Laki-laki",
+    "tempat_lahir": "Bogor",
+    "tanggal_lahir": "1990-05-12",
+    "alamat": "Jl. Mayor Oking No. 12, Cibinong"
   },
   {
     "name": "Suryani Wijaya",
     "phone": "081233334444",
     "email": "suryani@gmail.com",
-    "role": "umat"
+    "role": "umat",
+    "gender": "Perempuan",
+    "tempat_lahir": "Jakarta",
+    "tanggal_lahir": "1992-08-20",
+    "alamat": "Jl. Raya Jakarta-Bogor KM 43, Cibinong"
   },
   {
     "name": "Hendrik Pratama",
     "phone": "081255556666",
     "email": "hendrik@gmail.com",
-    "role": "umat"
+    "role": "umat",
+    "gender": "Laki-laki",
+    "tempat_lahir": "Depok",
+    "tanggal_lahir": "1988-11-04",
+    "alamat": "Ciriung, Cibinong, Bogor"
   },
   {
     "name": "Vincen Tan",
     "phone": "081277778888",
     "email": "vincen@amurwabhumi.or.id",
-    "role": "admin"
+    "role": "admin",
+    "gender": "Laki-laki",
+    "tempat_lahir": "Bogor",
+    "tanggal_lahir": "1995-02-14",
+    "alamat": "Cibinong, Bogor, Jawa Barat"
   },
   {
     "name": "Meilani Chen",
     "phone": "081299990000",
     "email": "meilani@gmail.com",
-    "role": "umat"
+    "role": "umat",
+    "gender": "Perempuan",
+    "tempat_lahir": "Bandung",
+    "tanggal_lahir": "1996-07-25",
+    "alamat": "Pabuaran, Cibinong, Bogor"
   }
 ]
-

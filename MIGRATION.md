@@ -31,7 +31,7 @@ Akses ini digunakan pengurus sehari-hari untuk mengelola acara dan umat:
 
 1. **Akses Portal Super Admin (`superadmin.html`):**
    * **URL:** `https://wiharaabc.vercel.app/superadmin.html`
-   * **Kunci PIN Master:** PIN saat ini adalah **`1029384756`** *(PIN ini tersimpan di Supabase dan bisa diubah kapan saja di dalam menu Super Admin)*.
+   * **Kunci PIN Master:** PIN saat ini adalah **``** *(PIN ini tersimpan di Supabase dan bisa diubah kapan saja di dalam menu Super Admin)*.
    * **Kegunaan:**
      * Menjadikan umat biasa sebagai Admin / Pengurus.
      * Reset kata sandi akun umat yang lupa sandi.
@@ -399,7 +399,7 @@ Lembar ini adalah ringkasan paling padat untuk disimpan di map berkas fisik oleh
    • Standee Meja QR        : https://wiharaabc.vercel.app/index.html?qr_dhammasala=1&qr_event=active&vihara=VAB_CIBINONG
 
 2. KUNCI AKSES & KREDENSIAL MASTER
-   • PIN Master Super Admin : 1029384756 (Wajib diganti saat serah terima)
+   • PIN Master Super Admin :  (Wajib diganti saat serah terima)
    • Password Default Umat  : 123456 (Umat wajib ganti saat login pertama)
    • Akun Pengurus Bawaan   : 08119999888
    • Akun Pengurus Aktif    : 0895355301519 (Vin Cen)

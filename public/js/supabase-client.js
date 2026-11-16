@@ -54,6 +54,10 @@ const ViharaSupabase = (() => {
           name: p.name,
           phone: p.phone,
           email: p.email || '',
+          gender: p.gender || '',
+          alamat: p.alamat || '',
+          tempat_lahir: p.tempat_lahir || '',
+          tanggal_lahir: p.tanggal_lahir ? String(p.tanggal_lahir).split('T')[0] : '',
           avatar: p.avatar_url || '',
           password_hash: p.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
           must_change_password: p.must_change_password !== false,
@@ -93,6 +97,10 @@ const ViharaSupabase = (() => {
         name: (user.name || '').trim(),
         phone: cleanPhone,
         email: cleanEmail,
+        gender: user.gender || null,
+        alamat: user.alamat || null,
+        tempat_lahir: user.tempat_lahir || null,
+        tanggal_lahir: user.tanggal_lahir || null,
         password_hash: user.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
         must_change_password: user.must_change_password !== false,
         role: user.role || 'umat',
@@ -109,9 +117,13 @@ const ViharaSupabase = (() => {
         .select()
         .single();
 
-      if (error && (error.code === 'PGRST204' || error.message.includes('password_hash') || error.message.includes('must_change_password'))) {
+      if (error && (error.code === 'PGRST204' || error.message.includes('password_hash') || error.message.includes('must_change_password') || error.message.includes('gender') || error.message.includes('alamat') || error.message.includes('tempat_lahir') || error.message.includes('tanggal_lahir'))) {
         delete payload.password_hash;
         delete payload.must_change_password;
+        if (error.message.includes('gender')) delete payload.gender;
+        if (error.message.includes('alamat')) delete payload.alamat;
+        if (error.message.includes('tempat_lahir')) delete payload.tempat_lahir;
+        if (error.message.includes('tanggal_lahir')) delete payload.tanggal_lahir;
         const retryRes = await sb
           .from('profiles')
           .upsert([payload], { onConflict: 'phone' })
@@ -151,6 +163,10 @@ const ViharaSupabase = (() => {
           name: data.name,
           phone: data.phone,
           email: data.email || '',
+          gender: data.gender || '',
+          alamat: data.alamat || '',
+          tempat_lahir: data.tempat_lahir || '',
+          tanggal_lahir: data.tanggal_lahir ? String(data.tanggal_lahir).split('T')[0] : '',
           avatar: data.avatar_url || '',
           password_hash: data.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
           must_change_password: data.must_change_password !== false,
@@ -184,6 +200,10 @@ const ViharaSupabase = (() => {
           name: cleanName,
           phone: cleanPhone,
           email: cleanEmail,
+          gender: u.gender || null,
+          alamat: u.alamat || null,
+          tempat_lahir: u.tempat_lahir || null,
+          tanggal_lahir: u.tanggal_lahir || null,
           password_hash: u.password_hash || '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92',
           must_change_password: u.must_change_password !== false,
           role: u.role === 'admin' ? 'admin' : 'umat',
@@ -273,6 +293,10 @@ const ViharaSupabase = (() => {
       }
       if (updates.role !== undefined) payload.role = updates.role;
       if (updates.avatar !== undefined) payload.avatar_url = updates.avatar || null;
+      if (updates.gender !== undefined) payload.gender = updates.gender || null;
+      if (updates.alamat !== undefined) payload.alamat = updates.alamat || null;
+      if (updates.tempat_lahir !== undefined) payload.tempat_lahir = updates.tempat_lahir || null;
+      if (updates.tanggal_lahir !== undefined) payload.tanggal_lahir = updates.tanggal_lahir || null;
       if (updates.password_hash !== undefined) payload.password_hash = updates.password_hash;
       if (updates.must_change_password !== undefined) payload.must_change_password = updates.must_change_password;
       payload.updated_at = new Date().toISOString();
@@ -843,7 +867,63 @@ const ViharaSupabase = (() => {
   // 6. KONFIGURASI SISTEM (MASTER PIN SUPER ADMIN, DB SETTINGS, DLL.)
   // ==========================================================================
 
-  // 6a. Ambil nilai konfigurasi berdasarkan key dari tabel configurations di Supabase
+  // 6a. Verifikasi PIN Master Super Admin Secara Aman Menggunakan Database RPC
+  async function verifyMasterPin(inputPin) {
+    const sb = getClient();
+    if (!sb) return false;
+    const cleanPin = String(inputPin || '').trim();
+    if (!cleanPin) return false;
+
+    try {
+      if (typeof sb.rpc === 'function') {
+        const { data, error } = await sb.rpc('verify_master_pin', { p_pin: cleanPin });
+        if (!error && typeof data === 'boolean') {
+          return data;
+        }
+      }
+    } catch (rpcErr) {
+      console.warn('[Supabase] RPC verify_master_pin fallback:', rpcErr.message);
+    }
+
+    // Fallback darurat jika fungsi RPC belum di-deploy di Supabase SQL Editor
+    try {
+      const dbPin = await getConfiguration('superadmin_pin');
+      if (dbPin !== null && dbPin !== undefined) {
+        return cleanPin === String(dbPin).trim();
+      }
+    } catch (fbErr) {
+      console.warn('[Supabase] Fallback getConfiguration gagal:', fbErr.message);
+    }
+    return false;
+  }
+
+  // 6b. Perbarui PIN Master Super Admin secara Terproteksi
+  async function updateMasterPin(oldPin, newPin) {
+    const sb = getClient();
+    if (!sb) return false;
+    const cleanOldPin = String(oldPin || '').trim();
+    const cleanNewPin = String(newPin || '').trim();
+    if (!cleanNewPin || cleanNewPin.length < 4) return false;
+
+    try {
+      if (typeof sb.rpc === 'function') {
+        const { data, error } = await sb.rpc('update_master_pin', {
+          p_old_pin: cleanOldPin,
+          p_new_pin: cleanNewPin
+        });
+        if (!error && typeof data === 'boolean') {
+          return data;
+        }
+      }
+    } catch (rpcErr) {
+      console.warn('[Supabase] RPC update_master_pin fallback:', rpcErr.message);
+    }
+
+    // Fallback darurat ke updateConfiguration
+    return await updateConfiguration('superadmin_pin', cleanNewPin, 'PIN Rahasia Master Vault Super Administrator');
+  }
+
+  // 6c. Ambil nilai konfigurasi berdasarkan key dari tabel configurations di Supabase
   async function getConfiguration(key) {
     const sb = getClient();
     if (!sb) return null;
@@ -969,7 +1049,7 @@ const ViharaSupabase = (() => {
     console.info('[Supabase] Sinkronisasi seluruh database Supabase selesai.');
   }
 
-  return {
+  const api = {
     CONFIG,
     isConfigured,
     getClient,
@@ -998,7 +1078,17 @@ const ViharaSupabase = (() => {
     clearAllGuests,
     getConfiguration,
     updateConfiguration,
+    verifyMasterPin,
+    updateMasterPin,
     subscribeRealtimeChanges
   };
+
+  if (typeof window !== 'undefined') {
+    window.ViharaSupabase = api;
+  }
+  if (typeof global !== 'undefined') {
+    global.ViharaSupabase = api;
+  }
+  return api;
 })();
 

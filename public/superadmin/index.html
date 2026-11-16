@@ -377,6 +377,31 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label class="form-label" for="modal-create-gender">Jenis Kelamin</label>
+          <select id="modal-create-gender" class="form-select">
+            <option value="">-- Pilih Jenis Kelamin --</option>
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label" for="modal-create-pob">Tempat Lahir</label>
+            <input type="text" id="modal-create-pob" class="form-input" placeholder="Contoh: Bogor">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-create-dob">Tanggal Lahir</label>
+            <input type="date" id="modal-create-dob" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-create-address">Alamat Tinggal / Domisili</label>
+          <textarea id="modal-create-address" class="form-input" rows="2" placeholder="Contoh: Jl. Mayor Oking No. 12, Cibinong, Bogor"></textarea>
+        </div>
+
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
           <button type="button" onclick="closeModal('modal-create-user')" class="btn btn-secondary">
             Batal
@@ -412,7 +437,7 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
             <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5z"/>
           </svg>
-          <span>Otoritas Super Admin: Anda berwenang mengubah Nama Lengkap, Nomor Telepon, dan Email pengguna.</span>
+          <span>Otoritas Super Admin: Anda berwenang mengubah Data Pengguna (Nama, Kontak, Biodata, & Hak Akses).</span>
         </div>
 
         <div class="form-group">
@@ -436,6 +461,31 @@
             <option value="umat">Umat Biasa</option>
             <option value="admin">Pengurus Vihara / Admin</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-edit-gender">Jenis Kelamin</label>
+          <select id="modal-edit-gender" class="form-select">
+            <option value="">-- Pilih Jenis Kelamin --</option>
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label" for="modal-edit-pob">Tempat Lahir</label>
+            <input type="text" id="modal-edit-pob" class="form-input" placeholder="Contoh: Bogor">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modal-edit-dob">Tanggal Lahir</label>
+            <input type="date" id="modal-edit-dob" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-edit-address">Alamat Tinggal / Domisili</label>
+          <textarea id="modal-edit-address" class="form-input" rows="2" placeholder="Contoh: Jl. Mayor Oking No. 12, Cibinong, Bogor"></textarea>
         </div>
 
         <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px; border-radius: var(--radius-md); margin-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
@@ -523,6 +573,11 @@
         </p>
 
         <div class="form-group">
+          <label class="form-label" for="modal-old-pin">PIN Master Saat Ini *</label>
+          <input type="password" id="modal-old-pin" class="form-input" placeholder="Masukkan PIN Master saat ini" required autocomplete="current-password">
+        </div>
+
+        <div class="form-group">
           <label class="form-label" for="modal-new-pin">PIN Master Baru *</label>
           <input type="password" id="modal-new-pin" class="form-input" placeholder="Masukkan minimal 4 karakter PIN baru" minlength="4" required autocomplete="new-password">
         </div>
@@ -563,7 +618,7 @@
 
       <form onsubmit="handleBatchImportSubmit(event)">
         <p style="font-size: 0.825rem; color: var(--color-text-muted); margin-bottom: 1rem; line-height: 1.45;">
-          Unggah file CSV atau tempel baris data berformat: <code>Nama, Nomor_HP, Email, Role</code>.
+          Unggah file CSV atau tempel baris data berformat: <code>Nama, Nomor_HP, Email, Role, Gender, Tempat_Lahir, Tanggal_Lahir, Alamat</code>.
         </p>
 
         <div class="form-group">
@@ -573,7 +628,7 @@
 
         <div class="form-group">
           <label class="form-label" for="batch-text-input">Atau Tempel / Tulis Data CSV Di Sini:</label>
-          <textarea id="batch-text-input" class="form-input" rows="5" placeholder="Contoh:&#10;Budi Santoso, 081211112222, budi@gmail.com, umat&#10;Suryani Wijaya, 081233334444, suryani@gmail.com, umat&#10;Vincen Tan, 081255556666, vincen@amurwabhumi.or.id, admin" style="font-family: monospace; font-size: 0.8rem; line-height: 1.4; resize: vertical;"></textarea>
+          <textarea id="batch-text-input" class="form-input" rows="5" placeholder="Contoh:&#10;Budi Santoso, 081211112222, budi@gmail.com, umat, Laki-laki, Bogor, 1990-05-12, Jl. Mayor Oking No. 12&#10;Suryani Wijaya, 081233334444, suryani@gmail.com, umat, Perempuan, Jakarta, 1992-08-20, Jl. Raya Bogor" style="font-family: monospace; font-size: 0.8rem; line-height: 1.4; resize: vertical;"></textarea>
         </div>
 
         <div id="batch-preview-info" style="font-size: 0.775rem; color: #fef08a; margin-top: 6px; display: none;"></div>

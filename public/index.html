@@ -1236,6 +1236,21 @@
                 <div id="page-profile-email" style="font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-top: 2px;">-</div>
               </div>
 
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.725rem; font-weight: 800; color: var(--ink-50); text-transform: uppercase; letter-spacing: 0.05em;">Jenis Kelamin</div>
+                <div id="page-profile-gender" style="font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-top: 2px;">-</div>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.725rem; font-weight: 800; color: var(--ink-50); text-transform: uppercase; letter-spacing: 0.05em;">Tempat, Tanggal Lahir</div>
+                <div id="page-profile-ttl" style="font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-top: 2px;">-</div>
+              </div>
+
+              <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.725rem; font-weight: 800; color: var(--ink-50); text-transform: uppercase; letter-spacing: 0.05em;">Alamat Domisili</div>
+                <div id="page-profile-alamat" style="font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-top: 2px;">-</div>
+              </div>
+
               <div data-ui style="display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--maroon-100);">
                 <span style="font-size: 0.8rem; font-weight: 600; color: var(--ink-70);">Status Hak Akses:</span>
                 <span id="page-profile-role" class="user-role-pill umat">Umat</span>
@@ -1246,9 +1261,18 @@
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                 </svg>
-                <span>Nama, nomor telepon, dan email hanya dapat diubah oleh <strong>Super Administrator</strong>.</span>
+                <span>Nama, nomor telepon, dan hak akses dikelola resmi oleh <strong>Pengurus Vihara</strong>.</span>
               </div>
             </div>
+
+            <!-- Tombol Lengkapi / Ubah Biodata Diri -->
+            <button type="button" onclick="openUserEditBiodataModal()" class="btn btn-block" style="padding: 12px; font-size: 0.85rem; background: #ffffff; color: var(--maroon-800); border: 1.5px solid var(--line); border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+              <span>Lengkapi / Ubah Biodata Diri</span>
+            </button>
 
             <!-- Tombol Ganti Kata Sandi Akun -->
             <button type="button" onclick="openUserChangePasswordModal()" class="btn btn-block" style="padding: 12px; font-size: 0.85rem; background: #ffffff; color: var(--maroon-800); border: 1.5px solid var(--line); border-radius: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;">
@@ -1827,6 +1851,64 @@
           </button>
           <button type="submit" id="btn-save-user-password" class="btn btn-primary">
             Simpan Kata Sandi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: LENGKAPI / UBAH BIODATA UMAT (GENDER, TTL, ALAMAT)
+       ======================================================================== -->
+  <div id="modal-user-edit-biodata" class="modal-backdrop">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--maroon-800); display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--maroon-700);">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <span>Lengkapi / Ubah Biodata Diri</span>
+        </h3>
+        <button type="button" onclick="closeModal('modal-user-edit-biodata')" class="btn-close-modal" title="Tutup">&times;</button>
+      </div>
+
+      <form onsubmit="handleUserEditBiodataSubmit(event)">
+        <p style="font-size: 0.825rem; color: var(--ink-70); margin-bottom: 1.25rem; line-height: 1.45;">
+          Lengkapi data identitas Anda untuk keperluan basis data jemaat dan arsip resmi Vihara Amurwa Bhumi Cibinong.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="user-input-gender">Jenis Kelamin</label>
+          <select id="user-input-gender" class="form-select">
+            <option value="">-- Pilih Jenis Kelamin --</option>
+            <option value="Laki-laki">Laki-laki</option>
+            <option value="Perempuan">Perempuan</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label class="form-label" for="user-input-pob">Tempat Lahir</label>
+            <input type="text" id="user-input-pob" class="form-input" placeholder="Contoh: Bogor">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-input-dob">Tanggal Lahir</label>
+            <input type="date" id="user-input-dob" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="user-input-address">Alamat Domisili Lengkap</label>
+          <textarea id="user-input-address" class="form-input" rows="2" placeholder="Contoh: Jl. Mayor Oking No. 12, Cibinong, Bogor"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="button" onclick="closeModal('modal-user-edit-biodata')" class="btn btn-secondary">
+            Batal
+          </button>
+          <button type="submit" id="btn-save-user-biodata" class="btn btn-primary">
+            Simpan Biodata
           </button>
         </div>
       </form>

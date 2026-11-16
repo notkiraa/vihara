@@ -1976,6 +1976,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailEl = document.getElementById('page-profile-email');
     if (emailEl) emailEl.innerText = user.email || '(Belum didaftarkan)';
 
+    const genderEl = document.getElementById('page-profile-gender');
+    if (genderEl) genderEl.innerText = user.gender || '(Belum diisi)';
+
+    const ttlEl = document.getElementById('page-profile-ttl');
+    if (ttlEl) {
+      let formattedDob = user.tanggal_lahir || '';
+      if (user.tanggal_lahir && typeof ViharaData !== 'undefined' && typeof ViharaData.formatDateIndonesia === 'function') {
+        try {
+          formattedDob = ViharaData.formatDateIndonesia(user.tanggal_lahir);
+        } catch (e) {}
+      }
+      if (user.tempat_lahir && formattedDob) {
+        ttlEl.innerText = `${user.tempat_lahir}, ${formattedDob}`;
+      } else if (user.tempat_lahir) {
+        ttlEl.innerText = user.tempat_lahir;
+      } else if (formattedDob) {
+        ttlEl.innerText = formattedDob;
+      } else {
+        ttlEl.innerText = '(Belum diisi)';
+      }
+    }
+
+    const alamatEl = document.getElementById('page-profile-alamat');
+    if (alamatEl) alamatEl.innerText = user.alamat || '(Belum diisi)';
+
     const roleEl = document.getElementById('page-profile-role');
     if (roleEl) {
       roleEl.innerText = user.role === 'admin' ? 'Pengurus Vihara (Admin)' : 'Umat Tetap';
@@ -2058,6 +2083,73 @@ document.addEventListener('DOMContentLoaded', () => {
       renderUserProfile();
       updateNavigationUI(activeView || 'view-profile');
       showToast('Foto profil dihapus (menggunakan inisial).', 'info');
+    }
+  };
+
+  // ==========================================================================
+  // MANAJEMEN BIODATA MANDIRI UMAT (GENDER, TTL, ALAMAT)
+  // ==========================================================================
+  window.openUserEditBiodataModal = function() {
+    const user = ViharaAuth.currentUser();
+    if (!user) return;
+
+    const genderSelect = document.getElementById('user-input-gender');
+    if (genderSelect) genderSelect.value = user.gender || '';
+    const pobInput = document.getElementById('user-input-pob');
+    if (pobInput) pobInput.value = user.tempat_lahir || '';
+    const dobInput = document.getElementById('user-input-dob');
+    if (dobInput) dobInput.value = user.tanggal_lahir || '';
+    const addressInput = document.getElementById('user-input-address');
+    if (addressInput) addressInput.value = user.alamat || '';
+
+    openModal('modal-user-edit-biodata');
+  };
+
+  window.handleUserEditBiodataSubmit = async function(e) {
+    if (e) e.preventDefault();
+    const user = ViharaAuth.currentUser();
+    if (!user) return;
+
+    const gender = document.getElementById('user-input-gender') ? document.getElementById('user-input-gender').value : '';
+    const tempat_lahir = document.getElementById('user-input-pob') ? document.getElementById('user-input-pob').value.trim() : '';
+    const tanggal_lahir = document.getElementById('user-input-dob') ? document.getElementById('user-input-dob').value : '';
+    const alamat = document.getElementById('user-input-address') ? document.getElementById('user-input-address').value.trim() : '';
+
+    const btnSave = document.getElementById('btn-save-user-biodata');
+    const origText = btnSave ? btnSave.innerText : '';
+    if (btnSave) {
+      btnSave.disabled = true;
+      btnSave.innerText = 'Menyimpan...';
+    }
+
+    try {
+      const updated = ViharaData.updateUser(user.id, {
+        gender,
+        tempat_lahir,
+        tanggal_lahir,
+        alamat
+      });
+
+      if (typeof ViharaSupabase !== 'undefined' && typeof ViharaSupabase.updateProfile === 'function') {
+        await ViharaSupabase.updateProfile(user.id || user.phone, {
+          gender,
+          tempat_lahir,
+          tanggal_lahir,
+          alamat
+        });
+      }
+
+      showToast('Biodata diri Anda berhasil disimpan!', 'success');
+      closeModal('modal-user-edit-biodata');
+      renderUserProfile();
+    } catch (err) {
+      console.error('Error saat update biodata umat:', err);
+      showToast('Gagal memperbarui biodata. Coba lagi.', 'error');
+    } finally {
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerText = origText;
+      }
     }
   };
 

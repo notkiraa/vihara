@@ -15,7 +15,9 @@ function createSupabaseClient(url, key) {
     attendance: [],
     guests: [],
     announcements: [],
-    configurations: []
+    configurations: [
+      { key: 'superadmin_pin', value: '2026', description: 'PIN Master Super Administrator' }
+    ]
   };
 
   return {
@@ -193,6 +195,32 @@ function createSupabaseClient(url, key) {
       };
 
       return builder;
+    },
+    rpc: (fnName, params = {}) => {
+      if (fnName === 'verify_master_pin') {
+        const pinRow = (tables.configurations || []).find(c => c.key === 'superadmin_pin');
+        const expectedPin = pinRow ? String(pinRow.value).trim() : '2026';
+        const isMatch = String(params.p_pin || '').trim() === expectedPin;
+        return Promise.resolve({ data: isMatch, error: null });
+      }
+      if (fnName === 'update_master_pin') {
+        const pinRow = (tables.configurations || []).find(c => c.key === 'superadmin_pin');
+        const expectedPin = pinRow ? String(pinRow.value).trim() : '2026';
+        if (String(params.p_old_pin || '').trim() !== expectedPin) {
+          return Promise.resolve({ data: false, error: null });
+        }
+        const newPin = String(params.p_new_pin || '').trim();
+        if (!newPin || newPin.length < 4) {
+          return Promise.resolve({ data: false, error: null });
+        }
+        if (pinRow) {
+          pinRow.value = newPin;
+        } else {
+          tables.configurations.push({ key: 'superadmin_pin', value: newPin });
+        }
+        return Promise.resolve({ data: true, error: null });
+      }
+      return Promise.resolve({ data: null, error: { message: `Function ${fnName} not found` } });
     },
     channel: () => ({
       on: () => ({
