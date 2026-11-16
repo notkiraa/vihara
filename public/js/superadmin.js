@@ -21,6 +21,24 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Enforce strict Role-Based Access Control (RBAC)
+  if (typeof ViharaAuth === 'undefined' || !ViharaAuth.isAdmin()) {
+    try {
+      sessionStorage.setItem('vihara_toast_pending', JSON.stringify({
+        message: 'Akses ditolak! Halaman Superadmin hanya dapat diakses oleh Pengurus Vihara (Admin).',
+        type: 'error'
+      }));
+    } catch (_) {}
+    if (typeof window !== 'undefined' && window.location && typeof window.location.replace === 'function') {
+      if (window.location.pathname && window.location.pathname.includes('/superadmin/')) {
+        window.location.replace('../index.html');
+      } else {
+        window.location.replace('index.html');
+      }
+      return;
+    }
+  }
+
   ViharaData.init();
 
   // Sinkronisasi data multi-device langsung dari Supabase
@@ -89,6 +107,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function checkAuthState() {
+    if (typeof ViharaAuth === 'undefined' || !ViharaAuth.isAdmin()) {
+      try {
+        sessionStorage.setItem('vihara_toast_pending', JSON.stringify({
+          message: 'Akses ditolak! Halaman Superadmin hanya dapat diakses oleh Pengurus Vihara (Admin).',
+          type: 'error'
+        }));
+      } catch (_) {}
+      if (typeof window !== 'undefined' && window.location && typeof window.location.replace === 'function') {
+        if (window.location.pathname && window.location.pathname.includes('/superadmin/')) {
+          window.location.replace('../index.html');
+        } else {
+          window.location.replace('index.html');
+        }
+        return;
+      }
+    }
+
     if (isSuperAdminAuth()) {
       if (gateSection) gateSection.style.display = 'none';
       if (mainSection) mainSection.style.display = 'block';

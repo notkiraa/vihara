@@ -145,3 +145,102 @@ CREATE TRIGGER trg_prevent_role_escalation
 BEFORE INSERT OR UPDATE OF role ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_role_escalation();
+
+
+-- ----------------------------------------------------------------------------
+-- BAGIAN 5: FUNGSI BANTU OTORISASI ADMIN KETAT (STRICT AUTH.UID CHECK)
+-- ----------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    IF auth.uid() IS NULL THEN
+        RETURN false;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE auth_user_id = auth.uid() AND role = 'admin'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO public, anon, authenticated;
+
+
+-- ----------------------------------------------------------------------------
+-- BAGIAN 6: VIEW PUBLIK PROFIL & PENGETATAN RLS TABEL PROFILES
+-- ----------------------------------------------------------------------------
+
+-- View publik untuk direktori profil (mencegah paparan password_hash ke publik)
+CREATE OR REPLACE VIEW public.vw_public_profiles AS
+SELECT id, name, role, avatar_url
+FROM public.profiles;
+
+GRANT SELECT ON public.vw_public_profiles TO anon, authenticated, public;
+
+-- Perbarui policy SELECT agar password_hash tidak dapat diakses secara bebas oleh publik
+DROP POLICY IF EXISTS "Profil dapat dibaca oleh publik dan umat terdaftar" ON public.profiles;
+DROP POLICY IF EXISTS "Pengguna dapat membaca profil sendiri atau admin" ON public.profiles;
+CREATE POLICY "Pengguna dapat membaca profil sendiri atau admin"
+    ON public.profiles FOR SELECT
+    TO public
+    USING (
+        auth.uid() = auth_user_id 
+        OR public.is_admin()
+    );
+
+-- Batasi policy UPDATE agar pengguna hanya dapat memperbarui profil milik sendiri atau admin
+DROP POLICY IF EXISTS "Pengguna dan admin dapat memperbarui profil" ON public.profiles;
+DROP POLICY IF EXISTS "Pengguna hanya dapat memperbarui profil sendiri atau admin" ON public.profiles;
+CREATE POLICY "Pengguna hanya dapat memperbarui profil sendiri atau admin"
+    ON public.profiles FOR UPDATE
+    TO public
+    USING (
+        auth.uid() = auth_user_id 
+        OR public.is_admin()
+    )
+    WITH CHECK (
+        auth.uid() = auth_user_id 
+        OR public.is_admin()
+    );
+
+
+-- ----------------------------------------------------------------------------
+-- BAGIAN 7: TRIGGER PROTEKSI BIODATA UMAT TERKUNCI (IMMUTABLE SETELAH LENGKAP)
+-- ----------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.protect_locked_biodata()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    -- Jika pemanggil adalah administrator, izinkan pembaruan biodata
+    IF public.is_admin() THEN
+        RETURN NEW;
+    END IF;
+
+    -- Cek jika biodata umat sudah terisi lengkap sebelumnya (terkunci)
+    IF OLD.gender IS NOT NULL 
+       AND OLD.tempat_lahir IS NOT NULL 
+       AND OLD.tanggal_lahir IS NOT NULL 
+       AND OLD.alamat IS NOT NULL THEN
+        -- Tolak perubahan pada kolom identitas penting kecuali admin
+        IF (NEW.gender IS DISTINCT FROM OLD.gender)
+           OR (NEW.tempat_lahir IS DISTINCT FROM OLD.tempat_lahir)
+           OR (NEW.tanggal_lahir IS DISTINCT FROM OLD.tanggal_lahir)
+           OR (NEW.alamat IS DISTINCT FROM OLD.alamat) THEN
+            RAISE EXCEPTION 'Biodata umat yang telah terisi lengkap telah dikunci dan hanya dapat diubah oleh administrator.';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_locked_biodata ON public.profiles;
+CREATE TRIGGER trg_protect_locked_biodata
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.protect_locked_biodata();

@@ -298,19 +298,33 @@ ALTER TABLE public.configurations ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
+    IF auth.uid() IS NULL THEN
+        RETURN false;
+    END IF;
     RETURN EXISTS (
         SELECT 1 FROM public.profiles
-        WHERE (auth_user_id = auth.uid() OR auth.uid() IS NULL) AND role = 'admin'
+        WHERE auth_user_id = auth.uid() AND role = 'admin'
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- View Publik Direktori Profil (Hanya mengekspos data publik tanpa password_hash atau kontak pribadi)
+CREATE OR REPLACE VIEW public.vw_public_profiles AS
+SELECT id, name, role, avatar_url
+FROM public.profiles;
+
+GRANT SELECT ON public.vw_public_profiles TO anon, authenticated, public;
+
 -- RLS: PROFILES
 DROP POLICY IF EXISTS "Profil dapat dibaca oleh publik dan umat terdaftar" ON public.profiles;
-CREATE POLICY "Profil dapat dibaca oleh publik dan umat terdaftar"
+DROP POLICY IF EXISTS "Pengguna dapat membaca profil sendiri atau admin" ON public.profiles;
+CREATE POLICY "Pengguna dapat membaca profil sendiri atau admin"
     ON public.profiles FOR SELECT
     TO public
-    USING (true);
+    USING (
+        auth.uid() = auth_user_id 
+        OR public.is_admin()
+    );
 
 DROP POLICY IF EXISTS "Izinkan registrasi profil baru" ON public.profiles;
 CREATE POLICY "Izinkan registrasi profil baru"
@@ -319,11 +333,18 @@ CREATE POLICY "Izinkan registrasi profil baru"
     WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Pengguna dan admin dapat memperbarui profil" ON public.profiles;
-CREATE POLICY "Pengguna dan admin dapat memperbarui profil"
+DROP POLICY IF EXISTS "Pengguna hanya dapat memperbarui profil sendiri atau admin" ON public.profiles;
+CREATE POLICY "Pengguna hanya dapat memperbarui profil sendiri atau admin"
     ON public.profiles FOR UPDATE
     TO public
-    USING (true)
-    WITH CHECK (true);
+    USING (
+        auth.uid() = auth_user_id 
+        OR public.is_admin()
+    )
+    WITH CHECK (
+        auth.uid() = auth_user_id 
+        OR public.is_admin()
+    );
 
 -- RLS: EVENTS
 DROP POLICY IF EXISTS "Jadwal kebaktian dapat dilihat oleh publik" ON public.events;
@@ -494,6 +515,44 @@ BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_role_escalation();
 
+-- TRIGGER KEAMANAN: PROTEKSI BIODATA UMAT TERKUNCI (IMMUTABLE SETELAH LENGKAP)
+CREATE OR REPLACE FUNCTION public.protect_locked_biodata()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    -- Jika dilakukan oleh administrator, izinkan modifikasi biodata
+    IF public.is_admin() THEN
+        RETURN NEW;
+    END IF;
+
+    -- Jika biodata umat sudah terisi lengkap sebelumnya (terkunci)
+    IF OLD.gender IS NOT NULL 
+       AND OLD.tempat_lahir IS NOT NULL 
+       AND OLD.tanggal_lahir IS NOT NULL 
+       AND OLD.alamat IS NOT NULL THEN
+        -- Tolak perubahan pada kolom identitas sensitif jika bukan admin
+        IF (NEW.gender IS DISTINCT FROM OLD.gender)
+           OR (NEW.tempat_lahir IS DISTINCT FROM OLD.tempat_lahir)
+           OR (NEW.tanggal_lahir IS DISTINCT FROM OLD.tanggal_lahir)
+           OR (NEW.alamat IS DISTINCT FROM OLD.alamat) THEN
+            RAISE EXCEPTION 'Biodata umat yang telah terisi lengkap telah dikunci dan hanya dapat diubah oleh administrator.';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_locked_biodata ON public.profiles;
+CREATE TRIGGER trg_protect_locked_biodata
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.protect_locked_biodata();
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.verify_master_pin(TEXT) TO public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.update_master_pin(TEXT, TEXT) TO public, anon, authenticated;
 

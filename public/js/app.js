@@ -3401,6 +3401,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3500);
   };
 
+  // Periksa & tampilkan pending toast dari sessionStorage (misal redirect penolakan akses RBAC superadmin)
+  function checkPendingToast() {
+    try {
+      const raw = sessionStorage.getItem('vihara_toast_pending') || sessionStorage.getItem('vihara_toast');
+      if (raw) {
+        sessionStorage.removeItem('vihara_toast_pending');
+        sessionStorage.removeItem('vihara_toast');
+        let toast = null;
+        try {
+          toast = JSON.parse(raw);
+        } catch (_) {
+          toast = { message: raw, type: 'info' };
+        }
+        if (toast) {
+          const msg = typeof toast === 'string' ? toast : (toast.message || '');
+          const type = (typeof toast === 'object' && toast.type) ? toast.type : 'info';
+          if (msg) {
+            showToast(msg, type);
+          }
+        }
+      }
+    } catch (e) {
+      sessionStorage.removeItem('vihara_toast_pending');
+      sessionStorage.removeItem('vihara_toast');
+    }
+  }
+  checkPendingToast();
+
   function getInitials(name) {
     if (!name) return 'V';
     const parts = name.trim().split(' ');
@@ -3572,6 +3600,9 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     navigateTo('view-login');
   }
+
+  // Pastikan pending toast ditampilkan jika belum terpanggil
+  checkPendingToast();
 
   // ==========================================================================
   // [INDEX: JS-APP-13] PRELOADER SAKRAL RODA DHAMMA (DHARMACHAKRA LOADING CONTROLLER)

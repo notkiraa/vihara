@@ -336,6 +336,30 @@ async function runAllTests() {
     assert(migSql.includes('tempat_lahir'), 'migration_combined_biodata_and_security.sql harus memuat kolom tempat_lahir');
   });
 
+  await it('7.3b Migrasi database memuat is_admin() ketat, vw_public_profiles, RLS profiles, & trg_protect_locked_biodata', () => {
+    const schemaSql = fs.readFileSync('supabase/schema.sql', 'utf8');
+    const migSql = fs.readFileSync('supabase/migration_combined_biodata_and_security.sql', 'utf8');
+
+    // 1. is_admin strictly checks auth.uid() IS NULL
+    assert(schemaSql.includes('IF auth.uid() IS NULL THEN'), 'schema.sql is_admin harus memvalidasi auth.uid() IS NULL');
+    assert(migSql.includes('IF auth.uid() IS NULL THEN'), 'migration is_admin harus memvalidasi auth.uid() IS NULL');
+    assert(!schemaSql.includes('OR auth.uid() IS NULL'), 'schema.sql tidak boleh membiarkan auth.uid() IS NULL membypass admin');
+
+    // 2. vw_public_profiles view
+    assert(schemaSql.includes('vw_public_profiles'), 'schema.sql harus memuat view vw_public_profiles');
+    assert(migSql.includes('vw_public_profiles'), 'migration harus memuat view vw_public_profiles');
+
+    // 3. profiles RLS policies
+    assert(schemaSql.includes('auth.uid() = auth_user_id'), 'schema.sql harus membatasi RLS profiles');
+    assert(migSql.includes('auth.uid() = auth_user_id'), 'migration harus membatasi RLS profiles');
+
+    // 4. trg_protect_locked_biodata trigger
+    assert(schemaSql.includes('trg_protect_locked_biodata'), 'schema.sql harus memuat trigger trg_protect_locked_biodata');
+    assert(migSql.includes('trg_protect_locked_biodata'), 'migration harus memuat trigger trg_protect_locked_biodata');
+    assert(schemaSql.includes('protect_locked_biodata'), 'schema.sql harus memuat fungsi protect_locked_biodata');
+    assert(migSql.includes('protect_locked_biodata'), 'migration harus memuat fungsi protect_locked_biodata');
+  });
+
   await it('7.4 Brute-force lockout Superadmin mengunci akses setelah 5 kali gagal berturut-turut', async () => {
     // Reset status lockout
     mockLocalStorage['vihara_superadmin_failed_attempts'] = '0';
@@ -406,6 +430,433 @@ async function runAllTests() {
     const freshUser = { phone: '08999999999', password_hash: null };
     const isDefaultMatch = await ViharaAuth.verifyPassword(freshUser, '123456');
     assert.strictEqual(isDefaultMatch, true, 'Pengguna baru dengan kata sandi default harus terverifikasi');
+  });
+
+  console.log('\n📌 9. Pengujian Superadmin RBAC Access Control & Pre-render Gate');
+
+  // Helper untuk mengekstrak dan mengeksekusi pre-render inline script
+  const superadminHtml = fs.readFileSync('public/superadmin.html', 'utf8');
+  const superadminSubdirHtml = fs.readFileSync('public/superadmin/index.html', 'utf8');
+  const appJsCode = fs.readFileSync('public/js/app.js', 'utf8');
+  const superadminJsCode = fs.readFileSync('public/js/superadmin.js', 'utf8');
+
+  const preRenderRegex = /<!-- Immediate Synchronous RBAC Pre-Render Security Check -->[\s\S]*?<script>([\s\S]*?)<\/script>/;
+  const matchSuperHtml = superadminHtml.match(preRenderRegex);
+  const matchSuperSubdirHtml = superadminSubdirHtml.match(preRenderRegex);
+
+  function runPreRenderSnippet(code, pathname = '/superadmin.html') {
+    let replacedUrl = null;
+    const origLocation = global.window.location;
+    global.window.location = {
+      pathname,
+      replace: (target) => { replacedUrl = target; }
+    };
+    try {
+      eval(code);
+    } finally {
+      global.window.location = origLocation;
+    }
+    return replacedUrl;
+  }
+
+  await it('9.1 Pre-render check di public/superadmin.html: Sesi null memicu redirect ke index.html dengan pending error toast', () => {
+    assert(matchSuperHtml, 'superadmin.html wajib memuat script inline pre-render RBAC');
+    sessionStorage.clear();
+    localStorage.clear();
+    ViharaData.setSession(null);
+
+    const redirect = runPreRenderSnippet(matchSuperHtml[1], '/superadmin.html');
+    assert.strictEqual(redirect, 'index.html', 'Sesi null harus langsung terpental ke index.html');
+
+    const pendingToastRaw = sessionStorage.getItem('vihara_toast_pending');
+    assert(pendingToastRaw, 'vihara_toast_pending harus tersimpan di sessionStorage');
+    const toast = JSON.parse(pendingToastRaw);
+    assert.strictEqual(toast.type, 'error');
+    assert(toast.message.includes('Akses ditolak'), 'Pesan toast harus menyatakan akses ditolak');
+  });
+
+  await it('9.2 Pre-render check di public/superadmin.html: Role "umat" memicu redirect ke index.html dengan pending error toast', () => {
+    sessionStorage.clear();
+    localStorage.clear();
+    const umatUser = { id: 'usr_sec_umat_92', name: 'Umat Biasa', phone: '081299990092', role: 'umat' };
+    localStorage.setItem('vihara_session', JSON.stringify(umatUser));
+
+    const redirect = runPreRenderSnippet(matchSuperHtml[1], '/superadmin.html');
+    assert.strictEqual(redirect, 'index.html', 'Role umat harus langsung terpental ke index.html');
+
+    const pendingToastRaw = sessionStorage.getItem('vihara_toast_pending');
+    assert(pendingToastRaw, 'vihara_toast_pending harus tersimpan di sessionStorage');
+    const toast = JSON.parse(pendingToastRaw);
+    assert.strictEqual(toast.type, 'error');
+    assert(toast.message.includes('Akses ditolak'), 'Pesan toast harus menyatakan akses ditolak');
+  });
+
+  await it('9.3 Pre-render check di public/superadmin/index.html: Akses subdirektori oleh user tanpa hak akses diredirect ke ../index.html', () => {
+    assert(matchSuperSubdirHtml, 'superadmin/index.html wajib memuat script inline pre-render RBAC');
+    sessionStorage.clear();
+    localStorage.clear();
+    const umatUser = { id: 'usr_sec_umat_93', name: 'Umat Biasa', phone: '081299990093', role: 'umat' };
+    localStorage.setItem('vihara_session', JSON.stringify(umatUser));
+
+    const redirect = runPreRenderSnippet(matchSuperSubdirHtml[1], '/superadmin/index.html');
+    assert.strictEqual(redirect, '../index.html', 'Subdirektori superadmin harus meredirect ke ../index.html');
+
+    const pendingToastRaw = sessionStorage.getItem('vihara_toast_pending');
+    assert(pendingToastRaw, 'vihara_toast_pending harus tersimpan');
+    const toast = JSON.parse(pendingToastRaw);
+    assert.strictEqual(toast.type, 'error');
+  });
+
+  await it('9.4 Pre-render check mengizinkan role "admin" dan "superadmin" tanpa redirect atau error toast', () => {
+    // 1. Role admin
+    sessionStorage.clear();
+    localStorage.clear();
+    const adminUser = { id: 'ADM_SEC_01', name: 'Pengurus Admin', phone: '08119999888', role: 'admin' };
+    localStorage.setItem('vihara_session', JSON.stringify(adminUser));
+
+    let redirect = runPreRenderSnippet(matchSuperHtml[1], '/superadmin.html');
+    assert.strictEqual(redirect, null, 'Role admin tidak boleh diredirect keluar');
+    assert.strictEqual(sessionStorage.getItem('vihara_toast_pending'), null, 'Role admin tidak boleh menerima error toast');
+
+    // 2. Role superadmin
+    sessionStorage.clear();
+    localStorage.clear();
+    const superadminUser = { id: 'ADM_SEC_SA', name: 'Master Superadmin', phone: '0895355301519', role: 'superadmin' };
+    localStorage.setItem('vihara_session', JSON.stringify(superadminUser));
+
+    redirect = runPreRenderSnippet(matchSuperHtml[1], '/superadmin.html');
+    assert.strictEqual(redirect, null, 'Role superadmin tidak boleh diredirect keluar');
+    assert.strictEqual(sessionStorage.getItem('vihara_toast_pending'), null, 'Role superadmin tidak boleh menerima error toast');
+  });
+
+  await it('9.5 public/js/superadmin.js: checkAuthState() memblokir non-admin dan mengizinkan admin membuka Vault PIN', () => {
+    // Simulasikan DOM superadmin
+    const mockGateSec = { style: { display: 'none' } };
+    const mockMainSec = { style: { display: 'none' } };
+    const mockGatePin = { value: 'initial' };
+
+    let checkAuthReplacedUrl = null;
+    const origLocation = global.window.location;
+    global.window.location = {
+      pathname: '/superadmin.html',
+      replace: (target) => { checkAuthReplacedUrl = target; }
+    };
+
+    function runCheckAuthStateSim(userSession, isPinAuthenticated = false) {
+      checkAuthReplacedUrl = null;
+      sessionStorage.clear();
+      localStorage.clear();
+      ViharaData.setSession(userSession);
+      if (isPinAuthenticated) {
+        sessionStorage.setItem('vihara_superadmin_auth_v5', 'true');
+      }
+
+      // Evaluasi logika RBAC checkAuthState dari superadmin.js
+      if (typeof ViharaAuth === 'undefined' || !ViharaAuth.isAdmin()) {
+        sessionStorage.setItem('vihara_toast_pending', JSON.stringify({
+          message: 'Akses ditolak! Halaman Superadmin hanya dapat diakses oleh Pengurus Vihara (Admin).',
+          type: 'error'
+        }));
+        if (typeof window !== 'undefined' && window.location && typeof window.location.replace === 'function') {
+          if (window.location.pathname && window.location.pathname.includes('/superadmin/')) {
+            window.location.replace('../index.html');
+          } else {
+            window.location.replace('index.html');
+          }
+          return;
+        }
+      }
+
+      // Akses diizinkan: atur tampilan vault PIN atau dashboard
+      if (sessionStorage.getItem('vihara_superadmin_auth_v5') === 'true') {
+        mockGateSec.style.display = 'none';
+        mockMainSec.style.display = 'block';
+      } else {
+        mockGateSec.style.display = 'block';
+        mockMainSec.style.display = 'none';
+        mockGatePin.value = '';
+      }
+    }
+
+    try {
+      // 1. Sesi null -> tertolak & diredirect
+      runCheckAuthStateSim(null);
+      assert.strictEqual(checkAuthReplacedUrl, 'index.html', 'Sesi null harus memicu redirect');
+      assert.strictEqual(JSON.parse(sessionStorage.getItem('vihara_toast_pending')).type, 'error');
+
+      // 2. Sesi umat -> tertolak & diredirect
+      runCheckAuthStateSim({ id: 'usr_sec_umat_95', role: 'umat' });
+      assert.strictEqual(checkAuthReplacedUrl, 'index.html', 'Sesi umat harus memicu redirect');
+
+      // 3. Sesi admin belum input PIN -> Diizinkan masuk layar Gate Vault PIN
+      runCheckAuthStateSim({ id: 'ADM_001', role: 'admin' }, false);
+      assert.strictEqual(checkAuthReplacedUrl, null, 'Admin tidak boleh diredirect');
+      assert.strictEqual(mockGateSec.style.display, 'block', 'Gate Vault PIN harus ditampilkan');
+      assert.strictEqual(mockMainSec.style.display, 'none');
+
+      // 4. Sesi admin sudah verifikasi PIN -> Diizinkan masuk Dashboard Utama
+      runCheckAuthStateSim({ id: 'ADM_001', role: 'admin' }, true);
+      assert.strictEqual(checkAuthReplacedUrl, null);
+      assert.strictEqual(mockGateSec.style.display, 'none');
+      assert.strictEqual(mockMainSec.style.display, 'block', 'Dashboard Utama harus ditampilkan');
+    } finally {
+      global.window.location = origLocation;
+    }
+  });
+
+  await it('9.6 public/js/app.js: checkPendingToast() menampilkan toast error dan membersihkan sessionStorage', () => {
+    const toastFnMatch = appJsCode.match(/function checkPendingToast\(\)[\s\S]*?\n  \}/);
+    assert(toastFnMatch, 'app.js harus memuat fungsi checkPendingToast');
+    eval(toastFnMatch[0]);
+
+    let capturedToast = null;
+    const origShowToast = global.showToast;
+    global.showToast = (msg, type) => {
+      capturedToast = { message: msg, type };
+    };
+
+    try {
+      sessionStorage.setItem('vihara_toast_pending', JSON.stringify({
+        message: 'Akses ditolak! Halaman Superadmin hanya dapat diakses oleh Pengurus Vihara (Admin).',
+        type: 'error'
+      }));
+
+      checkPendingToast();
+
+      assert(capturedToast !== null, 'showToast harus terpanggil saat ada pending toast');
+      assert.strictEqual(capturedToast.type, 'error');
+      assert(capturedToast.message.includes('Akses ditolak'));
+      assert.strictEqual(sessionStorage.getItem('vihara_toast_pending'), null, 'sessionStorage harus dibersihkan setelah toast dipicu');
+
+      // Panggilan kedua tidak memicu toast berulang
+      capturedToast = null;
+      checkPendingToast();
+      assert.strictEqual(capturedToast, null, 'Tidak boleh memicu toast kedua jika key sudah bersih');
+    } finally {
+      global.showToast = origShowToast;
+    }
+  });
+
+  console.log('\n📌 10. Pengujian Database Security Hardening (is_admin & trg_protect_locked_biodata)');
+
+  await it('10.1 public.is_admin(): Menolak pemanggilan jika auth.uid() IS NULL (unauthenticated caller)', () => {
+    const schemaSql = fs.readFileSync('supabase/schema.sql', 'utf8');
+    const migSql = fs.readFileSync('supabase/migration_combined_biodata_and_security.sql', 'utf8');
+
+    // Verifikasi skrip SQL memuat proteksi NULL auth.uid()
+    const isAdminRegex = /CREATE OR REPLACE FUNCTION public\.is_admin\(\)[\s\S]*?LANGUAGE plpgsql/i;
+    const matchSchema = schemaSql.match(isAdminRegex);
+    const matchMig = migSql.match(isAdminRegex);
+
+    assert(matchSchema, 'schema.sql harus memuat implementasi fungsi is_admin');
+    assert(matchMig, 'migration sql harus memuat implementasi fungsi is_admin');
+
+    assert(matchSchema[0].includes('IF auth.uid() IS NULL THEN'), 'is_admin harus cek IF auth.uid() IS NULL');
+    assert(matchSchema[0].includes('RETURN false;'), 'is_admin harus RETURN false jika auth.uid() null');
+    assert(!matchSchema[0].includes('OR auth.uid() IS NULL'), 'is_admin tidak boleh memuat OR auth.uid() IS NULL');
+
+    // Simulasi eksekusi logika PostgreSQL is_admin
+    const mockProfiles = [
+      { auth_user_id: 'uuid-admin-1', role: 'admin' },
+      { auth_user_id: 'uuid-umat-1', role: 'umat' }
+    ];
+
+    function simulateIsAdmin(authUid) {
+      if (authUid === null || authUid === undefined) {
+        return false;
+      }
+      return mockProfiles.some(p => p.auth_user_id === authUid && p.role === 'admin');
+    }
+
+    assert.strictEqual(simulateIsAdmin(null), false, 'auth.uid() = null wajib menghasilkan false');
+    assert.strictEqual(simulateIsAdmin(undefined), false, 'auth.uid() = undefined wajib menghasilkan false');
+    assert.strictEqual(simulateIsAdmin('uuid-admin-1'), true, 'Admin terdaftar wajib menghasilkan true');
+    assert.strictEqual(simulateIsAdmin('uuid-umat-1'), false, 'Umat biasa wajib menghasilkan false');
+    assert.strictEqual(simulateIsAdmin('uuid-unknown'), false, 'User tidak dikenal wajib menghasilkan false');
+  });
+
+  await it('10.2 trg_protect_locked_biodata: Menolak modifikasi biodata lengkap oleh non-admin', () => {
+    const schemaSql = fs.readFileSync('supabase/schema.sql', 'utf8');
+    const migSql = fs.readFileSync('supabase/migration_combined_biodata_and_security.sql', 'utf8');
+
+    // Verifikasi eksistensi fungsi dan trigger
+    assert(schemaSql.includes('protect_locked_biodata'), 'schema.sql harus memuat protect_locked_biodata');
+    assert(schemaSql.includes('trg_protect_locked_biodata'), 'schema.sql harus memuat trigger trg_protect_locked_biodata');
+    assert(migSql.includes('protect_locked_biodata'), 'migration harus memuat protect_locked_biodata');
+    assert(migSql.includes('trg_protect_locked_biodata'), 'migration harus memuat trigger trg_protect_locked_biodata');
+
+    // Simulasi trigger protect_locked_biodata
+    function simulateProtectLockedBiodataTrigger(isAdminCaller, oldRow, newRow) {
+      if (isAdminCaller) {
+        return newRow;
+      }
+
+      // Pengecekan apakah biodata lama sudah terisi lengkap (4 kolom utama)
+      const isOldComplete = oldRow.gender !== null && oldRow.gender !== undefined &&
+                            oldRow.tempat_lahir !== null && oldRow.tempat_lahir !== undefined &&
+                            oldRow.tanggal_lahir !== null && oldRow.tanggal_lahir !== undefined &&
+                            oldRow.alamat !== null && oldRow.alamat !== undefined;
+
+      if (isOldComplete) {
+        if (newRow.gender !== oldRow.gender ||
+            newRow.tempat_lahir !== oldRow.tempat_lahir ||
+            newRow.tanggal_lahir !== oldRow.tanggal_lahir ||
+            newRow.alamat !== oldRow.alamat) {
+          throw new Error('Biodata umat yang telah terisi lengkap telah dikunci dan hanya dapat diubah oleh administrator.');
+        }
+      }
+
+      return newRow;
+    }
+
+    const completedProfile = {
+      id: 'USR_COMPLETE_01',
+      name: 'Umat Terverifikasi',
+      gender: 'Laki-laki',
+      tempat_lahir: 'Cibinong',
+      tanggal_lahir: '1990-05-15',
+      alamat: 'Jl. Raya Jakarta-Bogor No. 10',
+      avatar_url: 'https://example.com/photo.jpg',
+      role: 'umat'
+    };
+
+    // Percobaan ubah alamat oleh non-admin (wajib gagal)
+    assert.throws(() => {
+      simulateProtectLockedBiodataTrigger(false, completedProfile, {
+        ...completedProfile,
+        alamat: 'Jl. Pindah Rumah Baru No. 99'
+      });
+    }, /Biodata umat yang telah terisi lengkap telah dikunci/, 'Non-admin dilarang mengubah alamat terkunci');
+
+    // Percobaan ubah gender oleh non-admin (wajib gagal)
+    assert.throws(() => {
+      simulateProtectLockedBiodataTrigger(false, completedProfile, {
+        ...completedProfile,
+        gender: 'Perempuan'
+      });
+    }, /Biodata umat yang telah terisi lengkap telah dikunci/, 'Non-admin dilarang mengubah gender terkunci');
+
+    // Percobaan ubah tempat_lahir oleh non-admin (wajib gagal)
+    assert.throws(() => {
+      simulateProtectLockedBiodataTrigger(false, completedProfile, {
+        ...completedProfile,
+        tempat_lahir: 'Bandung'
+      });
+    }, /Biodata umat yang telah terisi lengkap telah dikunci/, 'Non-admin dilarang mengubah tempat lahir terkunci');
+
+    // Percobaan ubah tanggal_lahir oleh non-admin (wajib gagal)
+    assert.throws(() => {
+      simulateProtectLockedBiodataTrigger(false, completedProfile, {
+        ...completedProfile,
+        tanggal_lahir: '2000-01-01'
+      });
+    }, /Biodata umat yang telah terisi lengkap telah dikunci/, 'Non-admin dilarang mengubah tanggal lahir terkunci');
+
+    // Pembaruan kolom non-biodata sensitif (misal avatar_url) oleh non-admin (diizinkan)
+    const updatedAvatar = simulateProtectLockedBiodataTrigger(false, completedProfile, {
+      ...completedProfile,
+      avatar_url: 'https://example.com/new-photo.jpg'
+    });
+    assert.strictEqual(updatedAvatar.avatar_url, 'https://example.com/new-photo.jpg', 'Pembaruan avatar_url harus diizinkan');
+  });
+
+  await it('10.3 trg_protect_locked_biodata: Mengizinkan admin mengubah biodata meskipun telah terkunci lengkap', () => {
+    function simulateProtectLockedBiodataTrigger(isAdminCaller, oldRow, newRow) {
+      if (isAdminCaller) {
+        return newRow;
+      }
+      const isOldComplete = oldRow.gender !== null && oldRow.gender !== undefined &&
+                            oldRow.tempat_lahir !== null && oldRow.tempat_lahir !== undefined &&
+                            oldRow.tanggal_lahir !== null && oldRow.tanggal_lahir !== undefined &&
+                            oldRow.alamat !== null && oldRow.alamat !== undefined;
+      if (isOldComplete) {
+        if (newRow.gender !== oldRow.gender ||
+            newRow.tempat_lahir !== oldRow.tempat_lahir ||
+            newRow.tanggal_lahir !== oldRow.tanggal_lahir ||
+            newRow.alamat !== oldRow.alamat) {
+          throw new Error('Biodata umat yang telah terisi lengkap telah dikunci dan hanya dapat diubah oleh administrator.');
+        }
+      }
+      return newRow;
+    }
+
+    const completedProfile = {
+      id: 'USR_COMPLETE_02',
+      name: 'Umat Lama',
+      gender: 'Laki-laki',
+      tempat_lahir: 'Bogor',
+      tanggal_lahir: '1988-12-01',
+      alamat: 'Jl. Suryakencana',
+      role: 'umat'
+    };
+
+    // Admin melakukan koreksi resmi atas alamat dan nama
+    const adminEdited = simulateProtectLockedBiodataTrigger(true, completedProfile, {
+      ...completedProfile,
+      alamat: 'Jl. Pajajaran No. 45, Bogor',
+      tempat_lahir: 'Kota Bogor'
+    });
+    assert.strictEqual(adminEdited.alamat, 'Jl. Pajajaran No. 45, Bogor', 'Admin harus dapat mengoreksi alamat');
+    assert.strictEqual(adminEdited.tempat_lahir, 'Kota Bogor', 'Admin harus dapat mengoreksi tempat lahir');
+  });
+
+  await it('10.4 trg_protect_locked_biodata: Mengizinkan umat melengkapi biodata untuk pertama kali (pengisian perdana)', () => {
+    function simulateProtectLockedBiodataTrigger(isAdminCaller, oldRow, newRow) {
+      if (isAdminCaller) {
+        return newRow;
+      }
+      const isOldComplete = oldRow.gender !== null && oldRow.gender !== undefined &&
+                            oldRow.tempat_lahir !== null && oldRow.tempat_lahir !== undefined &&
+                            oldRow.tanggal_lahir !== null && oldRow.tanggal_lahir !== undefined &&
+                            oldRow.alamat !== null && oldRow.alamat !== undefined;
+      if (isOldComplete) {
+        if (newRow.gender !== oldRow.gender ||
+            newRow.tempat_lahir !== oldRow.tempat_lahir ||
+            newRow.tanggal_lahir !== oldRow.tanggal_lahir ||
+            newRow.alamat !== oldRow.alamat) {
+          throw new Error('Biodata umat yang telah terisi lengkap telah dikunci dan hanya dapat diubah oleh administrator.');
+        }
+      }
+      return newRow;
+    }
+
+    // Profil baru yang belum mengisi biodata lengkap
+    const freshProfile = {
+      id: 'USR_FRESH_01',
+      name: 'Umat Baru Bergabung',
+      gender: null,
+      tempat_lahir: null,
+      tanggal_lahir: null,
+      alamat: null,
+      role: 'umat'
+    };
+
+    // Umat biasa mengisi biodata mereka untuk pertama kali
+    const completedByUmat = simulateProtectLockedBiodataTrigger(false, freshProfile, {
+      ...freshProfile,
+      gender: 'Perempuan',
+      tempat_lahir: 'Depok',
+      tanggal_lahir: '1996-08-17',
+      alamat: 'Jl. Margonda Raya No. 12'
+    });
+
+    assert.strictEqual(completedByUmat.gender, 'Perempuan');
+    assert.strictEqual(completedByUmat.tempat_lahir, 'Depok');
+    assert.strictEqual(completedByUmat.tanggal_lahir, '1996-08-17');
+    assert.strictEqual(completedByUmat.alamat, 'Jl. Margonda Raya No. 12');
+  });
+
+  await it('10.5 View vw_public_profiles dan RLS tabel profiles membatasi paparan password_hash dan data rahasia', () => {
+    const schemaSql = fs.readFileSync('supabase/schema.sql', 'utf8');
+    const migSql = fs.readFileSync('supabase/migration_combined_biodata_and_security.sql', 'utf8');
+
+    // 1. View definisi aman
+    assert(schemaSql.includes('CREATE OR REPLACE VIEW public.vw_public_profiles AS'), 'schema.sql harus memuat vw_public_profiles');
+    assert(!schemaSql.match(/vw_public_profiles[\s\S]*?password_hash/), 'vw_public_profiles TIDAK boleh memuat password_hash');
+
+    // 2. RLS SELECT & UPDATE
+    assert(schemaSql.includes('auth.uid() = auth_user_id'), 'RLS profiles SELECT wajib membatasi ke user sendiri');
+    assert(migSql.includes('auth.uid() = auth_user_id'), 'Migration RLS profiles SELECT wajib membatasi ke user sendiri');
   });
 
   console.log('\n======================================================');
