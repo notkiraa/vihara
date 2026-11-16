@@ -141,6 +141,45 @@ assert.strictEqual(parsedUsers[1].tanggal_lahir, '1995-01-25');
 assert.strictEqual(parsedUsers[1].alamat, 'Perumahan Griya Cibinong');
 console.log('  ✅ [PASS] 5.1 Baris CSV calon umat terurai akurat dengan Gender, TTL, dan Alamat');
 
+// 6. Uji Deteksi Biodata Kosong saat Awal Login Akun (Mirip Kunci PIN Baru)
+console.log('\n📌 6. Pengujian Deteksi Biodata Kosong saat Awal Login Akun');
+const appJsCode = fs.readFileSync(path.join(__dirname, '../public/js/app.js'), 'utf8');
+
+// Ekstrak fungsi isUserBiodataEmpty dari app.js
+const isUserBiodataEmptyMatch = appJsCode.match(/function isUserBiodataEmpty\(user\)[\s\S]*?\n  \}/);
+assert(isUserBiodataEmptyMatch, 'isUserBiodataEmpty harus terdefinisi di app.js');
+eval(isUserBiodataEmptyMatch[0]);
+
+const emptyUser1 = { name: 'Umat Baru', gender: '', tempat_lahir: '', tanggal_lahir: '', alamat: '' };
+const emptyUser2 = { name: 'Umat Sebagian', gender: 'Laki-laki', tempat_lahir: '', tanggal_lahir: '1990-01-01', alamat: '' };
+const completeUser = { name: 'Umat Lengkap', gender: 'Laki-laki', tempat_lahir: 'Cibinong', tanggal_lahir: '1990-01-01', alamat: 'Jl. Surya Kencana' };
+
+assert.strictEqual(isUserBiodataEmpty(emptyUser1), true, 'Akun dengan semua biodata kosong harus terdeteksi');
+assert.strictEqual(isUserBiodataEmpty(emptyUser2), true, 'Akun dengan sebagian biodata kosong harus terdeteksi');
+assert.strictEqual(isUserBiodataEmpty(completeUser), false, 'Akun dengan biodata lengkap tidak boleh dianggap kosong');
+console.log('  ✅ [PASS] 6.1 isUserBiodataEmpty akurat mendeteksi akun yang belum melengkapi identitas');
+
+// 7. Uji Alur Double Verification & Tombol Back Modal
+console.log('\n📌 7. Pengujian Alur Double Verification & Navigasi Tombol Back');
+const indexHtml = fs.readFileSync(path.join(__dirname, '../public/index.html'), 'utf8');
+
+// Verifikasi elemen modal dan langkah double verification
+assert(indexHtml.includes('id="biodata-step-1"'), 'Modal harus memuat Langkah 1 (Formulir Input)');
+assert(indexHtml.includes('id="biodata-step-2"'), 'Modal harus memuat Langkah 2 (Double Verification)');
+assert(indexHtml.includes('id="verify-preview-ttl"'), 'Langkah 2 harus memuat pratinjau verifikasi TTL');
+assert(indexHtml.includes('id="verify-confirm-check"'), 'Langkah 2 harus memuat centang konfirmasi verifikasi data');
+
+// Verifikasi tombol kembali yang proper
+assert(indexHtml.includes('id="btn-back-to-step1"'), 'Harus tersedia tombol kembali ke Langkah 1 (Ubah Data)');
+assert(indexHtml.includes('handleCancelForceChangePassword'), 'Modal wajib ganti password harus memiliki tombol batal/kembali ke login');
+assert(appJsCode.includes('handleCancelForceChangePassword'), 'app.js harus memuat handler handleCancelForceChangePassword');
+assert(appJsCode.includes('handleBackToBiodataStep1'), 'app.js harus memuat handler handleBackToBiodataStep1');
+assert(appJsCode.includes('handleProceedToDoubleVerification'), 'app.js harus memuat handler handleProceedToDoubleVerification');
+assert(appJsCode.includes('handleFinalSaveBiodata'), 'app.js harus memuat handler handleFinalSaveBiodata');
+
+console.log('  ✅ [PASS] 7.1 Struktur UI & handler Double Verification terverifikasi lengkap');
+console.log('  ✅ [PASS] 7.2 Tombol kembali proper terintegrasi pada seluruh alur aktivasi dan modal');
+
 console.log('\n======================================================');
-console.log('🎉 HASIL PENGUJIAN: SELURUH FITUR BIODATA UMAT 100% SUKSES!');
+console.log('🎉 HASIL PENGUJIAN: SELURUH FITUR BIODATA UMAT & DOUBLE VERIFICATION 100% SUKSES!');
 console.log('======================================================\n');

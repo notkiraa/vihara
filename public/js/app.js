@@ -64,17 +64,25 @@ document.addEventListener('DOMContentLoaded', () => {
     'view-profile': 5
   };
 
-  function navigateTo(targetViewId) {
+  const navigationHistory = [];
+
+  function navigateTo(targetViewId, isBack = false) {
     const access = ViharaAuth.checkRouteAccess(targetViewId);
     if (!access.allowed) {
       showToast(access.message, 'warning');
       targetViewId = access.reason === 'unauthorized' ? 'view-umat' : 'view-login';
     }
 
+    if (!isBack) {
+      if (navigationHistory[navigationHistory.length - 1] !== targetViewId) {
+        navigationHistory.push(targetViewId);
+      }
+    }
+
     const prevView = activeView;
     const prevOrder = (prevView && VIEW_ORDER[prevView] !== undefined) ? VIEW_ORDER[prevView] : 1;
     const nextOrder = (VIEW_ORDER[targetViewId] !== undefined) ? VIEW_ORDER[targetViewId] : 1;
-    const isSlideLeft = nextOrder < prevOrder;
+    const isSlideLeft = isBack || (nextOrder < prevOrder);
     const animationClass = isSlideLeft ? 'slide-in-left' : 'slide-in-right';
 
     Object.values(views).forEach(v => {
@@ -107,6 +115,32 @@ document.addEventListener('DOMContentLoaded', () => {
       renderUserProfile();
     }
   }
+
+  // Tombol Kembali Proper (Navigasi Mundur & Penutupan Modal Aman)
+  window.navigateBack = function(fallbackView = 'view-umat') {
+    // 1. Jika ada modal yang terbuka, tutup modal secara elegan
+    const openModalEl = document.querySelector('.modal-backdrop.show');
+    if (openModalEl) {
+      const modalId = openModalEl.id;
+      if (modalId === 'modal-force-change-password') {
+        handleCancelForceChangePassword();
+      } else if (modalId === 'modal-user-edit-biodata' && window.isInitialBiodataCompletion) {
+        handleCloseBiodataModal();
+      } else {
+        closeModal(modalId);
+      }
+      return;
+    }
+
+    // 2. Mundur ke view sebelumnya dalam antrean histori navigasi
+    if (navigationHistory.length > 1) {
+      navigationHistory.pop(); // buang view saat ini
+      const prev = navigationHistory[navigationHistory.length - 1];
+      navigateTo(prev, true);
+    } else {
+      navigateTo(fallbackView, true);
+    }
+  };
 
   // Navigasi Responsif: Di PC hanya navbar atas, di HP hanya navbar icon bawah
   function updateNavigationUI(currentViewId) {
@@ -1740,8 +1774,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // 5. Login berhasil langsung ke Beranda
+      // 5. Login berhasil: aktifkan sesi pengguna
       ViharaData.setSession(user, rememberMe);
+
+      // Jika akun masih memiliki data biodata yang kosong saat awal login
+      if (isUserBiodataEmpty(user)) {
+        showToast(`Selamat datang, ${user.name}! Mohon lengkapi biodata diri Anda.`, 'warning');
+        setTimeout(() => {
+          openUserEditBiodataModal({ isInitialLogin: true });
+        }, 200);
+        return;
+      }
+
       showToast(`Selamat datang, ${user.name}!`, 'success');
       navigateTo('view-umat');
     } catch (err) {
@@ -1753,6 +1797,23 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.innerHTML = origHtml;
       }
     }
+  };
+
+  // Helper deteksi kelengkapan biodata umat
+  function isUserBiodataEmpty(user) {
+    if (!user) return false;
+    const gender = String(user.gender || '').trim();
+    const tempat = String(user.tempat_lahir || '').trim();
+    const tgl = String(user.tanggal_lahir || '').trim();
+    const alamat = String(user.alamat || '').trim();
+    return !gender || !tempat || !tgl || !alamat;
+  }
+
+  window.handleCancelForceChangePassword = function() {
+    ViharaAuth.clearPendingFirstLogin();
+    closeModal('modal-force-change-password');
+    showToast('Proses aktivasi akun dibatalkan. Silakan masuk kembali.', 'info');
+    navigateTo('view-login', true);
   };
 
   // Handler Ganti Password Wajib (Login Pertama)
@@ -1815,7 +1876,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       closeModal('modal-force-change-password');
       showToast(`Kata sandi baru berhasil disimpan! Selamat datang, ${updatedUser.name}.`, 'success');
-      navigateTo('view-umat');
+
+      // Jika biodata masih kosong, arahkan ke aktivasi kelengkapan data (mirip set PIN)
+      if (isUserBiodataEmpty(updatedUser)) {
+        setTimeout(() => {
+          openUserEditBiodataModal({ isInitialLogin: true });
+        }, 250);
+      } else {
+        navigateTo('view-umat');
+      }
     } catch (err) {
       console.error('Error simpan password baru:', err);
       showToast('Gagal menyimpan kata sandi baru ke database.', 'error');
@@ -2087,25 +2156,59 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ==========================================================================
-  // MANAJEMEN BIODATA MANDIRI UMAT (GENDER, TTL, ALAMAT)
+  // MANAJEMEN BIODATA MANDIRI UMAT DENGAN DOUBLE VERIFICATION & ONBOARDING
   // ==========================================================================
-  window.openUserEditBiodataModal = function() {
+  window.isInitialBiodataCompletion = false;
+
+  window.openUserEditBiodataModal = function(options = {}) {
+    const isInitial = Boolean(options && options.isInitialLogin);
+    window.isInitialBiodataCompletion = isInitial;
+
     const user = ViharaAuth.currentUser();
     if (!user) return;
 
+    // Reset ke Langkah 1
+    const step1 = document.getElementById('biodata-step-1');
+    const step2 = document.getElementById('biodata-step-2');
+    if (step1) step1.style.display = 'block';
+    if (step2) step2.style.display = 'none';
+
+    // Banner & teks judul kontekstual
+    const banner = document.getElementById('biodata-onboarding-banner');
+    const headingText = document.getElementById('modal-biodata-heading-text');
+    const btnCancelText = document.getElementById('btn-cancel-biodata-text');
+    const headerBack = document.getElementById('btn-biodata-header-back');
+
+    if (banner) banner.style.display = isInitial ? 'block' : 'none';
+    if (headingText) {
+      headingText.innerText = isInitial ? 'Aktivasi Biodata Akun' : 'Lengkapi / Ubah Biodata Diri';
+    }
+    if (btnCancelText) {
+      btnCancelText.innerText = isInitial ? 'Lewati untuk Sekarang' : 'Batal';
+    }
+    if (headerBack) {
+      headerBack.style.display = 'none';
+    }
+
+    // Prefill form
     const genderSelect = document.getElementById('user-input-gender');
     if (genderSelect) genderSelect.value = user.gender || '';
     const pobInput = document.getElementById('user-input-pob');
     if (pobInput) pobInput.value = user.tempat_lahir || '';
     const dobInput = document.getElementById('user-input-dob');
-    if (dobInput) dobInput.value = user.tanggal_lahir || '';
+    if (dobInput) dobInput.value = user.tanggal_lahir ? String(user.tanggal_lahir).split('T')[0] : '';
     const addressInput = document.getElementById('user-input-address');
     if (addressInput) addressInput.value = user.alamat || '';
+
+    // Uncheck konfirmasi di step 2
+    const checkEl = document.getElementById('verify-confirm-check');
+    if (checkEl) checkEl.checked = false;
 
     openModal('modal-user-edit-biodata');
   };
 
-  window.handleUserEditBiodataSubmit = async function(e) {
+  // Step 1 -> Step 2: Validasi dan Tampilkan Layar Verifikasi Ganda
+  window.handleProceedToDoubleVerification = function(e) {
     if (e) e.preventDefault();
     const user = ViharaAuth.currentUser();
     if (!user) return;
@@ -2115,11 +2218,119 @@ document.addEventListener('DOMContentLoaded', () => {
     const tanggal_lahir = document.getElementById('user-input-dob') ? document.getElementById('user-input-dob').value : '';
     const alamat = document.getElementById('user-input-address') ? document.getElementById('user-input-address').value.trim() : '';
 
-    const btnSave = document.getElementById('btn-save-user-biodata');
-    const origText = btnSave ? btnSave.innerText : '';
+    if (!gender) {
+      showToast('Harap pilih jenis kelamin Anda!', 'warning');
+      return;
+    }
+    if (!tempat_lahir) {
+      showToast('Harap isi kota / tempat lahir Anda!', 'warning');
+      return;
+    }
+    if (!tanggal_lahir) {
+      showToast('Harap tentukan tanggal lahir Anda!', 'warning');
+      return;
+    }
+    if (!alamat || alamat.length < 5) {
+      showToast('Harap isi alamat domisili lengkap (minimal 5 karakter)!', 'warning');
+      return;
+    }
+
+    // Isi Pratinjau Verifikasi Ganda di Step 2
+    const nameEl = document.getElementById('verify-preview-name');
+    if (nameEl) nameEl.innerText = user.name || '-';
+
+    const genderEl = document.getElementById('verify-preview-gender');
+    if (genderEl) genderEl.innerText = gender;
+
+    const ttlEl = document.getElementById('verify-preview-ttl');
+    if (ttlEl) {
+      const formattedDate = typeof ViharaData !== 'undefined' && typeof ViharaData.formatIndonesianDate === 'function'
+        ? ViharaData.formatIndonesianDate(tanggal_lahir)
+        : tanggal_lahir;
+      ttlEl.innerText = `${tempat_lahir}, ${formattedDate}`;
+    }
+
+    const addrEl = document.getElementById('verify-preview-address');
+    if (addrEl) addrEl.innerText = alamat;
+
+    const checkEl = document.getElementById('verify-confirm-check');
+    if (checkEl) checkEl.checked = false;
+
+    // Transisi halus ke Langkah 2 (Double Verification)
+    const step1 = document.getElementById('biodata-step-1');
+    const step2 = document.getElementById('biodata-step-2');
+    if (step1) step1.style.display = 'none';
+    if (step2) step2.style.display = 'block';
+
+    const headingText = document.getElementById('modal-biodata-heading-text');
+    if (headingText) headingText.innerText = 'Verifikasi Ganda Biodata';
+
+    const headerBack = document.getElementById('btn-biodata-header-back');
+    if (headerBack) headerBack.style.display = 'inline-flex';
+  };
+
+  // Step 2 -> Step 1: Tombol Back Proper untuk Ubah Data tanpa kehilangan input
+  window.handleBackToBiodataStep1 = function() {
+    const step1 = document.getElementById('biodata-step-1');
+    const step2 = document.getElementById('biodata-step-2');
+    if (step1) step1.style.display = 'block';
+    if (step2) step2.style.display = 'none';
+
+    const headingText = document.getElementById('modal-biodata-heading-text');
+    if (headingText) {
+      headingText.innerText = window.isInitialBiodataCompletion ? 'Aktivasi Biodata Akun' : 'Lengkapi / Ubah Biodata Diri';
+    }
+
+    const headerBack = document.getElementById('btn-biodata-header-back');
+    if (headerBack) headerBack.style.display = 'none';
+  };
+
+  window.handleBiodataBackClick = function() {
+    const step2 = document.getElementById('biodata-step-2');
+    if (step2 && step2.style.display !== 'none') {
+      handleBackToBiodataStep1();
+    } else {
+      handleCloseBiodataModal();
+    }
+  };
+
+  window.handleCloseBiodataModal = function() {
+    closeModal('modal-user-edit-biodata');
+    if (window.isInitialBiodataCompletion) {
+      window.isInitialBiodataCompletion = false;
+      navigateTo('view-umat');
+    }
+  };
+
+  // Final Submit setelah Double Verification disetujui
+  window.handleFinalSaveBiodata = async function(e) {
+    if (e) e.preventDefault();
+    const user = ViharaAuth.currentUser();
+    if (!user) return;
+
+    const checkEl = document.getElementById('verify-confirm-check');
+    if (checkEl && !checkEl.checked) {
+      showToast('Beri centang persetujuan verifikasi data terlebih dahulu!', 'warning');
+      checkEl.focus();
+      return;
+    }
+
+    const gender = document.getElementById('user-input-gender') ? document.getElementById('user-input-gender').value : '';
+    const tempat_lahir = document.getElementById('user-input-pob') ? document.getElementById('user-input-pob').value.trim() : '';
+    const tanggal_lahir = document.getElementById('user-input-dob') ? document.getElementById('user-input-dob').value : '';
+    const alamat = document.getElementById('user-input-address') ? document.getElementById('user-input-address').value.trim() : '';
+
+    const btnSave = document.getElementById('btn-final-save-biodata');
+    const origHtml = btnSave ? btnSave.innerHTML : '';
     if (btnSave) {
       btnSave.disabled = true;
-      btnSave.innerText = 'Menyimpan...';
+      btnSave.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.8s linear infinite;">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10"></path>
+        </svg>
+        <span>Menyimpan ke Database...</span>
+      `;
     }
 
     try {
@@ -2139,18 +2350,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
-      showToast('Biodata diri Anda berhasil disimpan!', 'success');
+      if (updated) {
+        ViharaData.setSession(updated, true);
+      }
+
       closeModal('modal-user-edit-biodata');
-      renderUserProfile();
+      showToast('Biodata Anda telah diverifikasi ganda dan berhasil disimpan!', 'success');
+
+      if (window.isInitialBiodataCompletion) {
+        window.isInitialBiodataCompletion = false;
+        navigateTo('view-umat');
+      } else {
+        renderUserProfile();
+      }
     } catch (err) {
-      console.error('Error saat update biodata umat:', err);
-      showToast('Gagal memperbarui biodata. Coba lagi.', 'error');
+      console.error('Error saat simpan biodata:', err);
+      showToast('Gagal memperbarui biodata ke database. Coba lagi.', 'error');
     } finally {
       if (btnSave) {
         btnSave.disabled = false;
-        btnSave.innerText = origText;
+        btnSave.innerHTML = origHtml;
       }
     }
+  };
+
+  // Kompatibilitas form submit
+  window.handleUserEditBiodataSubmit = function(e) {
+    handleProceedToDoubleVerification(e);
   };
 
   function sanitizeImageUrl(url) {
@@ -3083,7 +3309,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', function(e) {
     if (e.target && e.target.classList && e.target.classList.contains('modal-backdrop')) {
       const modalId = e.target.id;
-      if (modalId && modalId !== 'modal-force-change-password') {
+      if (modalId === 'modal-force-change-password') {
+        handleCancelForceChangePassword();
+      } else if (modalId === 'modal-user-edit-biodata' && window.isInitialBiodataCompletion) {
+        handleCloseBiodataModal();
+      } else if (modalId) {
         if (typeof ViharaQR !== 'undefined' && modalId === 'modal-qr-scanner') {
           ViharaQR.closeScannerModal();
         } else {
@@ -3097,8 +3327,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' || e.key === 'Esc') {
       const activeBackdrop = document.querySelector('.modal-backdrop.show');
-      if (activeBackdrop && activeBackdrop.id !== 'modal-force-change-password') {
-        if (typeof ViharaQR !== 'undefined' && activeBackdrop.id === 'modal-qr-scanner') {
+      if (activeBackdrop) {
+        if (activeBackdrop.id === 'modal-force-change-password') {
+          handleCancelForceChangePassword();
+        } else if (activeBackdrop.id === 'modal-user-edit-biodata' && window.isInitialBiodataCompletion) {
+          handleCloseBiodataModal();
+        } else if (typeof ViharaQR !== 'undefined' && activeBackdrop.id === 'modal-qr-scanner') {
           ViharaQR.closeScannerModal();
         } else {
           closeModal(activeBackdrop.id);

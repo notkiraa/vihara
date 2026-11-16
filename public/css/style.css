@@ -2822,6 +2822,51 @@ body.user-logged-out #view-guest.active {
   transform: scale(1.06);
 }
 
+.btn-close-modal {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-full);
+  background: var(--maroon-50);
+  border: 1px solid var(--maroon-100);
+  color: var(--maroon-800);
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.btn-close-modal:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+  transform: scale(1.06);
+}
+
+.btn-modal-back-round {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-full);
+  background: var(--maroon-50);
+  border: 1px solid var(--maroon-100);
+  color: var(--maroon-800);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.btn-modal-back-round:hover {
+  background: var(--maroon-100);
+  color: var(--maroon-900);
+  transform: translateX(-2px);
+}
+
 .modal-tabs {
   display: flex;
   background-color: var(--maroon-50);
